@@ -25,6 +25,9 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
   // Set when the button is released. getUserMedia is async (and slow on the
   // first permission prompt), so a release can arrive before recording starts.
   const releasedRef = useRef(false)
+  // Each press gets an id; a mic request that resolves after a newer press
+  // started (press, release, press during the permission prompt) is stale.
+  const requestIdRef = useRef(0)
 
   // Declared before startRecording, whose onstop handler calls it.
   const transcribeAudio = useCallback(async (blob: Blob, mime: string) => {
@@ -56,9 +59,15 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
 
   const startRecording = useCallback(async () => {
     releasedRef.current = false
+    const requestId = ++requestIdRef.current
     try {
       // getUserMedia must be first — Safari revokes the user gesture after any other async op
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (requestId !== requestIdRef.current) {
+        // Superseded by a newer press: release this mic, the newer call owns it.
+        stream.getTracks().forEach((track) => track.stop())
+        return
+      }
       if (releasedRef.current) {
         // Let go before the mic opened (e.g. during the permission prompt):
         // don't start recording with nobody holding the button.

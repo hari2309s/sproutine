@@ -13,6 +13,7 @@ import {
 import { startObservation, propagateAttributes } from '@langfuse/tracing'
 import {
   classifySafety,
+  keywordScreen,
   routeIntent,
   buildSystemPrompt,
   selectModelCandidates,
@@ -126,6 +127,16 @@ export async function POST(request: NextRequest) {
     if (!profile || !profile.consentHealthAt) return json({ error: 'onboarding required' }, 409)
 
     if (!(await consumeUserQuota(user.id, 'chat', CHAT_DAILY_LIMIT))) {
+      // The quota never blocks a crisis reply. The keyword screen is
+      // deterministic and makes no model call, so it can't drain the budget.
+      const urgent = keywordScreen(message)
+      if (urgent?.category === 'crisis' || urgent?.category === 'ed_risk') {
+        return templatedResponse(SAFE_RESPONSES[urgent.category], {
+          safety: urgent.category,
+          speechTone: 'reassuring' satisfies SpeechTone,
+          createdAt: new Date().toISOString(),
+        })
+      }
       return json({ error: "You've reached today's chat limit. Rosie will be back tomorrow." }, 429)
     }
 
@@ -239,6 +250,7 @@ export async function POST(request: NextRequest) {
           const first = await firstSignal(result.stream)
           if (first.error) {
             generation.update({ level: 'ERROR', statusMessage: String(first.error) }).end()
+            first.stream.cancel().catch(() => {})
             throw first.error
           }
 
