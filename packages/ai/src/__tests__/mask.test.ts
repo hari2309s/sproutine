@@ -22,12 +22,19 @@ describe('maskContactDetails', () => {
     'on 13/10/2026',
     'on 01/10/2026 I ate',
     'since 05/03/2025.',
+    'on 01/10/2026 12:00 I ate',
+    'since 05/03/2025 3 times a day',
+    '01/10/2026 - 05/10/2026',
     'at 2026-10-13T10:00:00.000Z',
     'about 1200-1500 kcal',
     'trace 14afbdf166f41f077b744e12449db0b2',
     '"tokens": 412',
   ])('leaves %s alone', (text) => {
     expect(maskContactDetails(text)).toBe(text)
+  })
+
+  it('still masks a phone number that follows a date', () => {
+    expect(maskContactDetails('on 01/10/2026 call 0151 23456789')).toBe('on 01/10/2026 call [phone]')
   })
 
   it('keeps the public helpline numbers from safety replies readable', () => {
