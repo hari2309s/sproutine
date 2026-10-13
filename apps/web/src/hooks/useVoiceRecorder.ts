@@ -120,6 +120,13 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
   // Stop microphone track if the component unmounts while recording is in progress
   useEffect(() => {
     return () => {
+      // Invalidate any mic request still pending (e.g. during the permission
+      // prompt) so its stream is released when it resolves after unmount.
+      // Reading the latest value at unmount is the point here (it's a counter,
+      // not a DOM node), so the stale-ref warning doesn't apply.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      requestIdRef.current++
+      releasedRef.current = true
       streamRef.current?.getTracks().forEach((track) => track.stop())
       if (mediaRecorderRef.current?.state === 'recording') {
         mediaRecorderRef.current.stop()

@@ -94,6 +94,12 @@ function boundHistory(messages: UIMessage[]): UIMessage[] {
   return bounded
 }
 
+/** Eating-disorder signals switch the user to gentle mode for all later replies. */
+async function enableSafetyMode(db: ReturnType<typeof createServerClient>, userId: string) {
+  const { error } = await db.from('profiles').update({ safety_mode: true }).eq('user_id', userId)
+  if (error) console.error('[chat] failed to enable safety mode:', error.message)
+}
+
 /** Streams a fixed, pre-written reply — used for safety responses, never model output. */
 function templatedResponse(text: string, metadata: Record<string, unknown>) {
   const stream = createUIMessageStream({
@@ -131,6 +137,7 @@ export async function POST(request: NextRequest) {
       // deterministic and makes no model call, so it can't drain the budget.
       const urgent = keywordScreen(message)
       if (urgent?.category === 'crisis' || urgent?.category === 'ed_risk') {
+        if (urgent.category === 'ed_risk' && !profile.safetyMode) await enableSafetyMode(db, user.id)
         return templatedResponse(SAFE_RESPONSES[urgent.category], {
           safety: urgent.category,
           speechTone: 'reassuring' satisfies SpeechTone,
@@ -159,11 +166,7 @@ export async function POST(request: NextRequest) {
 
       if (safety.category === 'crisis' || safety.category === 'ed_risk') {
         if (safety.category === 'ed_risk' && !profile.safetyMode) {
-          const { error } = await db
-            .from('profiles')
-            .update({ safety_mode: true })
-            .eq('user_id', user.id)
-          if (error) console.error('[chat] failed to enable safety mode:', error.message)
+          await enableSafetyMode(db, user.id)
         }
         trace.update({ output: `[safe-response:${safety.category}]` }).end()
         await langfuseSpanProcessor.forceFlush()
