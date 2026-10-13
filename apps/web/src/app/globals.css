@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Dark theme (default) ── */
+:root {
+  color-scheme: dark;
+  --t-bg: #0e0d0c;
+  --t-surface: #1e1d1b;
+  --t-card: #2c2b28;
+  --t-border: #404038;
+  --t-muted: #706a5e;
+  --t-text: #f5ead2;
+  --t-text-secondary: #c4a87e;
+  --t-amber: #e8a84e;
+  --t-amber-light: #f0c070;
+  --t-green: #4a7a5a;
+  --t-red: #7a4a4a;
+}
+
+/* ── Light theme ── */
+:root.light {
+  color-scheme: light;
+  --t-bg: #faf6f0;
+  --t-surface: #f0e9df;
+  --t-card: #e8dfd3;
+  --t-border: #d4c8b8;
+  --t-muted: #8c7d6b;
+  --t-text: #1a1814;
+  --t-text-secondary: #6b4f2a;
+  --t-amber: #b86d10;
+  --t-amber-light: #c87f20;
+  --t-green: #2d5c3d;
+  --t-red: #7a3030;
+}
+
+/* ── System theme (no class set) — respects OS preference ── */
+@media (prefers-color-scheme: light) {
+  :root:not(.dark):not(.light) {
+    color-scheme: light;
+    --t-bg: #faf6f0;
+    --t-surface: #f0e9df;
+    --t-card: #e8dfd3;
+    --t-border: #d4c8b8;
+    --t-muted: #8c7d6b;
+    --t-text: #1a1814;
+    --t-text-secondary: #6b4f2a;
+    --t-amber: #b86d10;
+    --t-amber-light: #c87f20;
+    --t-green: #2d5c3d;
+    --t-red: #7a3030;
+  }
+}
+
+@layer base {
+  html {
+    background-color: var(--t-bg);
+    color: var(--t-text);
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--t-bg);
+    color: var(--t-text);
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Native <select> follows the app's own theme instead of falling back to
+     the OS default (unreadable in Windows dark mode without this). */
+  select {
+    background-color: var(--t-surface);
+    color: var(--t-text);
+  }
+}
+
+/* Shifts a `bottom-0` fixed element up to clear the home-indicator/gesture
+   area on notched devices. Margin (not padding) so it never fights with an
+   element's own padding utilities in the cascade — it just adds clearance
+   outside the box, and is 0 with no visual effect on non-notched devices. */
+.safe-bottom {
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
+/* Spending heatmap — 5 intensity levels, auto-adapt to dark/light via CSS vars */
+.heat-0 { background-color: var(--t-surface); }
+.heat-1 { background-color: color-mix(in srgb, var(--t-green) 30%, var(--t-surface)); }
+.heat-2 { background-color: color-mix(in srgb, var(--t-green) 65%, var(--t-surface)); }
+.heat-3 { background-color: color-mix(in srgb, var(--t-amber) 60%, var(--t-surface)); }
+.heat-4 { background-color: color-mix(in srgb, var(--t-red) 70%, var(--t-surface)); }
+
+@layer components {
+  .card {
+    @apply bg-truffle-card border border-truffle-border rounded-2xl p-4;
+  }
+
+  .btn-primary {
+    @apply bg-truffle-amber text-truffle-bg font-semibold px-6 py-3 rounded-xl
+           hover:bg-truffle-amber-light active:scale-95 transition-all duration-150;
+  }
+
+  .btn-ghost {
+    @apply text-truffle-text-secondary hover:text-truffle-text px-4 py-2 rounded-xl
+           hover:bg-truffle-surface transition-all duration-150;
+  }
+}
