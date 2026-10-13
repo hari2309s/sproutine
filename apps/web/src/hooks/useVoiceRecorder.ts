@@ -22,6 +22,9 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<BlobPart[]>([])
+  // Set when the button is released. getUserMedia is async (and slow on the
+  // first permission prompt), so a release can arrive before recording starts.
+  const releasedRef = useRef(false)
 
   // Declared before startRecording, whose onstop handler calls it.
   const transcribeAudio = useCallback(async (blob: Blob, mime: string) => {
@@ -52,9 +55,17 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
   }, [])
 
   const startRecording = useCallback(async () => {
+    releasedRef.current = false
     try {
       // getUserMedia must be first — Safari revokes the user gesture after any other async op
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (releasedRef.current) {
+        // Let go before the mic opened (e.g. during the permission prompt):
+        // don't start recording with nobody holding the button.
+        stream.getTracks().forEach((track) => track.stop())
+        setError('Hold the button while you speak.')
+        return
+      }
       streamRef.current = stream
       setError(null)
       setTranscript(null)
@@ -90,6 +101,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
   }, [transcribeAudio])
 
   const stopRecording = useCallback(() => {
+    releasedRef.current = true
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop()
       setIsRecording(false)

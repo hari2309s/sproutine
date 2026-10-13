@@ -44,16 +44,19 @@ export function ChatPage({ userId, initialMessages }: ChatPageProps) {
         ? 'speaking'
         : 'idle'
 
-  const handleReact = useCallback(async (traceId: string, score: 1 | -1, messageId: string) => {
-    if (reactedRef.current.has(messageId)) return
-    reactedRef.current.add(messageId)
-    setReactions((prev) => ({ ...prev, [messageId]: score }))
-    fetch('/api/chat/feedback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ traceId, score }),
-    }).catch((e) => console.warn('Failed to send feedback:', e))
-  }, [])
+  const handleReact = useCallback(
+    async (traceId: string, token: string, score: 1 | -1, messageId: string) => {
+      if (reactedRef.current.has(messageId)) return
+      reactedRef.current.add(messageId)
+      setReactions((prev) => ({ ...prev, [messageId]: score }))
+      fetch('/api/chat/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ traceId, token, score }),
+      }).catch((e) => console.warn('Failed to send feedback:', e))
+    },
+    []
+  )
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -165,9 +168,12 @@ export function ChatPage({ userId, initialMessages }: ChatPageProps) {
                   timestamp={message.metadata?.createdAt}
                   speaking={chat.isSpeaking && message.id === lastAssistantId}
                   failed={failed}
-                  traceId={message.metadata?.traceId}
+                  // Feedback needs the server-signed token; reloaded history has none.
+                  traceId={message.metadata?.feedbackToken ? message.metadata.traceId : undefined}
                   reaction={reactions[message.id] ?? null}
-                  onReact={(tid, score) => handleReact(tid, score, message.id)}
+                  onReact={(tid, score) =>
+                    handleReact(tid, message.metadata?.feedbackToken ?? '', score, message.id)
+                  }
                 />
                 {failed && (
                   <div className="mt-1 flex items-center justify-end gap-1">

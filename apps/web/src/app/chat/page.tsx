@@ -28,7 +28,7 @@ export default function Chat() {
     // Load history
     supabase
       .from('chat_messages')
-      .select('id, role, content, created_at, is_proactive')
+      .select('id, role, content, created_at, is_proactive, safety')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -42,6 +42,8 @@ export default function Chat() {
             metadata: {
               createdAt: row.created_at as string,
               proactive: Boolean(row.is_proactive),
+              safety:
+                row.safety === 'crisis' || row.safety === 'ed_risk' ? row.safety : undefined,
             },
           }))
         )

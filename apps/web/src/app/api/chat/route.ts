@@ -6,6 +6,8 @@ import {
   createUIMessageStream,
   createUIMessageStreamResponse,
   generateId,
+  type TextStreamPart,
+  type ToolSet,
   type UIMessage,
 } from 'ai'
 import { startObservation, propagateAttributes } from '@langfuse/tracing'
@@ -18,16 +20,23 @@ import {
   groqChatProviderOptions,
   incrementUsage,
   logEval,
+  consumeUserQuota,
   SAFE_RESPONSES,
+  SAFETY_MAX_CHARS,
 } from '@sproutine/ai'
 import { createServerClient, getProfile } from '@sproutine/db'
 import { requireUser } from '@/lib/supabase-server'
+import { signTrace } from '@/lib/feedbackToken'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
-const MAX_MESSAGE_CHARS = 4000
+const MAX_MESSAGE_CHARS = SAFETY_MAX_CHARS
 const HISTORY_LIMIT = 10
+// Earlier turns are context only; cap them so a client can't inflate token use.
+const MAX_HISTORY_CHARS = 16_000
+// Per-user cap so one account can't drain the shared free-tier LLM budget.
+const CHAT_DAILY_LIMIT = 150
 
 type SpeechTone = 'neutral' | 'reassuring'
 
@@ -44,6 +53,44 @@ function textOf(m: UIMessage | undefined): string {
     .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
     .map((p) => p.text)
     .join('')
+}
+
+/**
+ * Waits for the first meaningful part of a model stream. Provider failures
+ * (429s, 5xx) surface as an `error` part rather than a thrown exception, so
+ * this is how the fallback loop learns a provider failed before any text was
+ * sent. Returns the untouched stream for the client either way.
+ */
+async function firstSignal<T extends ToolSet>(
+  stream: ReadableStream<TextStreamPart<T>>
+): Promise<{ stream: ReadableStream<TextStreamPart<T>>; error: unknown }> {
+  const [probe, rest] = stream.tee()
+  const reader = probe.getReader()
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) return { stream: rest, error: null }
+      if (value.type === 'error') return { stream: rest, error: value.error }
+      if (value.type !== 'start' && value.type !== 'start-step') return { stream: rest, error: null }
+    }
+  } finally {
+    // Stop buffering for the probe; `rest` keeps the source flowing.
+    reader.cancel().catch(() => {})
+  }
+}
+
+/** Caps each turn and the total history, keeping the most recent turns. */
+function boundHistory(messages: UIMessage[]): UIMessage[] {
+  const bounded: UIMessage[] = []
+  let total = 0
+  for (const m of [...messages].reverse()) {
+    const text = textOf(m).slice(0, MAX_MESSAGE_CHARS)
+    if (!text.trim()) continue
+    if (total + text.length > MAX_HISTORY_CHARS && bounded.length > 0) break
+    total += text.length
+    bounded.unshift({ ...m, parts: [{ type: 'text', text }] })
+  }
+  return bounded
 }
 
 /** Streams a fixed, pre-written reply — used for safety responses, never model output. */
@@ -75,7 +122,12 @@ export async function POST(request: NextRequest) {
 
     const db = createServerClient()
     const profile = await getProfile(db, user.id)
-    if (!profile) return json({ error: 'onboarding required' }, 409)
+    // No health data goes to any model without recorded consent (GDPR Art. 9).
+    if (!profile || !profile.consentHealthAt) return json({ error: 'onboarding required' }, 409)
+
+    if (!(await consumeUserQuota(user.id, 'chat', CHAT_DAILY_LIMIT))) {
+      return json({ error: "You've reached today's chat limit. Rosie will be back tomorrow." }, 429)
+    }
 
     // Candidate selection only depends on the task, so start it now. The no-op
     // catch stops an early return below from leaving an unhandled rejection.
@@ -127,21 +179,19 @@ export async function POST(request: NextRequest) {
         }),
       })
 
-      // Only text parts are replayed; drop empty assistant turns (some
-      // providers reject them) and bound the history.
-      const history = clientMessages
-        .filter((m) => m.role === 'user' || m.role === 'assistant')
-        .map((m) => ({
-          ...m,
-          parts: (m.parts ?? []).filter((p) => p.type === 'text'),
-        }))
-        .filter((m) => textOf(m).trim())
-        .slice(-HISTORY_LIMIT)
+      // Only user/assistant text is replayed; empty turns are dropped (some
+      // providers reject them) and the history is bounded by turns and size.
+      const history = boundHistory(
+        clientMessages
+          .filter((m) => m.role === 'user' || m.role === 'assistant')
+          .slice(-HISTORY_LIMIT)
+      )
       const modelMessages = await convertToModelMessages(history)
       const speechTone: SpeechTone = safety.category === 'medical' ? 'reassuring' : 'neutral'
 
-      // Try candidates in priority order; per-minute rate limits on one
-      // provider fall through to the next. Mid-stream errors surface via onError.
+      // Try candidates in priority order. A provider that fails before sending
+      // any text (e.g. a per-minute rate limit) falls through to the next;
+      // errors after text has started surface to the client via onError.
       let lastError: unknown = null
       for (const { model, provider, modelId } of await candidatesPromise) {
         try {
@@ -178,8 +228,6 @@ export async function POST(request: NextRequest) {
                 logEval({
                   provider,
                   task: 'fast-chat',
-                  input: message,
-                  output: text,
                   latencyMs: Date.now() - start,
                   tokensUsed: (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0),
                   traceId: trace.traceId,
@@ -188,16 +236,31 @@ export async function POST(request: NextRequest) {
             },
           })
 
+          const first = await firstSignal(result.stream)
+          if (first.error) {
+            generation.update({ level: 'ERROR', statusMessage: String(first.error) }).end()
+            throw first.error
+          }
+
           const stream = toUIMessageStream({
-            stream: result.stream,
+            stream: first.stream,
             // Tone (for TTS), trace id (for feedback) and a timestamp ride on
             // the assistant message.
             messageMetadata: ({ part }) =>
               part.type === 'start'
-                ? { traceId: trace.traceId, speechTone, createdAt: new Date().toISOString() }
+                ? {
+                    traceId: trace.traceId,
+                    // Proves to /api/chat/feedback that this trace is the caller's.
+                    feedbackToken: signTrace(trace.traceId, profile.llmPseudonym),
+                    speechTone,
+                    createdAt: new Date().toISOString(),
+                  }
                 : undefined,
             onError: (error: unknown) => {
               console.error('[chat/stream error]', error)
+              generation.update({ level: 'ERROR', statusMessage: String(error) }).end()
+              trace.end()
+              langfuseSpanProcessor.forceFlush().catch(() => {})
               return 'Rosie had trouble answering. Please try again.'
             },
           })

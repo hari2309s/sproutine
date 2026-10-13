@@ -38,7 +38,7 @@ export interface Profile {
   voiceId: string
   /** Set when the safety gate sees eating-disorder signals. Hides numbers and targets. */
   safetyMode: boolean
-  consentHealthAt: string | null
+  consentHealthAt: string
   /** Stable random id sent to LLM providers instead of the user id, name or email. */
   llmPseudonym: string
 }

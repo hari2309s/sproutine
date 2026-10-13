@@ -16,7 +16,7 @@ export interface Database {
           locale: string
           voice_id: string
           safety_mode: boolean
-          consent_health_at: string | null
+          consent_health_at: string
           llm_pseudonym: string
           created_at: string
           updated_at: string
@@ -32,8 +32,7 @@ export interface Database {
           quit_date?: string | null
           locale?: string
           voice_id?: string
-          safety_mode?: boolean
-          consent_health_at?: string | null
+          consent_health_at: string
         }
         Update: {
           display_name?: string
@@ -46,7 +45,6 @@ export interface Database {
           locale?: string
           voice_id?: string
           safety_mode?: boolean
-          consent_health_at?: string | null
         }
       }
       chat_messages: {
@@ -58,6 +56,7 @@ export interface Database {
           is_proactive: boolean
           read_at: string | null
           nudge_key: string | null
+          safety: 'crisis' | 'ed_risk' | null
           created_at: string
         }
         Insert: {
@@ -67,6 +66,7 @@ export interface Database {
           content: string
           is_proactive?: boolean
           nudge_key?: string | null
+          safety?: 'crisis' | 'ed_risk' | null
           created_at?: string
         }
         Update: {
@@ -92,8 +92,6 @@ export interface Database {
           created_at: string
           provider: string
           task: string
-          input: string
-          output: string
           latency_ms: number | null
           tokens_used: number | null
           trace_id: string | null
@@ -101,8 +99,6 @@ export interface Database {
         Insert: {
           provider: string
           task: string
-          input: string
-          output: string
           latency_ms?: number | null
           tokens_used?: number | null
           trace_id?: string | null

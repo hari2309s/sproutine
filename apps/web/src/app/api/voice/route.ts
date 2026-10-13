@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
 import { startObservation } from '@langfuse/tracing'
-import { langfuseSpanProcessor, MODELS } from '@sproutine/ai'
+import { langfuseSpanProcessor, MODELS, consumeUserQuota } from '@sproutine/ai'
 import { requireUser } from '@/lib/supabase-server'
+
+const VOICE_DAILY_LIMIT = 100
 
 function getGroq() {
   return new Groq({ apiKey: process.env.GROQ_API_KEY })
@@ -10,7 +12,7 @@ function getGroq() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { errorResponse } = await requireUser(request)
+    const { user, errorResponse } = await requireUser(request)
     if (errorResponse) return errorResponse
 
     const formData = await request.formData()
@@ -24,6 +26,14 @@ export async function POST(request: NextRequest) {
     }
     if (audio.size > 25 * 1024 * 1024) {
       return NextResponse.json({ error: 'Audio file too large (max 25 MB)' }, { status: 400 })
+    }
+
+    // Per-user cap: Whisper calls share the app-wide Groq budget.
+    if (!(await consumeUserQuota(user.id, 'voice', VOICE_DAILY_LIMIT))) {
+      return NextResponse.json(
+        { error: "You've reached today's voice limit. Typing still works." },
+        { status: 429 }
+      )
     }
 
     const model = MODELS.groq.transcription

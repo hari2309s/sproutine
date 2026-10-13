@@ -10,6 +10,8 @@ import { supabase } from '@/lib/supabase'
 // Metadata the chat route attaches to each assistant message (see chat/route.ts).
 export type ChatMetadata = {
   traceId?: string
+  /** Server-signed proof that traceId belongs to this user (for feedback). */
+  feedbackToken?: string
   speechTone?: SpeechTone
   proactive?: boolean
   createdAt?: string
@@ -76,26 +78,25 @@ export function useSproutineChat(
       // Card components persist their own acknowledgement messages to Supabase.
       if (isAbort || isError || !text.trim()) return
 
-      try {
-        await supabase.from('chat_messages').insert({
-          user_id: userId,
-          role: message.role,
-          content: text,
-        })
-      } catch (e) {
-        console.warn('Failed to save chat message:', e)
-      }
+      // supabase-js reports failures in `error`; it only throws on network faults.
+      const { error } = await supabase.from('chat_messages').insert({
+        user_id: userId,
+        role: message.role,
+        content: text,
+        // Lets a reload re-render the safety card instead of a plain bubble.
+        safety: message.metadata?.safety ?? null,
+      })
+      if (error) console.warn('Failed to save chat message:', error.message)
     },
   })
   const { sendMessage } = chat
 
   const saveUserMessage = useCallback(
     async (content: string) => {
-      try {
-        await supabase.from('chat_messages').insert({ user_id: userId, role: 'user', content })
-      } catch (e) {
-        console.warn('Failed to save user message:', e)
-      }
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({ user_id: userId, role: 'user', content })
+      if (error) console.warn('Failed to save user message:', error.message)
     },
     [userId]
   )

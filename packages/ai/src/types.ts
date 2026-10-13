@@ -12,8 +12,6 @@ export type TaskType =
 export interface EvalLogEntry {
   provider: Provider
   task: TaskType
-  input: string
-  output: string
   latencyMs: number
   tokensUsed: number
   traceId?: string

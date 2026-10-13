@@ -83,15 +83,13 @@ export interface RouterGenerateOptions {
 function track(
   provider: Provider,
   task: TaskType,
-  input: string,
-  output: string,
   latencyMs: number,
   tokensUsed: number,
   traceId?: string
 ) {
   Promise.all([
     incrementUsage(provider),
-    logEval({ provider, task, input, output, latencyMs, tokensUsed, traceId }),
+    logEval({ provider, task, latencyMs, tokensUsed, traceId }),
   ]).catch((e) => console.error('[LLMRouter] eval log error:', e))
 }
 
@@ -100,8 +98,6 @@ export async function routedGenerateText(
   options: RouterGenerateOptions,
   meta?: { traceId?: string }
 ): Promise<{ text: string; provider: Provider | null }> {
-  const input = options.prompt ?? options.instructions ?? ''
-
   for (const { model, provider } of await selectModelCandidates(task)) {
     const start = Date.now()
     try {
@@ -114,7 +110,7 @@ export async function routedGenerateText(
         providerOptions: groqProviderOptions,
       })
       const tokens = (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0)
-      track(provider, task, input, result.text, Date.now() - start, tokens, meta?.traceId)
+      track(provider, task, Date.now() - start, tokens, meta?.traceId)
       return { text: result.text, provider }
     } catch (e) {
       console.warn(`[LLMRouter] ${provider} failed for ${task}, trying next:`, (e as Error).message)
@@ -136,8 +132,6 @@ export async function routedGenerateObject<T>(
   options: RouterGenerateOptions,
   meta?: { traceId?: string }
 ): Promise<{ object: T; provider: Provider } | null> {
-  const input = options.prompt ?? options.instructions ?? ''
-
   for (const { model, provider } of await selectModelCandidates(task)) {
     let feedback: string | null = null
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -156,7 +150,7 @@ export async function routedGenerateObject<T>(
           output: Output.object({ schema }),
         })
         const tokens = (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0)
-        track(provider, task, input, JSON.stringify(result.output), Date.now() - start, tokens, meta?.traceId)
+        track(provider, task, Date.now() - start, tokens, meta?.traceId)
         return { object: result.output as T, provider }
       } catch (e) {
         feedback = (e as Error).message.slice(0, 500)

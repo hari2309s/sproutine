@@ -103,6 +103,9 @@ export function parseSafetyLabel(text: string): SafetyCategory | null {
   return null
 }
 
+/** Matches the chat route's message cap, so the classifier always sees the whole message. */
+export const SAFETY_MAX_CHARS = 4000
+
 export async function classifySafety(
   message: string,
   meta?: { traceId?: string }
@@ -112,7 +115,7 @@ export async function classifySafety(
 
   const { text } = await routedGenerateText(
     'safety',
-    { instructions: SAFETY_POLICY, prompt: message.slice(0, 2000), maxOutputTokens: 300, temperature: 0 },
+    { instructions: SAFETY_POLICY, prompt: message.slice(0, SAFETY_MAX_CHARS), maxOutputTokens: 300, temperature: 0 },
     meta
   )
   const label = parseSafetyLabel(text)

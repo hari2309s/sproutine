@@ -7,6 +7,9 @@ create table if not exists public.chat_messages (
   read_at      timestamptz,
   -- Dedup key for proactive nudges, e.g. 'habit-streak:<id>:7'
   nudge_key    text,
+  -- Set on templated safety replies so the UI re-renders the safety card
+  -- (tappable helplines) after a reload.
+  safety       text check (safety in ('crisis', 'ed_risk')),
   created_at   timestamptz not null default now()
 );
 

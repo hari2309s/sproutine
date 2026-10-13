@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -39,13 +39,21 @@ export function VoiceDock({ status, onStart, onStop, onStopSpeaking }: VoiceDock
   const isRecording = status === 'recording'
   const elapsed = useElapsed(isRecording)
 
+  // Tracks the physical press, not the recorder: the release must reach the
+  // recorder even if recording hasn't started yet (mic permission pending).
+  const pressedRef = useRef(false)
+
   const start = useCallback(() => {
-    if (status === 'idle') onStart()
+    if (status !== 'idle') return
+    pressedRef.current = true
+    onStart()
   }, [status, onStart])
 
   const stop = useCallback(() => {
-    if (isRecording) onStop()
-  }, [isRecording, onStop])
+    if (!pressedRef.current) return
+    pressedRef.current = false
+    onStop()
+  }, [onStop])
 
   // Space/Enter behave like holding the button.
   const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
