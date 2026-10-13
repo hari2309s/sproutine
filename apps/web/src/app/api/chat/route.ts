@@ -317,14 +317,20 @@ export async function POST(request: NextRequest) {
                       return 'Rosie had trouble answering. Please try again.'
                     },
                     // Fires on completion, abort and client disconnect alike.
-                    onEnd: ({ responseMessage, isAborted, isCancelled }) => {
+                    onEnd: ({ responseMessage, isAborted, isCancelled, outcome }) => {
                       const interrupted = isAborted || isCancelled === true
+                      const failed = outcome.status === 'failed'
                       endTurn({
                         output: textOf(responseMessage),
                         metadata: { provider, ...(interrupted ? { interrupted: true } : {}) },
-                        ...(interrupted
-                          ? { level: 'WARNING' as const, statusMessage: 'stream ended early' }
-                          : {}),
+                        ...(failed
+                          ? {
+                              level: 'ERROR' as const,
+                              statusMessage: String(outcome.error ?? 'stream failed'),
+                            }
+                          : interrupted
+                            ? { level: 'WARNING' as const, statusMessage: 'stream ended early' }
+                            : {}),
                       })
                     },
                   })
