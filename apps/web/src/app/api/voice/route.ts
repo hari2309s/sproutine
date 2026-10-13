@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
-import { startObservation } from '@langfuse/tracing'
+import { propagateAttributes, startActiveObservation } from '@langfuse/tracing'
 import { langfuseSpanProcessor, MODELS, consumeUserQuota } from '@sproutine/ai'
+import { createServerClient, getProfile } from '@sproutine/db'
 import { requireUser } from '@/lib/supabase-server'
 
 const VOICE_DAILY_LIMIT = 100
@@ -28,6 +29,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Audio file too large (max 25 MB)' }, { status: 400 })
     }
 
+    // Speech about eating is health data: same consent gate as chat.
+    const profile = await getProfile(createServerClient(), user.id)
+    if (!profile || !profile.consentHealthAt) {
+      return NextResponse.json({ error: 'onboarding required' }, { status: 409 })
+    }
+
     // Per-user cap: Whisper calls share the app-wide Groq budget.
     if (!(await consumeUserQuota(user.id, 'voice', VOICE_DAILY_LIMIT))) {
       return NextResponse.json(
@@ -36,25 +43,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    after(() => langfuseSpanProcessor.forceFlush())
+
     const model = MODELS.groq.transcription
-    const trace = startObservation('voice_transcription', {
-      metadata: { model, mimeType: audio.type, fileSize: audio.size },
-    })
-    const span = trace.startObservation('whisper_transcribe', { input: { model } })
+    const transcript = await propagateAttributes(
+      { traceName: 'transcribe-voice', userId: profile.llmPseudonym, tags: ['voice'] },
+      () =>
+        startActiveObservation('transcribe-voice', async (span) => {
+          span.update({ input: { mimeType: audio.type, bytes: audio.size } })
+          // Whisper isn't called through the AI SDK, so record the generation
+          // manually to keep the model on the trace.
+          const text = await startActiveObservation(
+            'transcribe-audio',
+            async (generation) => {
+              generation.update({ model, input: { mimeType: audio.type, bytes: audio.size } })
+              // No fixed language: users mix English with German food names
+              // ("zwei Brötchen mit Quark"), and Whisper's auto-detect handles both.
+              const result = await getGroq().audio.transcriptions.create({
+                file: audio,
+                model,
+                response_format: 'json',
+              })
+              generation.update({ output: result.text })
+              return result.text
+            },
+            { asType: 'generation' }
+          )
+          span.update({ output: text })
+          return text
+        })
+    )
 
-    // No fixed language: users mix English with German food names
-    // ("zwei Brötchen mit Quark"), and Whisper's auto-detect handles both.
-    const transcription = await getGroq().audio.transcriptions.create({
-      file: audio,
-      model,
-      response_format: 'json',
-    })
-
-    span.update({ output: transcription.text }).end()
-    trace.end()
-    await langfuseSpanProcessor.forceFlush()
-
-    return NextResponse.json({ transcript: transcription.text })
+    return NextResponse.json({ transcript })
   } catch (error) {
     console.error('Voice transcription error:', error instanceof Error ? error.message : error)
     return NextResponse.json({ error: 'Transcription failed' }, { status: 500 })

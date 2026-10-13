@@ -115,7 +115,13 @@ export async function classifySafety(
 
   const { text } = await routedGenerateText(
     'safety',
-    { instructions: SAFETY_POLICY, prompt: message.slice(0, SAFETY_MAX_CHARS), maxOutputTokens: 300, temperature: 0 },
+    {
+      instructions: SAFETY_POLICY,
+      prompt: message.slice(0, SAFETY_MAX_CHARS),
+      maxOutputTokens: 300,
+      temperature: 0,
+      functionId: 'classify-safety',
+    },
     meta
   )
   const label = parseSafetyLabel(text)

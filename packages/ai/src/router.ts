@@ -78,6 +78,11 @@ export interface RouterGenerateOptions {
   messages?: ModelMessage[]
   maxOutputTokens?: number
   temperature?: number
+  /**
+   * Names the generation in Langfuse (verb-first, stable: e.g. 'classify-intent').
+   * Each provider attempt is its own generation, so fallbacks are visible.
+   */
+  functionId?: string
 }
 
 function track(
@@ -108,6 +113,7 @@ export async function routedGenerateText(
         maxOutputTokens: options.maxOutputTokens,
         temperature: options.temperature,
         providerOptions: groqProviderOptions,
+        telemetry: { functionId: options.functionId ?? task },
       })
       const tokens = (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0)
       track(provider, task, Date.now() - start, tokens, meta?.traceId)
@@ -148,6 +154,7 @@ export async function routedGenerateObject<T>(
           temperature: options.temperature ?? 0,
           providerOptions: groqProviderOptions,
           output: Output.object({ schema }),
+          telemetry: { functionId: options.functionId ?? task },
         })
         const tokens = (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0)
         track(provider, task, Date.now() - start, tokens, meta?.traceId)

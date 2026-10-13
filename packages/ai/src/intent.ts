@@ -46,14 +46,34 @@ export function parseIntentLabel(text: string): Intent | null {
   return INTENTS.find((i) => new RegExp(`\\b${i}\\b`).test(cleaned)) ?? null
 }
 
-export async function routeIntent(message: string, meta?: { traceId?: string }): Promise<Intent> {
+export interface IntentResult {
+  intent: Intent
+  /** Which layer decided — recorded on the trace for debugging misroutes. */
+  source: 'keyword' | 'llm' | 'default'
+}
+
+export async function classifyIntent(
+  message: string,
+  meta?: { traceId?: string }
+): Promise<IntentResult> {
   const fast = keywordIntent(message)
-  if (fast) return fast
+  if (fast) return { intent: fast, source: 'keyword' }
 
   const { text } = await routedGenerateText(
     'classify',
-    { instructions: INTENT_PROMPT, prompt: message.slice(0, 1000), maxOutputTokens: 200, temperature: 0 },
+    {
+      instructions: INTENT_PROMPT,
+      prompt: message.slice(0, 1000),
+      maxOutputTokens: 200,
+      temperature: 0,
+      functionId: 'classify-intent',
+    },
     meta
   )
-  return parseIntentLabel(text) ?? INTENT.OTHER
+  const parsed = parseIntentLabel(text)
+  return parsed ? { intent: parsed, source: 'llm' } : { intent: INTENT.OTHER, source: 'default' }
+}
+
+export async function routeIntent(message: string, meta?: { traceId?: string }): Promise<Intent> {
+  return (await classifyIntent(message, meta)).intent
 }

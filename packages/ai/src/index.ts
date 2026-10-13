@@ -1,9 +1,10 @@
 export { embedText, cosineSimilarity } from './embeddings'
-export { routeIntent, keywordIntent } from './intent'
+export { routeIntent, classifyIntent, keywordIntent } from './intent'
+export type { IntentResult } from './intent'
 export { classifySafety, keywordScreen, SAFE_RESPONSES, SAFETY_MAX_CHARS } from './safety'
 export { buildSystemPrompt } from './systemPrompt'
 export { groqProviderOptions, groqChatProviderOptions } from './llm'
-export { langfuseSpanProcessor, langfuseClient, otelSdk } from './langfuse'
+export { langfuseSpanProcessor, langfuseClient, otelSdk, maskContactDetails } from './langfuse'
 export { MODELS, getModelId } from './models'
 export {
   DAILY_LIMITS,
