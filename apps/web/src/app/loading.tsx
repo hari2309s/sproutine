@@ -1,9 +1,5 @@
-import { LoadingDots } from '@/components/PageMotion'
+import { LoadingScreen } from '@/components/LoadingScreen'
 
 export default function Loading() {
-  return (
-    <div className="min-h-dvh bg-truffle-bg flex items-center justify-center">
-      <LoadingDots />
-    </div>
-  )
+  return <LoadingScreen />
 }

@@ -1,54 +1,129 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-/* ── Dark theme (default) ── */
+/* Scan the shared UI package too (Tailwind 4 auto-detects only this app). */
+@source '../../../../packages/ui/src';
+
+/* Theme is chosen in-app (ThemeToggle writes .dark / .light on <html>), not
+   only by the OS, so `dark:` keys off the class. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Palette: "Sunday Market" (design direction 1a) ──
+   Oat-cream base the colour of the plate in the icon, terracotta for actions,
+   sprout green as a garnish. Errors use a cool berry red so they never read
+   like the terracotta primary. Components only reference these variables via
+   the `sproutine-*` utilities below, so theming lives entirely here. */
+
+/* ── Light theme (default) ── */
 :root {
-  color-scheme: dark;
-  --t-bg: #0e0d0c;
-  --t-surface: #1e1d1b;
-  --t-card: #2c2b28;
-  --t-border: #404038;
-  --t-muted: #706a5e;
-  --t-text: #f5ead2;
-  --t-text-secondary: #c4a87e;
-  --t-amber: #e8a84e;
-  --t-amber-light: #f0c070;
-  --t-green: #4a7a5a;
-  --t-red: #7a4a4a;
-}
-
-/* ── Light theme ── */
-:root.light {
   color-scheme: light;
-  --t-bg: #faf6f0;
-  --t-surface: #f0e9df;
-  --t-card: #e8dfd3;
-  --t-border: #d4c8b8;
-  --t-muted: #8c7d6b;
-  --t-text: #1a1814;
-  --t-text-secondary: #6b4f2a;
-  --t-amber: #b86d10;
-  --t-amber-light: #c87f20;
-  --t-green: #2d5c3d;
-  --t-red: #7a3030;
+  --t-bg: #f6efe4;
+  --t-surface: #efe5d5;
+  --t-card: #fffbf5;
+  --t-border: #e2d5c1;
+  /* Form-control outlines; meets 3:1 where `border` is decorative only. */
+  --t-border-strong: #968471;
+  --t-muted: #756555;
+  --t-text: #2e2219;
+  --t-text-secondary: #5a4a3c;
+  --t-accent: #ad4128;
+  --t-accent-soft: #f5dccf;
+  --t-secondary: #8cc63f;
+  --t-green: #47711c;
+  --t-red: #9e1f4a;
+  --t-red-soft: #f6dde3;
+  --t-overlay: rgba(46, 34, 25, 0.42);
+  --t-shadow: 0 1px 2px rgba(74, 48, 24, 0.06), 0 8px 24px rgba(74, 48, 24, 0.08);
 }
 
-/* ── System theme (no class set) — respects OS preference ── */
-@media (prefers-color-scheme: light) {
+/* ── Dark theme: deep roast, still warm ── */
+:root.dark {
+  color-scheme: dark;
+  --t-bg: #1c1612;
+  --t-surface: #251d17;
+  --t-card: #2d241d;
+  --t-border: #3d3229;
+  --t-border-strong: #806f5e;
+  --t-muted: #a08e7a;
+  --t-text: #f4eadc;
+  --t-text-secondary: #cdbeaa;
+  --t-accent: #e8835f;
+  --t-accent-soft: #40281f;
+  --t-secondary: #a3cf62;
+  --t-green: #9bcb5e;
+  --t-red: #ee8fb0;
+  --t-red-soft: #3a1e28;
+  --t-overlay: rgba(0, 0, 0, 0.6);
+  --t-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* ── System theme (no class set) — follows the OS ── */
+@media (prefers-color-scheme: dark) {
   :root:not(.dark):not(.light) {
-    color-scheme: light;
-    --t-bg: #faf6f0;
-    --t-surface: #f0e9df;
-    --t-card: #e8dfd3;
-    --t-border: #d4c8b8;
-    --t-muted: #8c7d6b;
-    --t-text: #1a1814;
-    --t-text-secondary: #6b4f2a;
-    --t-amber: #b86d10;
-    --t-amber-light: #c87f20;
-    --t-green: #2d5c3d;
-    --t-red: #7a3030;
+    color-scheme: dark;
+    --t-bg: #1c1612;
+    --t-surface: #251d17;
+    --t-card: #2d241d;
+    --t-border: #3d3229;
+    --t-border-strong: #806f5e;
+    --t-muted: #a08e7a;
+    --t-text: #f4eadc;
+    --t-text-secondary: #cdbeaa;
+    --t-accent: #e8835f;
+    --t-accent-soft: #40281f;
+    --t-secondary: #a3cf62;
+    --t-green: #9bcb5e;
+    --t-red: #ee8fb0;
+    --t-red-soft: #3a1e28;
+    --t-overlay: rgba(0, 0, 0, 0.6);
+    --t-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+}
+
+@theme inline {
+  --color-sproutine-bg: var(--t-bg);
+  --color-sproutine-surface: var(--t-surface);
+  --color-sproutine-card: var(--t-card);
+  --color-sproutine-border: var(--t-border);
+  --color-sproutine-border-strong: var(--t-border-strong);
+  --color-sproutine-muted: var(--t-muted);
+  --color-sproutine-text: var(--t-text);
+  --color-sproutine-text-secondary: var(--t-text-secondary);
+  --color-sproutine-accent: var(--t-accent);
+  /* Hover: nudge the accent toward the text colour — darker in light, lighter in dark. */
+  --color-sproutine-accent-hover: color-mix(in srgb, var(--t-accent) 86%, var(--t-text));
+  --color-sproutine-accent-soft: var(--t-accent-soft);
+  --color-sproutine-secondary: var(--t-secondary);
+  --color-sproutine-green: var(--t-green);
+  --color-sproutine-red: var(--t-red);
+  --color-sproutine-red-soft: var(--t-red-soft);
+  --color-sproutine-overlay: var(--t-overlay);
+
+  --shadow-soft: var(--t-shadow);
+
+  --font-sans: var(--font-hanken), system-ui, sans-serif;
+  --font-display: var(--font-young-serif), Georgia, serif;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-eq: eq 1s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-1.5deg);
+  }
+}
+
+@keyframes eq {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
   }
 }
 
@@ -59,7 +134,6 @@
   }
 
   body {
-    font-family: 'Inter', system-ui, sans-serif;
     background-color: var(--t-bg);
     color: var(--t-text);
     height: 100dvh;
@@ -74,41 +148,112 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Native <select> follows the app's own theme instead of falling back to
-     the OS default (unreadable in Windows dark mode without this). */
+  /* Tailwind 4 resets buttons to cursor: default; keep the pointer. */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* One focus style everywhere: a 2px gap in the page colour, then a 2px
+     ring in the text colour — visible on every surface in both themes. */
+  :focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--t-bg),
+      0 0 0 4px var(--t-text);
+  }
+
   select {
     background-color: var(--t-surface);
     color: var(--t-text);
   }
 }
 
-/* Shifts a `bottom-0` fixed element up to clear the home-indicator/gesture
-   area on notched devices. Margin (not padding) so it never fights with an
-   element's own padding utilities in the cascade — it just adds clearance
-   outside the box, and is 0 with no visual effect on non-notched devices. */
-.safe-bottom {
-  margin-bottom: env(safe-area-inset-bottom);
+/* Material Symbols Rounded, self-hosted (scripts/sync-icons.ts) so no request
+   ever goes to Google at runtime. Only the glyphs in lib/icons.ts are
+   included. Outline by default; `icon-filled` for active/selected states only. */
+@font-face {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: block;
+  src: url('/fonts/material-symbols-rounded.woff2') format('woff2');
 }
 
-/* Spending heatmap — 5 intensity levels, auto-adapt to dark/light via CSS vars */
-.heat-0 { background-color: var(--t-surface); }
-.heat-1 { background-color: color-mix(in srgb, var(--t-green) 30%, var(--t-surface)); }
-.heat-2 { background-color: color-mix(in srgb, var(--t-green) 65%, var(--t-surface)); }
-.heat-3 { background-color: color-mix(in srgb, var(--t-amber) 60%, var(--t-surface)); }
-.heat-4 { background-color: color-mix(in srgb, var(--t-red) 70%, var(--t-surface)); }
+@utility icon {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  display: inline-block;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'liga';
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
 
-@layer components {
-  .card {
-    @apply bg-truffle-card border border-truffle-border rounded-2xl p-4;
-  }
+@utility icon-filled {
+  font-variation-settings:
+    'FILL' 1,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
 
-  .btn-primary {
-    @apply bg-truffle-amber text-truffle-bg font-semibold px-6 py-3 rounded-xl
-           hover:bg-truffle-amber-light active:scale-95 transition-all duration-150;
-  }
+/* Shifts a `bottom-0` element up to clear the home indicator on notched devices. */
+@utility safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
 
-  .btn-ghost {
-    @apply text-truffle-text-secondary hover:text-truffle-text px-4 py-2 rounded-xl
-           hover:bg-truffle-surface transition-all duration-150;
-  }
+@utility card {
+  @apply rounded-[22px] border border-sproutine-border bg-sproutine-card shadow-soft;
+}
+
+@utility btn {
+  @apply inline-flex h-[52px] items-center justify-center gap-2 rounded-full px-6 text-base font-semibold
+    transition-colors duration-150 disabled:cursor-not-allowed motion-reduce:transition-none;
+}
+
+@utility btn-primary {
+  @apply btn bg-sproutine-accent text-sproutine-bg hover:bg-sproutine-accent-hover
+    disabled:bg-sproutine-surface disabled:text-sproutine-muted;
+}
+
+@utility btn-secondary {
+  @apply btn border-[1.5px] border-sproutine-border-strong bg-sproutine-card text-sproutine-text
+    hover:bg-sproutine-surface disabled:opacity-50;
+}
+
+@utility btn-ghost {
+  @apply btn px-4 text-sproutine-accent hover:bg-sproutine-accent-soft disabled:opacity-50;
+}
+
+@utility btn-destructive {
+  @apply btn bg-sproutine-red text-sproutine-bg hover:opacity-90
+    disabled:bg-sproutine-surface disabled:text-sproutine-muted;
+}
+
+@utility icon-btn {
+  @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sproutine-text-secondary
+    transition-colors hover:bg-sproutine-surface hover:text-sproutine-text;
+}
+
+@utility field {
+  @apply h-[52px] w-full rounded-2xl border border-sproutine-border-strong bg-sproutine-card px-4 text-base
+    text-sproutine-text placeholder:text-sproutine-muted transition-shadow
+    focus:border-2 focus:border-sproutine-accent focus:px-[15px] focus:shadow-[0_0_0_4px_var(--t-accent-soft)] focus:outline-none;
+}
+
+@utility eyebrow {
+  @apply text-xs font-semibold tracking-[0.06em] text-sproutine-muted uppercase;
 }

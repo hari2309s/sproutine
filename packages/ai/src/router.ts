@@ -1,13 +1,13 @@
-import { generateText } from 'ai'
-import type { ModelMessage } from 'ai'
+import { generateText, Output } from 'ai'
+import type { LanguageModel, ModelMessage } from 'ai'
+import type { z } from 'zod'
 import type { Provider, TaskType } from './types'
 import { groqProviderOptions } from './llm'
 import { logEval, incrementUsage, getGlobalUsage } from './eval'
-import { getModel as getGroqModel } from './providers/groq'
-import { getModel as getGeminiModel } from './providers/gemini'
-import { getModel as getCerebrasModel } from './providers/cerebras'
-import { getModel as getOpenRouterModel } from './providers/openrouter'
-import { getModel as getMistralModel } from './providers/mistral'
+import { buildModel } from './providers'
+import { getModelId } from './models'
+
+export { getModelId } from './models'
 
 // Conservative buffers — stay ~10% under actual free tier limits
 export const DAILY_LIMITS: Record<Provider, number> = {
@@ -18,164 +18,151 @@ export const DAILY_LIMITS: Record<Provider, number> = {
   mistral: 600,
 }
 
-// Priority order per task type. First available provider wins.
+// Priority order per task type. First provider under its daily budget wins.
 export const PRIORITY_ORDER: Record<TaskType, Provider[]> = {
   'fast-chat': ['groq', 'cerebras', 'openrouter', 'mistral'],
-  // Only genuinely multimodal models — OpenRouter's free Llama is text-only.
-  vision: ['gemini', 'groq'],
+  classify: ['groq', 'cerebras', 'mistral'],
+  // Groq serves gpt-oss-safeguard here; the fallbacks are general models
+  // following the same written policy.
+  safety: ['groq', 'cerebras', 'mistral'],
   reasoning: ['gemini', 'groq', 'cerebras', 'openrouter'],
+  structured: ['gemini', 'groq', 'cerebras'],
   'tool-calling': ['groq', 'gemini', 'cerebras'],
+  // Only genuinely multimodal models.
+  vision: ['gemini', 'groq'],
 }
 
-// Model ID strings per provider+task — used for Langfuse tracing
-export function getModelId(provider: Provider, task: TaskType): string {
-  switch (provider) {
-    case 'groq':
-      if (task === 'vision') return 'qwen/qwen3.6-27b'
-      return task === 'fast-chat' ? 'openai/gpt-oss-20b' : 'openai/gpt-oss-120b'
-    case 'gemini':
-      return task === 'fast-chat' ? 'gemini-3.5-flash-lite' : 'gemini-3.7-flash'
-    case 'cerebras':
-      return 'gpt-oss-120b'
-    case 'openrouter':
-      return 'meta-llama/llama-3.3-70b-instruct:free'
-    case 'mistral':
-      return 'mistral-small-latest'
-  }
+export interface ModelCandidate {
+  model: LanguageModel
+  provider: Provider
+  modelId: string
 }
 
-function buildModel(provider: Provider, task: TaskType) {
-  switch (provider) {
-    case 'groq':
-      return getGroqModel(task)
-    case 'gemini':
-      return getGeminiModel(task)
-    case 'cerebras':
-      return getCerebrasModel()
-    case 'openrouter':
-      return getOpenRouterModel()
-    case 'mistral':
-      return getMistralModel()
-  }
-}
-
-export async function selectModel(
-  task: TaskType
-): Promise<{ model: ReturnType<typeof buildModel>; provider: Provider; modelId: string }> {
-  let usage: Record<string, number> = {}
+async function usageOrEmpty(): Promise<Record<string, number>> {
   try {
-    usage = await getGlobalUsage()
+    return await getGlobalUsage()
   } catch {
-    // If usage check fails, proceed with primary provider rather than blocking the user
+    // Usage check is best-effort — proceed rather than block the user.
+    return {}
   }
+}
 
-  const priority = PRIORITY_ORDER[task]
-  for (const provider of priority) {
-    if ((usage[`${provider}_requests`] ?? 0) >= DAILY_LIMITS[provider]) continue
-    return { model: buildModel(provider, task), provider, modelId: getModelId(provider, task) }
-  }
-
-  // All providers exhausted — fall back to primary without tracking, let the API error surface
-  console.warn('[LLMRouter] All providers exhausted for task:', task)
-  const provider = priority[0]!
+function candidate(provider: Provider, task: TaskType): ModelCandidate {
   return { model: buildModel(provider, task), provider, modelId: getModelId(provider, task) }
 }
 
 /**
- * Get all candidate providers for a task, ordered by priority and filtered by daily usage.
- * Used by streaming callers that need to retry on per-minute rate limits.
+ * All candidate providers for a task, in priority order, skipping any over
+ * their daily budget. Streaming callers iterate these to retry on per-minute
+ * rate limits. If every provider is over budget the primary is still returned
+ * so the caller can try (and surface the real error).
  */
-export async function selectModelCandidates(
-  task: TaskType
-): Promise<{ model: ReturnType<typeof buildModel>; provider: Provider; modelId: string }[]> {
-  let usage: Record<string, number> = {}
-  try {
-    usage = await getGlobalUsage()
-  } catch {
-    // usage check is best-effort — fall through with an empty map
-  }
-
+export async function selectModelCandidates(task: TaskType): Promise<ModelCandidate[]> {
+  const usage = await usageOrEmpty()
   const priority = PRIORITY_ORDER[task]
-  const candidates = priority
-    .filter((p) => (usage[`${p}_requests`] ?? 0) < DAILY_LIMITS[p])
-    .map((provider) => ({
-      model: buildModel(provider, task),
-      provider,
-      modelId: getModelId(provider, task),
-    }))
-
-  // If all exhausted, still return primary so the caller can try
-  if (candidates.length === 0) {
-    const provider = priority[0]!
-    return [{ model: buildModel(provider, task), provider, modelId: getModelId(provider, task) }]
+  const available = priority.filter((p) => (usage[`${p}_requests`] ?? 0) < DAILY_LIMITS[p])
+  if (available.length === 0) {
+    console.warn('[LLMRouter] All providers over budget for task:', task)
+    return [candidate(priority[0]!, task)]
   }
-  return candidates
+  return available.map((p) => candidate(p, task))
+}
+
+export async function selectModel(task: TaskType): Promise<ModelCandidate> {
+  return (await selectModelCandidates(task))[0]!
 }
 
 export interface RouterGenerateOptions {
   prompt?: string
-  system?: string
+  instructions?: string
   messages?: ModelMessage[]
   maxOutputTokens?: number
   temperature?: number
+}
+
+function track(
+  provider: Provider,
+  task: TaskType,
+  input: string,
+  output: string,
+  latencyMs: number,
+  tokensUsed: number,
+  traceId?: string
+) {
+  Promise.all([
+    incrementUsage(provider),
+    logEval({ provider, task, input, output, latencyMs, tokensUsed, traceId }),
+  ]).catch((e) => console.error('[LLMRouter] eval log error:', e))
 }
 
 export async function routedGenerateText(
   task: TaskType,
   options: RouterGenerateOptions,
   meta?: { traceId?: string }
-): Promise<{ text: string; usage: { promptTokens: number; completionTokens: number } }> {
-  let usage: Record<string, number> = {}
-  try {
-    usage = await getGlobalUsage()
-  } catch {
-    // usage check is best-effort — fall through with an empty map
-  }
+): Promise<{ text: string; provider: Provider | null }> {
+  const input = options.prompt ?? options.instructions ?? ''
 
-  const priority = PRIORITY_ORDER[task]
-  const input = options.prompt ?? options.system ?? ''
-
-  for (const provider of priority) {
-    if ((usage[`${provider}_requests`] ?? 0) >= DAILY_LIMITS[provider]) continue
-
-    const model = buildModel(provider, task)
+  for (const { model, provider } of await selectModelCandidates(task)) {
     const start = Date.now()
-
     try {
       const result = await generateText({
-        ...(options as object),
         model,
+        instructions: options.instructions,
+        ...(options.messages ? { messages: options.messages } : { prompt: options.prompt ?? '' }),
+        maxOutputTokens: options.maxOutputTokens,
+        temperature: options.temperature,
         providerOptions: groqProviderOptions,
-      } as unknown as Parameters<typeof generateText>[0])
-
-      const latencyMs = Date.now() - start
-      // AI SDK v5 renamed usage fields; the router keeps the old public shape.
-      const promptTokens = result.usage?.inputTokens ?? 0
-      const completionTokens = result.usage?.outputTokens ?? 0
-
-      Promise.all([
-        incrementUsage(provider),
-        logEval({
-          provider,
-          task,
-          input,
-          output: result.text,
-          latencyMs,
-          tokensUsed: promptTokens + completionTokens,
-          traceId: meta?.traceId,
-        }),
-      ]).catch((e) => console.error('[LLMRouter] eval log error:', e))
-
-      return { text: result.text, usage: { promptTokens, completionTokens } }
+      })
+      const tokens = (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0)
+      track(provider, task, input, result.text, Date.now() - start, tokens, meta?.traceId)
+      return { text: result.text, provider }
     } catch (e) {
-      console.warn(`[LLMRouter] provider ${provider} failed, trying next:`, (e as Error).message)
+      console.warn(`[LLMRouter] ${provider} failed for ${task}, trying next:`, (e as Error).message)
     }
   }
 
-  // All providers failed — surface a graceful message rather than a raw error
   console.error('[LLMRouter] All providers failed for task:', task)
-  return {
-    text: "I'm having trouble responding right now. Please try again in a moment.",
-    usage: { promptTokens: 0, completionTokens: 0 },
+  return { text: '', provider: null }
+}
+
+/**
+ * Structured output with schema validation. Each provider gets one retry with
+ * the validation error fed back before falling through to the next provider.
+ * Returns null if nothing produced a valid object — callers decide the fallback.
+ */
+export async function routedGenerateObject<T>(
+  task: TaskType,
+  schema: z.ZodType<T>,
+  options: RouterGenerateOptions,
+  meta?: { traceId?: string }
+): Promise<{ object: T; provider: Provider } | null> {
+  const input = options.prompt ?? options.instructions ?? ''
+
+  for (const { model, provider } of await selectModelCandidates(task)) {
+    let feedback: string | null = null
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const start = Date.now()
+      try {
+        const prompt = feedback
+          ? `${options.prompt ?? ''}\n\nYour previous answer was invalid: ${feedback}\nReturn only valid output.`
+          : (options.prompt ?? '')
+        const result = await generateText({
+          model,
+          instructions: options.instructions,
+          prompt,
+          maxOutputTokens: options.maxOutputTokens,
+          temperature: options.temperature ?? 0,
+          providerOptions: groqProviderOptions,
+          output: Output.object({ schema }),
+        })
+        const tokens = (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0)
+        track(provider, task, input, JSON.stringify(result.output), Date.now() - start, tokens, meta?.traceId)
+        return { object: result.output as T, provider }
+      } catch (e) {
+        feedback = (e as Error).message.slice(0, 500)
+        console.warn(`[LLMRouter] ${provider} structured attempt ${attempt + 1} failed:`, feedback)
+      }
+    }
   }
+  return null
 }

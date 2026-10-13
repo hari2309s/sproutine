@@ -1,17 +1,17 @@
 {
-  "name": "@truffle/ui",
+  "name": "@sproutine/ui",
   "version": "1.0.0",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "lint": "eslint src --ext .ts,.tsx",
+    "lint": "eslint src",
     "type-check": "tsc --noEmit"
   },
   "peerDependencies": {
     "react": "^19.0.0"
   },
   "devDependencies": {
-    "@types/react": "^19",
-    "typescript": "^5.4.0"
+    "@types/react": "^19.3.0",
+    "typescript": "~6.0.3"
   }
 }

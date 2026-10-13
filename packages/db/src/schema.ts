@@ -1,115 +1,52 @@
+// Hand-maintained to match supabase/migrations. Regenerate with
+// `supabase gen types typescript --linked` once the project is linked.
 export interface Database {
   public: {
     Tables: {
-      transactions: {
+      profiles: {
         Row: {
-          id: string
           user_id: string
-          amount: number
-          currency: string
-          description: string
-          category: string
-          merchant: string | null
-          date: string
-          is_recurring: boolean
-          embedding: number[] | null
+          display_name: string
+          diet: string
+          allergies: string[]
+          dislikes: string[]
+          budget_weekly_cents: number | null
+          goals: string[]
+          quit_date: string | null
+          locale: string
+          voice_id: string
+          safety_mode: boolean
+          consent_health_at: string | null
+          llm_pseudonym: string
           created_at: string
+          updated_at: string
         }
         Insert: {
-          id?: string
           user_id: string
-          amount: number
-          currency?: string
-          description: string
-          category: string
-          merchant?: string | null
-          date: string
-          is_recurring?: boolean
-          embedding?: number[] | null
-          created_at?: string
+          display_name: string
+          diet?: string
+          allergies?: string[]
+          dislikes?: string[]
+          budget_weekly_cents?: number | null
+          goals?: string[]
+          quit_date?: string | null
+          locale?: string
+          voice_id?: string
+          safety_mode?: boolean
+          consent_health_at?: string | null
         }
         Update: {
-          amount?: number
-          currency?: string
-          description?: string
-          category?: string
-          merchant?: string | null
-          date?: string
-          is_recurring?: boolean
-          embedding?: number[] | null
-        }
-      }
-      monthly_snapshots: {
-        Row: {
-          id: string
-          user_id: string
-          month: string
-          data: Record<string, unknown>
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          month: string
-          data: Record<string, unknown>
-          created_at?: string
-        }
-        Update: {
-          data?: Record<string, unknown>
-        }
-      }
-      anomalies: {
-        Row: {
-          id: string
-          user_id: string
-          transaction_id: string
-          type: string
-          severity: string
-          description: string
-          dismissed: boolean
-          detected_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          transaction_id: string
-          type: string
-          severity: string
-          description: string
-          dismissed?: boolean
-          detected_at?: string
-        }
-        Update: {
-          dismissed?: boolean
-        }
-      }
-      savings_goals: {
-        Row: {
-          id: string
-          user_id: string
-          name: string
-          target_amount: number
-          saved_amount: number
-          deadline: string | null
-          emoji: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          name: string
-          target_amount: number
-          saved_amount?: number
-          deadline?: string | null
-          emoji?: string
-          created_at?: string
-        }
-        Update: {
-          name?: string
-          target_amount?: number
-          saved_amount?: number
-          deadline?: string | null
-          emoji?: string
+          display_name?: string
+          diet?: string
+          allergies?: string[]
+          dislikes?: string[]
+          budget_weekly_cents?: number | null
+          goals?: string[]
+          quit_date?: string | null
+          locale?: string
+          voice_id?: string
+          safety_mode?: boolean
+          consent_health_at?: string | null
         }
       }
       chat_messages: {
@@ -118,7 +55,9 @@ export interface Database {
           user_id: string
           role: string
           content: string
-          audio_url: string | null
+          is_proactive: boolean
+          read_at: string | null
+          nudge_key: string | null
           created_at: string
         }
         Insert: {
@@ -126,62 +65,49 @@ export interface Database {
           user_id: string
           role: string
           content: string
-          audio_url?: string | null
+          is_proactive?: boolean
+          nudge_key?: string | null
           created_at?: string
         }
         Update: {
-          content?: string
+          read_at?: string | null
         }
       }
-      savings_habits: {
+      daily_llm_usage: {
+        Row: {
+          date: string
+          groq_requests: number
+          gemini_requests: number
+          cerebras_requests: number
+          openrouter_requests: number
+          mistral_requests: number
+          updated_at: string
+        }
+        Insert: { date?: string }
+        Update: Record<string, never>
+      }
+      eval_logs: {
         Row: {
           id: string
-          user_id: string
-          name: string
-          amount: number
-          frequency: string
-          emoji: string
-          is_active: boolean
           created_at: string
+          provider: string
+          task: string
+          input: string
+          output: string
+          latency_ms: number | null
+          tokens_used: number | null
+          trace_id: string | null
         }
         Insert: {
-          id?: string
-          user_id: string
-          name: string
-          amount: number
-          frequency: string
-          emoji?: string
-          is_active?: boolean
-          created_at?: string
+          provider: string
+          task: string
+          input: string
+          output: string
+          latency_ms?: number | null
+          tokens_used?: number | null
+          trace_id?: string | null
         }
-        Update: {
-          name?: string
-          amount?: number
-          frequency?: string
-          emoji?: string
-          is_active?: boolean
-        }
-      }
-      habit_contributions: {
-        Row: {
-          id: string
-          habit_id: string
-          user_id: string
-          period: string
-          amount: number
-          logged_at: string
-        }
-        Insert: {
-          id?: string
-          habit_id: string
-          user_id: string
-          period: string
-          amount: number
-          logged_at?: string
-        }
-        Update: {
-          amount?: number
-        }
+        Update: Record<string, never>
       }
     }
   }

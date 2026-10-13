@@ -3,12 +3,12 @@
  * into the Langfuse dataset "agent-golden". Idempotent — items upsert on their
  * stable `id`, so re-running after editing dataset-items.ts just updates them.
  *
- * Run with: pnpm --filter @truffle/ai eval:sync-dataset
+ * Run with: pnpm --filter @sproutine/ai eval:sync-dataset
  */
 
 import { config } from 'dotenv'
 import { resolve } from 'path'
-config({ path: resolve(__dirname, '../../../.env.local') })
+config({ path: resolve(import.meta.dirname, '../../../.env.local') })
 
 import { LangfuseClient } from '@langfuse/client'
 import { EVAL_DATASET_ITEMS } from './dataset-items'
@@ -32,7 +32,7 @@ async function run() {
     await langfuse.api.datasets.create({
       name: DATASET_NAME,
       description:
-        'Router intent-classification cases plus per-agent response cases (affordabilityChecker, forecaster, spendingAnalyst, savingsGoalAdvisor, habitAdvisor, anomalyReviewer) against the fixed Hari fixture set. Source of truth: packages/ai/evals/dataset-items.ts.',
+        'Intent-routing and safety-gate cases (must-trigger and must-not-trigger). Source of truth: packages/ai/evals/dataset-items.ts.',
     })
     console.log(`Created dataset "${DATASET_NAME}"`)
   }

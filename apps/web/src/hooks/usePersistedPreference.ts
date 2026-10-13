@@ -11,7 +11,7 @@
 // with Supabase at all, what happens when Supabase disagrees with what's
 // stored locally), so those bits are pluggable rather than baked in.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { supabase } from '@/lib/supabase'
 
 function safeGetItem(key: string): string | null {
@@ -69,6 +69,24 @@ export interface UsePersistedPreferenceOptions<T extends string> {
 
 export type UsePersistedPreferenceResult<T> = [T, (next: T) => void]
 
+// Same-tab writes don't fire the `storage` event, so writers notify
+// subscribers directly. Other tabs are covered by the real `storage` event.
+const listeners = new Set<() => void>()
+
+function subscribe(onChange: () => void) {
+  listeners.add(onChange)
+  window.addEventListener('storage', onChange)
+  return () => {
+    listeners.delete(onChange)
+    window.removeEventListener('storage', onChange)
+  }
+}
+
+function writeAndNotify(key: string, value: string) {
+  safeSetItem(key, value)
+  listeners.forEach((l) => l())
+}
+
 export function usePersistedPreference<T extends string>({
   storageKey,
   defaultValue,
@@ -77,42 +95,37 @@ export function usePersistedPreference<T extends string>({
   detectFallback,
   onRemoteNormalize,
 }: UsePersistedPreferenceOptions<T>): UsePersistedPreferenceResult<T> {
-  const [value, setValueState] = useState<T>(defaultValue)
+  // localStorage is an external store: reading it through
+  // useSyncExternalStore gives the server/first-hydration render the default
+  // and the client the stored value, without a setState-in-effect re-render.
+  // Snapshots are strings, so referential stability is free.
+  const value = useSyncExternalStore(
+    subscribe,
+    () => normalize(safeGetItem(storageKey)) ?? detectFallback?.() ?? defaultValue,
+    () => defaultValue
+  )
 
+  // Account-level value from Supabase wins once the session resolves.
   useEffect(() => {
-    const stored = normalize(safeGetItem(storageKey))
-    if (stored != null) {
-      setValueState(stored)
-    } else if (detectFallback) {
-      const fallback = detectFallback()
-      if (fallback != null) setValueState(fallback)
-    }
-
     if (!metadataField) return
-
+    let cancelled = false
     supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return
       const raw = data.session?.user?.user_metadata?.[metadataField]
       const normalized = normalize(raw)
       if (normalized != null) {
-        setValueState(normalized)
-        safeSetItem(storageKey, normalized)
-        if (normalized !== raw) {
-          onRemoteNormalize?.(normalized, raw)
-        }
+        writeAndNotify(storageKey, normalized)
+        if (normalized !== raw) onRemoteNormalize?.(normalized, raw)
       }
     })
-    // Intentionally mount-only: this mirrors the previous per-context
-    // implementations, which only ever resolved the initial value once.
+    return () => {
+      cancelled = true
+    }
+    // Intentionally mount-only: the account value is resolved once per mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const setValue = useCallback(
-    (next: T) => {
-      setValueState(next)
-      safeSetItem(storageKey, next)
-    },
-    [storageKey]
-  )
+  const setValue = useCallback((next: T) => writeAndNotify(storageKey, next), [storageKey])
 
   return [value, setValue]
 }

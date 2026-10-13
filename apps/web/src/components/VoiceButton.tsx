@@ -1,111 +1,151 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { Icon } from './Icon'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export type VoiceButtonStatus = 'idle' | 'recording' | 'transcribing' | 'speaking'
 
-interface VoiceButtonProps {
+interface VoiceDockProps {
   status: VoiceButtonStatus
   onStart: () => void
   onStop: () => void
+  onStopSpeaking: () => void
 }
 
-export function VoiceButton({ status, onStart, onStop }: VoiceButtonProps) {
+// Decorative level bars for the recording state (heights from the design).
+const BARS = [8, 14, 22, 12, 26, 18, 10, 24, 16, 28, 20, 12, 22, 8, 18, 26, 14, 10, 20, 6]
+
+function useElapsed(running: boolean): number {
+  const [seconds, setSeconds] = useState(0)
+  useEffect(() => {
+    if (!running) return
+    const startedAt = Date.now()
+    const id = setInterval(() => setSeconds(Math.floor((Date.now() - startedAt) / 1000)), 250)
+    return () => {
+      clearInterval(id)
+      setSeconds(0)
+    }
+  }, [running])
+  return seconds
+}
+
+/**
+ * Hold-to-talk mic and its states. Recording is shown by a ring, bars, a timer
+ * and the word "Recording", so it never depends on colour alone.
+ */
+export function VoiceDock({ status, onStart, onStop, onStopSpeaking }: VoiceDockProps) {
+  const { t } = useLanguage()
   const isRecording = status === 'recording'
-  const isTranscribing = status === 'transcribing'
+  const elapsed = useElapsed(isRecording)
 
   const start = useCallback(() => {
-    if (!isRecording && !isTranscribing) {
-      onStart()
-    }
-  }, [isRecording, isTranscribing, onStart])
+    if (status === 'idle') onStart()
+  }, [status, onStart])
 
   const stop = useCallback(() => {
-    if (isRecording) {
-      onStop()
-    }
+    if (isRecording) onStop()
   }, [isRecording, onStop])
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLButtonElement>) => {
-      if (e.key !== ' ' && e.key !== 'Enter') return
-      e.preventDefault()
-      if (e.repeat) return
-      start()
-    },
-    [start]
-  )
+  // Space/Enter behave like holding the button.
+  const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key !== ' ' && e.key !== 'Enter') return
+    e.preventDefault()
+    if (!e.repeat) start()
+  }
+  const onKeyUp = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key !== ' ' && e.key !== 'Enter') return
+    e.preventDefault()
+    stop()
+  }
 
-  const handleKeyUp = useCallback(
-    (e: React.KeyboardEvent<HTMLButtonElement>) => {
-      if (e.key !== ' ' && e.key !== 'Enter') return
-      e.preventDefault()
-      stop()
-    },
-    [stop]
-  )
+  if (status === 'speaking') {
+    return (
+      <div className="flex flex-col items-center gap-2 pt-1 pb-3">
+        <button
+          type="button"
+          onClick={onStopSpeaking}
+          aria-label={t.chat.stopSpeaking}
+          className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-sproutine-accent bg-sproutine-card text-sproutine-accent"
+        >
+          <Icon name="stop" filled size={34} />
+        </button>
+        <span className="mt-1.5 text-[13px] font-medium text-sproutine-text-secondary">
+          {t.chat.rosieSpeaking}
+        </span>
+      </div>
+    )
+  }
 
-  const buttonClasses = {
-    idle: 'bg-truffle-amber hover:bg-truffle-amber-light shadow-lg shadow-truffle-amber/20',
-    recording: 'bg-red-500 shadow-lg shadow-red-500/40 scale-110 animate-pulse',
-    transcribing: 'bg-truffle-muted shadow-none cursor-wait',
-    speaking: 'bg-truffle-green shadow-lg shadow-truffle-green/30 animate-pulse-slow',
-  }[status]
+  if (status === 'transcribing') {
+    return (
+      <div className="flex flex-col items-center gap-2 pt-1 pb-3" role="status">
+        <span className="flex h-20 w-20 items-center justify-center rounded-full border border-sproutine-border bg-sproutine-card">
+          <span className="h-[34px] w-[34px] animate-spin rounded-full border-[3px] border-sproutine-accent-soft border-t-sproutine-accent motion-reduce:animate-none" />
+        </span>
+        <span className="mt-1.5 text-[13px] font-medium text-sproutine-text-secondary">
+          {t.chat.transcribing}
+        </span>
+      </div>
+    )
+  }
 
-  const label = {
-    idle: 'Hold to speak',
-    recording: 'Listening…',
-    transcribing: 'Thinking…',
-    speaking: 'Speaking…',
-  }[status]
+  const mm = Math.floor(elapsed / 60)
+  const ss = String(elapsed % 60).padStart(2, '0')
 
   return (
-    <div className="flex flex-col items-center gap-3 select-none">
+    <div
+      className={`flex flex-col items-center ${
+        isRecording
+          ? 'gap-3.5 border-t border-sproutine-border bg-sproutine-surface pt-3.5 pb-5'
+          : 'gap-2 pt-1 pb-3'
+      }`}
+    >
+      {isRecording && (
+        <>
+          <div className="flex items-center gap-2.5" role="status">
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-sproutine-text">
+              <span className="h-2 w-2 rounded-full bg-sproutine-accent" />
+              {t.chat.recording}
+            </span>
+            <span className="font-mono text-sm text-sproutine-text-secondary tabular-nums">
+              {mm}:{ss}
+            </span>
+          </div>
+          <div aria-hidden className="flex h-7 items-center gap-1">
+            {BARS.map((h, i) => (
+              <span
+                key={i}
+                className="block w-1 origin-center rounded-sm bg-sproutine-accent motion-safe:animate-eq"
+                style={{ height: h, animationDelay: `${(i % 7) * 0.12}s` }}
+              />
+            ))}
+          </div>
+        </>
+      )}
       <button
+        type="button"
         onPointerDown={start}
         onPointerUp={stop}
         onPointerLeave={stop}
-        onKeyDown={handleKeyDown}
-        onKeyUp={handleKeyUp}
-        className={`w-14 h-14 rounded-full transition-all duration-200 flex items-center justify-center touch-none ${buttonClasses}`}
-        aria-label={label}
-        disabled={isTranscribing}
+        onKeyDown={onKeyDown}
+        onKeyUp={onKeyUp}
+        onContextMenu={(e) => e.preventDefault()}
+        aria-label={isRecording ? t.chat.releaseToSend : t.chat.holdToTalk}
+        aria-pressed={isRecording}
+        className={`flex touch-none select-none items-center justify-center rounded-full bg-sproutine-accent text-sproutine-bg transition-all duration-150 ${
+          isRecording
+            ? 'my-2 h-24 w-24 shadow-[0_0_0_10px_var(--t-accent-soft),0_0_0_12px_var(--t-accent)]'
+            : 'h-20 w-20 shadow-[0_0_0_8px_var(--t-accent-soft)] hover:bg-sproutine-accent-hover'
+        }`}
       >
-        <MicIcon isRecording={isRecording} />
+        <Icon name="mic" filled size={isRecording ? 38 : 34} />
       </button>
-      <span className="text-sm text-truffle-text-secondary">{label}</span>
+      <span
+        className={`text-[13px] font-medium ${isRecording ? 'text-sproutine-text-secondary' : 'mt-1.5 text-sproutine-muted'}`}
+      >
+        {isRecording ? t.chat.releaseToSend : t.chat.holdToTalk}
+      </span>
     </div>
-  )
-}
-
-function MicIcon({ isRecording }: { isRecording: boolean }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className={`w-6 h-6 text-truffle-bg transition-transform duration-200 ${isRecording ? 'scale-90' : ''}`}
-    >
-      <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z" />
-      <path d="M19 10v1a7 7 0 0 1-14 0v-1a1 1 0 0 1 2 0v1a5 5 0 0 0 10 0v-1a1 1 0 0 1 2 0z" />
-      <line
-        x1="12"
-        y1="18"
-        x2="12"
-        y2="22"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <line
-        x1="8"
-        y1="22"
-        x2="16"
-        y2="22"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
   )
 }

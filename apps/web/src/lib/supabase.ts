@@ -5,5 +5,5 @@ import { createBrowserClient } from '@supabase/ssr'
 // on iOS where the homescreen context has a separate storage origin.
 export const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
 )

@@ -14,7 +14,7 @@ const MIN_INTERVAL_MS = 1500
 /**
  * One-click demo sign-in.
  *
- * Truffle only does passwordless magic-link auth, so there is no password to
+ * Sproutine only does passwordless magic-link auth, so there is no password to
  * hand a visitor. Instead we mint a one-time magic-link token for the demo
  * account with the admin API (no captcha, no email round-trip) and immediately
  * exchange it for a session on the response cookies.
@@ -26,9 +26,9 @@ const MIN_INTERVAL_MS = 1500
 export async function POST(request: Request) {
   const { origin } = new URL(request.url)
   const demoEmail = process.env.DEMO_USER_EMAIL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const serviceRoleKey = process.env.SUPABASE_SECRET_KEY
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
   if (
     process.env.NEXT_PUBLIC_DEMO_ENABLED !== '1' ||

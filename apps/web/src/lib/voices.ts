@@ -1,4 +1,4 @@
-// Selectable TTS "voices" for Truffle's spoken replies.
+// Selectable TTS "voices" for Rosie's spoken replies.
 //
 // The browser Web Speech API exposes a wildly different voice list per
 // OS/browser, so we don't let the user pick a raw SpeechSynthesisVoice.
@@ -12,7 +12,7 @@
 // silently. Safari has no Google voices and falls through to the macOS
 // names naturally.
 
-export type VoiceId = 'sophie' | 'niamh' | 'isla'
+export type VoiceId = 'rosie' | 'niamh' | 'isla'
 
 export type VoiceGender = 'female' | 'male'
 
@@ -40,12 +40,13 @@ export interface VoicePersona {
 
 export const VOICE_PERSONAS: VoicePersona[] = [
   {
-    id: 'sophie',
-    name: 'Sophie',
+    // Named after Rosenkohl (Brussels sprouts) — the default Sproutine voice.
+    id: 'rosie',
+    name: 'Rosie',
     accent: 'British English',
     flag: '🇬🇧',
     gender: 'female',
-    description: 'Warm and clear — the default Truffle voice',
+    description: 'Warm and calm — the default Sproutine voice',
     voiceNames: [
       'Google UK English Female',
       'Microsoft Sonia',
@@ -96,11 +97,11 @@ export const VOICE_PERSONAS: VoicePersona[] = [
   },
 ]
 
-export const DEFAULT_VOICE_ID: VoiceId = 'sophie'
+export const DEFAULT_VOICE_ID: VoiceId = 'rosie'
 
 // Identical for every persona so the user compares voices on the same words.
 export const VOICE_SAMPLE_TEXT =
-  "Hi, I'm Truffle. You're doing well this month — you've spent a little under half of what came in, so there's room to breathe."
+  "Hi, I'm Rosie. Tell me what you had for breakfast, or ask me for a quick dinner idea."
 
 export function isVoiceId(value: unknown): value is VoiceId {
   return typeof value === 'string' && VOICE_PERSONAS.some((p) => p.id === value)
@@ -111,7 +112,9 @@ export function isVoiceId(value: unknown): value is VoiceId {
 // most devices anyway) should quietly land on its nearest replacement rather
 // than silently disappearing.
 const LEGACY_VOICE_IDS: Record<string, VoiceId> = {
-  oliver: 'sophie',
+  oliver: 'rosie',
+  // Truffle's default persona; Rosie took its place.
+  sophie: 'rosie',
 }
 
 /** Resolve a stored voice preference to a current persona id, migrating retired ones. */

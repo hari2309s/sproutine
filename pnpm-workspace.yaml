@@ -5,3 +5,18 @@ packages:
 blockExoticSubdeps: true
 minimumReleaseAge: 1440
 trustPolicy: no-downgrade
+
+# semver 6.3.1 (2023, the patched ReDoS release) predates npm provenance, so
+# no-downgrade flags it even though it's legitimate. Pulled in by
+# eslint-config-next → eslint-plugin-import. Keep exclusions to exact versions.
+trustPolicyExclude:
+  - semver@6.3.1
+
+# Dependency install scripts: none are needed. esbuild and unrs-resolver ship
+# prebuilt platform binaries as optional deps; core-js and protobufjs scripts
+# only print messages. Review any new entry pnpm reports before allowing it.
+allowBuilds:
+  core-js: false
+  esbuild: false
+  protobufjs: false
+  unrs-resolver: false

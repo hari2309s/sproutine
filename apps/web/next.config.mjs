@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@truffle/ai', '@truffle/db', '@truffle/types', '@truffle/ui'],
+  transpilePackages: ['@sproutine/ai', '@sproutine/db', '@sproutine/types', '@sproutine/ui'],
 }
 
 export default nextConfig

@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { usePersistedPreference } from '@/hooks/usePersistedPreference'
 import { DEFAULT_VOICE_ID, normalizeVoiceId, type VoiceId } from '@/lib/voices'
 
-const STORAGE_KEY = 'truffle-voice'
+const STORAGE_KEY = 'sproutine-voice'
 
 interface VoiceContextValue {
   voiceId: VoiceId

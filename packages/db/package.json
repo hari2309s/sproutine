@@ -1,18 +1,18 @@
 {
-  "name": "@truffle/db",
+  "name": "@sproutine/db",
   "version": "1.0.0",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.100.0",
-    "@truffle/types": "workspace:*"
+    "@sproutine/types": "workspace:*",
+    "@supabase/supabase-js": "^2.117.3"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "typescript": "^5.4.0"
+    "@types/node": "^26.6.5",
+    "typescript": "~6.0.3"
   }
 }

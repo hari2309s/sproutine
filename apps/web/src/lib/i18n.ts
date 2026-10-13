@@ -1,8 +1,18 @@
+import type { Allergen, Diet } from '@sproutine/types'
+import type { VoiceId } from './voices'
+import type { Theme } from '@/hooks/useTheme'
+
 export type Locale = 'en'
 
 export interface Translations {
   auth: {
     tagline: string
+    intro: string
+    rosieName: string
+    rosieRole: string
+    greeting: string
+    ask: string
+    emailLabel: string
     emailPlaceholder: string
     invalidEmail: string
     continueWithEmail: string
@@ -10,595 +20,392 @@ export interface Translations {
     footer: string
     checkEmail: string
     magicLinkSent: (email: string) => string
+    differentEmail: string
     demoButton: string
     demoHint: string
+    disclaimer: string
   }
   onboarding: {
-    heading: string
-    subtitle: string
+    intro: string
+    languageLabel: string
     nameLabel: string
     namePlaceholder: string
-    currencyLabel: string
+    dietLabel: string
+    allergiesLabel: string
+    allergiesHint: string
+    dislikesLabel: string
+    dislikesPlaceholder: string
+    budgetLabel: string
+    budgetPlaceholder: string
+    perWeek: string
+    optional: string
+    quitDateLabel: string
+    quitDateHint: string
+    voiceLabel: string
+    consentLabel: string
+    privacyPolicy: string
+    required: string
+    disclaimer: string
+    consentHint: string
     saving: string
     continue: string
     errorSave: string
-    languageLabel: string
-    voiceLabel: string
-    voiceHint: string
+  }
+  diets: Record<Diet, string>
+  allergens: Record<Allergen, string>
+  voices: {
+    groupLabel: string
+    descriptions: Record<VoiceId, string>
+    sample: string
+    stop: string
+    playSample: (name: string) => string
+    stopSample: (name: string) => string
   }
   tour: {
-    steps: Array<{ emoji: string; title: string; body: string }>
+    steps: Array<{ title: string; body: string }>
+    illustrations: {
+      logUser: string
+      logRosie: string
+      logged: string
+      weekTitle: string
+      weekBudget: string
+      weekDays: Array<[string, string]>
+      habits: string[]
+      missedDay: string
+    }
     next: string
     letsGo: string
     skip: string
   }
-  settings: {
-    title: string
-    yourData: string
-    downloadData: string
-    downloadDataDesc: string
-    exportData: string
-    preparing: string
-    dangerZone: string
-    deleteAccount: string
-    deleteAccountDesc: string
-    deletePlaceholder: string
-    deleteConfirmWord: string
-    deleting: string
-    deleteMyAccount: string
-    deleteError: string
-    language: string
-    currency: string
-    voice: string
-    voiceDesc: string
-  }
-  dashboard: {
+  today: {
     goodMorning: string
     goodAfternoon: string
     goodEvening: string
-    recent: string
-    scan: string
-    csv: string
-    add: string
-    cancel: string
-    signOut: string
-    settingsLabel: string
+    emptyTitle: string
+    emptyBody: string
+    talkToRosie: string
+    comingSoon: string
+    upcoming: string[]
   }
   nav: {
-    home: string
+    today: string
     chat: string
-    insights: string
+  }
+  topBar: {
+    settings: string
+    signOut: string
+  }
+  theme: Record<Theme, string> & { label: string }
+  settings: {
+    title: string
+    close: string
+    language: string
+    appearance: string
+    voice: string
+    gentleMode: string
+    gentleModeDesc: string
+    gentleModeOn: string
+    yourData: string
+    downloadData: string
+    preparing: string
+    dangerZone: string
+    deleteAccountDesc: string
+    deleteConfirmLabel: string
+    deleteConfirmWord: string
+    deleting: string
+    deleteMyAccount: string
+    keepAccount: string
+    deleteError: string
+    disclaimer: string
+  }
+  chat: {
+    rosieName: string
+    rosieRole: string
+    soundOn: string
+    muted: string
+    emptyTitle: string
+    emptyBody: string
+    suggestions: string[]
+    holdToTalk: string
+    releaseToSend: string
+    recording: string
+    listening: string
+    transcribing: string
+    speaking: string
+    rosieSpeaking: string
+    stopSpeaking: string
+    typing: string
+    typePlaceholder: string
+    send: string
+    notSent: string
+    resend: string
+    helpful: string
+    notHelpful: string
+    thanks: string
+    anErrorOccurred: string
+  }
+  safety: {
+    crisis: {
+      title: string
+      body: string
+      helplineLabel: string
+      emergencyLabel: string
+      closing: string
+    }
+    edRisk: { title: string; body: string; helplineLabel: string; closing: string }
   }
   home: {
     authExpiredError: string
     demoUnavailableError: string
   }
-  categories: Record<string, string>
-  addTransaction: {
-    title: string
-    expense: string
-    income: string
-    descriptionPlaceholder: string
-    amountLabel: string
-    dateLabel: string
-    categoryLabel: string
-    saving: string
-    add: string
-  }
-  transactions: {
-    noTransactions: string
-    noTransactionsHint: string
-    filteredCount: (filtered: number, total: number) => string
-    count: (n: number) => string
-    clear: string
-    exportCSV: string
-    noMatching: string
-    noThisMonth: string
-    loadMonth: (label: string) => string
-    deleteConfirm: string
-    cancel: string
-    delete: string
-    edit: string
-    descriptionPlaceholder: string
-    merchantPlaceholder: string
-    save: string
-  }
-  csvImport: {
-    title: string
-    hint: string
-    tapToSelect: string
-    parseError: string
-    transactionsFound: (n: number) => string
-    selectedOf: (selected: number, total: number) => string
-    showLess: string
-    showMore: (n: number) => string
-    cancel: string
-    import: (n: number) => string
-    importing: string
-    imported: (n: number) => string
-    done: string
-    importFailed: string
-  }
-  receiptUpload: {
-    title: string
-    hint: string
-    tapToSelect: string
-    fileTypes: string
-    invalidFile: string
-    fileTooLarge: (maxMb: number) => string
-    changeFile: string
-    analysing: string
-    extractTransactions: string
-    transactionsFound: (n: number) => string
-    tryAgain: string
-    import: (n: number) => string
-    importing: string
-    imported: (n: number) => string
-    done: string
-    noTransactions: string
-    parseError: string
-    importFailed: string
-    somethingWrong: string
-  }
-  weeklySummary: {
-    title: string
-    readAloud: string
-    playing: string
-    spent: (amount: string) => string
-    earned: (amount: string) => string
-    topCategory: (label: string) => string
-    dismiss: string
-  }
-  financialBrief: {
-    addTransactions: string
-    endOfMonth: string
-    projectedBalance: string
-    current: string
-    addForForecast: string
-    income: string
-    expenses: string
-    netBalance: string
-    noDataThisMonth: string
-    confidence: { high: string; medium: string; low: string }
-  }
-  filter: {
-    searchPlaceholder: string
-    filters: string
-    all: string
-    expenses: string
-    income: string
-    datePresets: Record<string, string>
-  }
-  insights: {
-    title: string
-    monthForecast: string
-    addTransactionsForForecast: string
-    spendingCalendar: string
-    monthlyBudgets: string
-    newBudget: string
-    savingsGoals: string
-    newGoal: string
-    savingHabits: string
-    recurringSubscriptions: string
-    lastCharged: string
-    detected: (months: number) => string
-    thingsToReview: string
-    noUnusualActivity: string
-    projectedEndOfMonth: string
-    perMonth: string
-  }
-  savingsGoals: {
-    title: string
-    newGoal: string
-    cancel: string
-    noGoals: string
-    deadlinePassed: string
-    daysLeft: (days: number) => string
-    complete: string
-    addFunds: string
-    add: string
-    goalNamePlaceholder: string
-    targetAmount: string
-    creating: string
-    createGoal: string
-    remaining: (amount: string) => string
-    deleteGoal: string
-    deleteConfirm: string
-  }
-  savingsHabits: {
-    noHabits: string
-    periodWeek: string
-    periodMonth: string
-    totalSaved: (amount: string) => string
-    done: string
-    log: string
-    frequencyWeekly: string
-    frequencyMonthly: string
-  }
-  monthlyBudgets: {
-    noBudgets: string
-    allCategoriesHaveBudget: string
-    over: (amount: string) => string
-    left: (amount: string) => string
-    budgetLabel: (amount: string) => string
-    monthlyLimit: string
-    saving: string
-    setBudget: string
-    removeBudget: string
-    deleteConfirm: string
-  }
   cookieBanner: {
     message: string
-    accept: string
-    reject: string
-    privacyLabel: string
+    details: string
+    essentialOnly: string
+    acceptAll: string
   }
-  topBar: {
-    subtitle: string
-    signOut: string
-    settingsLabel: string
-  }
-  chat: {
-    holdButton: string
-    suggestions: string[]
-    typePlaceholder: string
-    send: string
-    stop: string
-    mute: string
-    unmute: string
-    failedToSend: string
-    resend: string
-    anErrorOccurred: string
-  }
-  proposals: {
-    goal: {
-      addToGoals: string
-      noThanks: string
-      yesAddIt: string
-      saving: string
-      error: string
-      addedToGoals: (emoji: string, name: string) => string
-    }
-    transaction: {
-      logThis: string
-      noThanks: string
-      add: string
-      saving: string
-      error: string
-    }
-    habit: {
-      weeklyLabel: string
-      monthlyLabel: string
-      logEachPeriod: (period: string) => string
-      notNow: string
-      startSaving: string
-      settingUp: string
-      error: string
-    }
+  states: {
+    loading: string
+    errorTitle: string
+    errorBody: string
+    retry: string
+    backToToday: string
   }
 }
 
 export const translations: Record<Locale, Translations> = {
   en: {
     auth: {
-      tagline: 'Your finances, unearthed.',
-      emailPlaceholder: 'your@email.com',
-      invalidEmail: 'Enter a valid email address.',
+      tagline: 'Eat well, one sprout at a time.',
+      intro:
+        'Talk or type to Rosie. Log what you ate, get a weekly plan that fits your diet and budget, and pick up small habits that stick.',
+      rosieName: 'Rosie',
+      rosieRole: 'Your food friend',
+      greeting: "Hi, I'm Rosie. I'll help you eat well, one small routine at a time.",
+      ask: "What's your email? I'll send you a link to sign in. New here? The same link creates your account.",
+      emailLabel: 'Email address',
+      emailPlaceholder: 'you@example.com',
+      invalidEmail: 'That email looks incomplete. Check the part after @.',
       continueWithEmail: 'Continue with email',
-      sending: 'Sending...',
-      footer: 'Sign in with a magic link · No password needed',
+      sending: 'Sending…',
+      footer: 'No password needed',
       checkEmail: 'Check your email',
       magicLinkSent: (email) =>
-        `We sent a magic link to ${email}. Click it to sign in — no password needed.`,
-      demoButton: 'Explore the demo →',
-      demoHint: 'A furnished account with sample data. No sign-up.',
+        `I sent a magic link to ${email}. Tap it on this device to sign in. It works for one hour.`,
+      differentEmail: 'Use a different email',
+      demoButton: 'Explore the demo',
+      demoHint: 'or look around first',
+      disclaimer: 'Sproutine offers general food ideas, not medical advice.',
     },
     onboarding: {
-      heading: 'Welcome to Truffle',
-      subtitle: "Let's get you set up in 30 seconds.",
-      nameLabel: 'What should we call you?',
-      namePlaceholder: 'Your first name',
-      currencyLabel: 'Your currency',
-      saving: 'Saving...',
-      continue: 'Continue →',
-      errorSave: 'Failed to save your details — please try again.',
+      intro:
+        "I'm Rosie. A few quick questions so I can suggest food you'll actually enjoy. It takes about a minute, and you can change anything later.",
       languageLabel: 'Language',
-      voiceLabel: "Truffle's voice",
-      voiceHint: 'Tap play to hear each one. You can change this later in Settings.',
+      nameLabel: 'What should I call you?',
+      namePlaceholder: 'Your first name',
+      dietLabel: 'How do you eat?',
+      allergiesLabel: 'Any allergies?',
+      allergiesHint: "Pick all that apply. I'll keep them out of every suggestion.",
+      dislikesLabel: "Anything you'd rather not eat?",
+      dislikesPlaceholder: 'e.g. olives, mushrooms',
+      budgetLabel: 'Weekly food budget',
+      budgetPlaceholder: 'e.g. 50',
+      perWeek: 'per week',
+      optional: 'Optional',
+      quitDateLabel: 'Quit smoking recently? When?',
+      quitDateHint:
+        'Appetite and cravings often shift after quitting. If you tell me, I can plan with that in mind.',
+      voiceLabel: 'Pick my voice',
+      consentLabel:
+        'I agree that Sproutine processes what I share about my eating to give me suggestions.',
+      privacyPolicy: 'Privacy policy',
+      required: 'Required',
+      disclaimer:
+        'Sproutine offers general food ideas, not medical advice. For health questions, please talk to your doctor.',
+      consentHint:
+        'Tick the consent box to continue. Everything else is optional except your name.',
+      saving: 'Saving…',
+      continue: 'Continue',
+      errorSave: "I couldn't save that. Please try again.",
+    },
+    diets: {
+      omnivore: 'Everything',
+      vegetarian: 'Vegetarian',
+      vegan: 'Vegan',
+      pescatarian: 'Pescatarian',
+    },
+    allergens: {
+      gluten: 'Gluten',
+      crustaceans: 'Crustaceans',
+      eggs: 'Eggs',
+      fish: 'Fish',
+      peanuts: 'Peanuts',
+      soybeans: 'Soy',
+      milk: 'Milk',
+      nuts: 'Tree nuts',
+      celery: 'Celery',
+      mustard: 'Mustard',
+      sesame: 'Sesame',
+      sulphites: 'Sulphites',
+      lupin: 'Lupin',
+      molluscs: 'Molluscs',
+    },
+    voices: {
+      groupLabel: "Rosie's voice",
+      descriptions: {
+        rosie: 'Warm and bright',
+        niamh: 'Soft, with an Irish lilt',
+        isla: 'Calm and unhurried',
+      },
+      sample: 'Sample',
+      stop: 'Stop',
+      playSample: (name) => `Play a sample of ${name}`,
+      stopSample: (name) => `Stop ${name}'s sample`,
     },
     tour: {
       steps: [
         {
-          emoji: '💬',
-          title: 'Chat naturally',
-          body: "Just talk to Truffle like you'd text a friend. Ask how you're doing, log an expense, or get advice — voice or text.",
+          title: 'Just tell me',
+          body: 'Talk or type, like you would to a friend. No searching, no scanning, no weighing.',
         },
         {
-          emoji: '💶',
-          title: 'Track every euro',
-          body: 'Every transaction is automatically categorised. Add by chat, CSV import, or snap a receipt.',
+          title: 'Plans that fit your week',
+          body: 'Meals built around your diet, allergies and budget, with a shopping list for Rewe, Edeka, Aldi or Lidl.',
         },
         {
-          emoji: '🔔',
-          title: 'Get smart nudges',
-          body: 'Truffle watches for budget overruns, unusual spends, and saving streaks — and tells you before things go sideways.',
+          title: 'Small steps, no guilt',
+          body: 'No scores and no good or bad food. Just gentle nudges toward routines that feel good. Gentle mode can hide numbers any time.',
         },
       ],
+      illustrations: {
+        logUser: 'Had a Brezel and a cappuccino on the way to work',
+        logRosie: "Nice. I've added that as breakfast.",
+        logged: 'Logged',
+        weekTitle: 'Your week',
+        weekBudget: 'Aldi · about €38',
+        weekDays: [
+          ['Mon', 'Red lentil soup with bread'],
+          ['Tue', 'Veggie pasta, big salad'],
+          ['Wed', 'Ofengemüse with feta'],
+          ['Thu', 'Kartoffel-Quark bowls'],
+        ],
+        habits: ['One extra veg at dinner', 'Water with lunch', 'A slow breakfast'],
+        missedDay: "Missed a day? That's just a day. We'll pick it up tomorrow.",
+      },
       next: 'Next',
-      letsGo: "Let's go →",
-      skip: 'Skip tour',
+      letsGo: "Let's go",
+      skip: 'Skip',
     },
-    settings: {
-      title: 'Settings',
-      yourData: 'Your data',
-      downloadData: 'Download all my data',
-      downloadDataDesc: 'Transactions, goals, budgets, and habits exported as JSON',
-      exportData: 'Export data',
-      preparing: 'Preparing…',
-      dangerZone: 'Danger zone',
-      deleteAccount: 'Delete account',
-      deleteAccountDesc: 'Permanently deletes all your data. This cannot be undone.',
-      deletePlaceholder: 'Type "DELETE" to confirm',
-      deleteConfirmWord: 'DELETE',
-      deleting: 'Deleting…',
-      deleteMyAccount: 'Delete my account',
-      deleteError: 'Failed to delete account. Please try again.',
-      language: 'Language',
-      currency: 'Currency',
-      voice: 'Voice',
-      voiceDesc: 'The voice Truffle uses when reading replies aloud.',
-    },
-    dashboard: {
+    today: {
       goodMorning: 'Good morning',
       goodAfternoon: 'Good afternoon',
       goodEvening: 'Good evening',
-      recent: 'Recent',
-      scan: 'Scan',
-      csv: 'CSV',
-      add: '+ Add',
-      cancel: 'Cancel',
-      signOut: 'Sign out',
-      settingsLabel: 'Settings',
+      emptyTitle: 'Nothing logged yet',
+      emptyBody: 'Tell Rosie what you had. A quick note or a voice message is plenty.',
+      talkToRosie: 'Talk to Rosie',
+      comingSoon: 'Coming soon',
+      upcoming: ['Weekly meal plan', 'Shopping lists for Rewe, Edeka, Aldi, Lidl', 'Gentle nudges'],
     },
     nav: {
-      home: 'Home',
+      today: 'Today',
       chat: 'Chat',
-      insights: 'Insights',
     },
-    home: {
-      authExpiredError: 'Sign-in link expired or already used. Please request a new one.',
-      demoUnavailableError: 'The demo is temporarily unavailable. Please try again in a moment.',
+    topBar: {
+      settings: 'Settings',
+      signOut: 'Sign out',
     },
-    categories: {
-      food_groceries: 'Groceries',
-      food_delivery: 'Food Delivery',
-      transport: 'Transport',
-      housing: 'Housing',
-      utilities: 'Utilities',
-      subscriptions: 'Subscriptions',
-      health: 'Health',
-      entertainment: 'Entertainment',
-      shopping: 'Shopping',
-      income: 'Income',
-      savings: 'Savings',
-      other: 'Other',
+    theme: {
+      label: 'Theme',
+      light: 'Light',
+      dark: 'Dark',
+      system: 'System',
     },
-    addTransaction: {
-      title: 'Add Transaction',
-      expense: 'Expense',
-      income: 'Income',
-      descriptionPlaceholder: 'Description (e.g. Coffee at Rewe)',
-      amountLabel: 'Amount',
-      dateLabel: 'Date',
-      categoryLabel: 'Category',
-      saving: 'Saving...',
-      add: 'Add Transaction',
+    settings: {
+      title: 'Settings',
+      close: 'Close settings',
+      language: 'Language',
+      appearance: 'Appearance',
+      voice: "Rosie's voice",
+      gentleMode: 'Gentle mode',
+      gentleModeDesc:
+        'Hides calories, grams, portions and targets everywhere. Rosie still notes your meals and keeps you company.',
+      gentleModeOn: 'On. Numbers, portions and targets are hidden.',
+      yourData: 'Your data',
+      downloadData: 'Download my data',
+      preparing: 'Preparing…',
+      dangerZone: 'Danger zone',
+      deleteAccountDesc:
+        "Deleting your account removes your profile, meals and chats for good. It can't be undone.",
+      deleteConfirmLabel: 'Type DELETE to confirm',
+      deleteConfirmWord: 'DELETE',
+      deleting: 'Deleting…',
+      deleteMyAccount: 'Delete my account',
+      keepAccount: 'Keep my account',
+      deleteError: "I couldn't delete your account. Please try again.",
+      disclaimer: 'Sproutine offers general food ideas, not medical advice.',
     },
-    transactions: {
-      noTransactions: 'No transactions yet.',
-      noTransactionsHint: 'Add one below to get started.',
-      filteredCount: (filtered, total) => `${filtered} of ${total} transactions`,
-      count: (n) => `${n} transactions`,
-      clear: 'Clear',
-      exportCSV: 'Export CSV',
-      noMatching: 'No matching transactions.',
-      noThisMonth: 'No transactions this month yet.',
-      loadMonth: (label) => `Load ${label}`,
-      deleteConfirm: 'Delete this transaction?',
-      cancel: 'Cancel',
-      delete: 'Delete',
-      edit: 'Edit',
-      descriptionPlaceholder: 'Description',
-      merchantPlaceholder: 'Merchant (optional)',
-      save: 'Save',
+    chat: {
+      rosieName: 'Rosie',
+      rosieRole: 'Your food friend',
+      soundOn: 'Sound on',
+      muted: 'Muted',
+      emptyTitle: "What's on your plate today?",
+      emptyBody: "Tell me what you ate, ask me anything about food, or let's plan your week.",
+      suggestions: [
+        'I had muesli for breakfast',
+        'Plan my meals for this week',
+        'Easy snacks for cravings',
+      ],
+      holdToTalk: 'Hold to talk',
+      releaseToSend: 'Release to send',
+      recording: 'Recording',
+      listening: 'Listening…',
+      transcribing: 'Transcribing…',
+      speaking: 'Speaking',
+      rosieSpeaking: 'Rosie is speaking · Tap to stop',
+      stopSpeaking: 'Stop Rosie speaking',
+      typing: 'Rosie is typing',
+      typePlaceholder: 'Or type a message…',
+      send: 'Send message',
+      notSent: 'Not sent',
+      resend: 'Resend',
+      helpful: 'Helpful',
+      notHelpful: 'Not helpful',
+      thanks: 'Thanks!',
+      anErrorOccurred: 'Rosie had trouble answering. Please try again.',
     },
-    csvImport: {
-      title: 'Import CSV',
-      hint: 'date, description, amount',
-      tapToSelect: 'Tap to select a CSV file',
-      parseError:
-        'Could not parse the CSV. Make sure it has date, description, and amount columns.',
-      transactionsFound: (n) =>
-        `${n} transaction${n !== 1 ? 's' : ''} found — select which to import`,
-      selectedOf: (selected, total) => `${selected} of ${total} selected`,
-      showLess: 'Show less',
-      showMore: (n) => `+${n} more`,
-      cancel: 'Cancel',
-      import: (n) => `Import ${n}`,
-      importing: 'Importing…',
-      imported: (n) => `${n} transaction${n !== 1 ? 's' : ''} imported`,
-      done: 'Done',
-      importFailed: 'Import failed. Please try again.',
-    },
-    receiptUpload: {
-      title: 'Scan receipt / statement',
-      hint: 'image or PDF',
-      tapToSelect: 'Tap to select a receipt or bank statement',
-      fileTypes: 'JPEG · PNG · WEBP · PDF',
-      invalidFile: 'Please choose an image (JPEG, PNG, WEBP) or a PDF.',
-      fileTooLarge: (maxMb) => `File is too large — maximum size is ${maxMb} MB.`,
-      changeFile: 'Change file',
-      analysing: 'Analysing…',
-      extractTransactions: 'Extract transactions',
-      transactionsFound: (n) =>
-        `${n} transaction${n !== 1 ? 's' : ''} found — review before importing`,
-      tryAgain: 'Try again',
-      import: (n) => `Import ${n}`,
-      importing: 'Importing…',
-      imported: (n) => `${n} transaction${n !== 1 ? 's' : ''} imported`,
-      done: 'Done',
-      noTransactions: 'No transactions found. Make sure the receipt or statement is legible.',
-      parseError: 'Could not parse the file. Try a clearer image.',
-      importFailed: 'Import failed. Please try again.',
-      somethingWrong: 'Something went wrong. Please try again.',
-    },
-    weeklySummary: {
-      title: 'Weekly summary',
-      readAloud: 'Read aloud',
-      playing: 'Playing…',
-      spent: (amount) => `This week you spent ${amount}`,
-      earned: (amount) => ` and earned ${amount}`,
-      topCategory: (label) => `. Most went on ${label}.`,
-      dismiss: 'Dismiss',
-    },
-    financialBrief: {
-      addTransactions: 'Add some transactions to see your financial brief',
-      endOfMonth: 'End of Month',
-      projectedBalance: 'projected balance',
-      current: 'Current',
-      addForForecast: 'Add a transaction for this month to see your forecast',
-      income: 'Income',
-      expenses: 'Expenses',
-      netBalance: 'net balance',
-      noDataThisMonth: 'no data this month',
-      confidence: { high: 'high confidence', medium: 'medium confidence', low: 'low confidence' },
-    },
-    filter: {
-      searchPlaceholder: 'Search transactions…',
-      filters: 'Filters',
-      all: 'All',
-      expenses: 'Expenses',
-      income: 'Income',
-      datePresets: {
-        all: 'All time',
-        week: 'This week',
-        month: 'This month',
-        last_month: 'Last month',
-        '3months': '3 months',
+    safety: {
+      crisis: {
+        title: "I'm really glad you told me.",
+        body: "You don't have to carry this on your own. If you'd like to talk to someone now, these lines are free, confidential and open day and night.",
+        helplineLabel: 'TelefonSeelsorge · free, 24/7',
+        emergencyLabel: "If you're in immediate danger",
+        closing: "I'm still here if you want to keep talking.",
+      },
+      edRisk: {
+        title: 'Thank you for telling me.',
+        body: "It sounds like food might feel really hard right now. I'll step back from numbers and targets and keep things gentle. If you'd like to talk to someone who knows this well, this line offers free, confidential first advice.",
+        helplineLabel: 'BIÖG eating-disorder line · Mon–Thu 10–22, Fri–Sun 10–18',
+        closing: "Whenever you're ready, I'm still here to chat about food in a relaxed way.",
       },
     },
-    insights: {
-      title: 'Insights',
-      monthForecast: 'Month Forecast',
-      addTransactionsForForecast: 'Add transactions to see your forecast',
-      spendingCalendar: 'Spending Calendar',
-      monthlyBudgets: 'Monthly Budgets',
-      newBudget: '+ New budget',
-      savingsGoals: 'Savings Goals',
-      newGoal: '+ New goal',
-      savingHabits: 'Saving Habits',
-      recurringSubscriptions: 'Recurring Subscriptions',
-      lastCharged: 'Last charged',
-      detected: (months) => `detected ${months} month${months !== 1 ? 's' : ''}`,
-      thingsToReview: 'Things to Review',
-      noUnusualActivity: 'No unusual activity detected',
-      projectedEndOfMonth: 'Projected end of month',
-      perMonth: '/mo',
-    },
-    savingsGoals: {
-      title: 'Savings Goals',
-      newGoal: '+ New goal',
-      cancel: 'Cancel',
-      noGoals: 'No goals yet — set one to start saving towards something',
-      deadlinePassed: 'deadline passed',
-      daysLeft: (days) => `${days}d left`,
-      complete: 'Complete!',
-      addFunds: '+ Add funds',
-      add: 'Add',
-      goalNamePlaceholder: 'Goal name (e.g. Amsterdam trip)',
-      targetAmount: 'Target amount',
-      creating: 'Creating…',
-      createGoal: 'Create goal',
-      remaining: (amount) => `${amount} remaining`,
-      deleteGoal: 'Delete goal',
-      deleteConfirm: 'Delete this goal?',
-    },
-    savingsHabits: {
-      noHabits: 'No saving habits yet — ask Truffle to set one up',
-      periodWeek: 'week',
-      periodMonth: 'month',
-      totalSaved: (amount) => `${amount} total saved`,
-      done: '✓ done',
-      log: '+ Log',
-      frequencyWeekly: 'Weekly',
-      frequencyMonthly: 'Monthly',
-    },
-    monthlyBudgets: {
-      noBudgets: 'No budgets yet — set one to track category spending',
-      allCategoriesHaveBudget: 'All spendable categories already have a budget.',
-      over: (amount) => `${amount} over`,
-      left: (amount) => `${amount} left`,
-      budgetLabel: (amount) => `budget ${amount}/mo`,
-      monthlyLimit: 'Monthly limit',
-      saving: 'Saving…',
-      setBudget: 'Set budget',
-      removeBudget: 'Remove budget',
-      deleteConfirm: 'Delete this budget?',
+    home: {
+      authExpiredError: 'That sign-in link has expired or was already used. Ask me for a new one.',
+      demoUnavailableError: 'The demo is taking a break. Please try again in a moment.',
     },
     cookieBanner: {
       message:
-        'We use analytics cookies to understand how Truffle is used and improve the experience.',
-      accept: 'Accept',
-      reject: 'Reject',
-      privacyLabel: 'Privacy Policy',
+        'We use essential cookies to keep you signed in. Optional analytics help us improve.',
+      details: 'Details',
+      essentialOnly: 'Essential only',
+      acceptAll: 'Accept all',
     },
-    topBar: {
-      subtitle: 'Ask me anything',
-      signOut: 'Sign out',
-      settingsLabel: 'Settings',
-    },
-    chat: {
-      holdButton: 'Hold the button and ask anything.',
-      suggestions: [
-        'How am I doing this month?',
-        'What did I spend on food?',
-        'Can I afford a weekend trip?',
-      ],
-      typePlaceholder: 'Or type your question...',
-      send: 'Send message',
-      stop: 'Stop',
-      mute: 'Mute voice',
-      unmute: 'Unmute voice',
-      failedToSend: 'Failed to send',
-      resend: 'Resend',
-      anErrorOccurred: 'An error occurred.',
-    },
-    proposals: {
-      goal: {
-        addToGoals: 'Add this to your goals?',
-        noThanks: 'No thanks',
-        yesAddIt: 'Yes, add it',
-        saving: 'Saving…',
-        error: 'Something went wrong — please try again.',
-        addedToGoals: (emoji, name) =>
-          `${emoji} ${name} added to your goals — find it in Insights.`,
-      },
-      transaction: {
-        logThis: 'Log this transaction?',
-        noThanks: 'No thanks',
-        add: 'Add',
-        saving: 'Saving…',
-        error: 'Something went wrong — please try again.',
-      },
-      habit: {
-        weeklyLabel: 'Weekly saving habit',
-        monthlyLabel: 'Monthly saving habit',
-        logEachPeriod: (period) => `You log each ${period} yourself in Insights`,
-        notNow: 'Not now',
-        startSaving: 'Start saving',
-        settingUp: 'Setting up…',
-        error: 'Something went wrong — please try again.',
-      },
+    states: {
+      loading: 'Setting the table…',
+      errorTitle: 'Something went wrong',
+      errorBody: "That one's on us, not you. Your meals and chats are safe.",
+      retry: 'Try again',
+      backToToday: 'Back to Today',
     },
   },
 }

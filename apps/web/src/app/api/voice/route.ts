@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
 import { startObservation } from '@langfuse/tracing'
-import { langfuseSpanProcessor } from '@truffle/ai'
+import { langfuseSpanProcessor, MODELS } from '@sproutine/ai'
 import { requireUser } from '@/lib/supabase-server'
 
 function getGroq() {
@@ -26,17 +26,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Audio file too large (max 25 MB)' }, { status: 400 })
     }
 
+    const model = MODELS.groq.transcription
     const trace = startObservation('voice_transcription', {
-      metadata: { model: 'whisper-large-v3', mimeType: audio.type, fileSize: audio.size },
+      metadata: { model, mimeType: audio.type, fileSize: audio.size },
     })
-    const span = trace.startObservation('whisper_transcribe', {
-      input: { model: 'whisper-large-v3', language: 'en' },
-    })
+    const span = trace.startObservation('whisper_transcribe', { input: { model } })
 
+    // No fixed language: users mix English with German food names
+    // ("zwei Brötchen mit Quark"), and Whisper's auto-detect handles both.
     const transcription = await getGroq().audio.transcriptions.create({
       file: audio,
-      model: 'whisper-large-v3',
-      language: 'en',
+      model,
       response_format: 'json',
     })
 

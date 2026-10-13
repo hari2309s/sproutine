@@ -1,14 +1,14 @@
 /** Shared easing — matches accordion / UI motion. */
-export const truffleEase = [0.4, 0, 0.2, 1] as const
+export const sproutineEase = [0.4, 0, 0.2, 1] as const
 
 export const transitionBase = {
   duration: 0.38,
-  ease: truffleEase,
+  ease: sproutineEase,
 }
 
 export const transitionSnappy = {
   duration: 0.28,
-  ease: truffleEase,
+  ease: sproutineEase,
 }
 
 /** Page / section entrance */

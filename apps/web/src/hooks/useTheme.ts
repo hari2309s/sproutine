@@ -1,28 +1,32 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { usePersistedPreference } from './usePersistedPreference'
 
 export type Theme = 'dark' | 'light' | 'system'
 
-const THEMES: Theme[] = ['dark', 'light', 'system']
-const STORAGE_KEY = 'truffle-theme'
-// The TopBar renders `bg-truffle-surface` (--t-surface) — read that same CSS
+export const THEMES: Theme[] = ['light', 'dark', 'system']
+const STORAGE_KEY = 'sproutine-theme'
+// The top bar sits on the page background (--t-bg) — read that same CSS
 // custom property for the tab/PWA chrome color instead of a hand-maintained
 // hex table, so the two can never drift apart. Works for 'system' too: with
-// no .dark/.light class set, --t-surface already resolves via the
-// `@media (prefers-color-scheme)` block in globals.css, so getComputedStyle
-// gives the right answer without any JS-side OS-preference logic.
-const COLOR_VAR = '--t-surface'
+// no .dark/.light class set, --t-bg already resolves via the
+// `@media (prefers-color-scheme)` block in globals.css.
+const COLOR_VAR = '--t-bg'
 
 function syncThemeColorMeta() {
   if (typeof document === 'undefined') return
   const color = getComputedStyle(document.documentElement).getPropertyValue(COLOR_VAR).trim()
   if (!color) return
-  let meta = document.querySelector('meta[name="theme-color"]')
-  if (!meta) {
-    meta = document.createElement('meta')
+  // layout.tsx emits a light/dark media pair; the in-app theme can differ
+  // from the OS, so both get the colour that's actually showing.
+  const metas = document.querySelectorAll('meta[name="theme-color"]')
+  if (metas.length === 0) {
+    const meta = document.createElement('meta')
     meta.setAttribute('name', 'theme-color')
+    meta.setAttribute('content', color)
     document.head.appendChild(meta)
+    return
   }
-  meta.setAttribute('content', color)
+  metas.forEach((meta) => meta.setAttribute('content', color))
 }
 
 function applyTheme(theme: Theme) {
@@ -32,21 +36,25 @@ function applyTheme(theme: Theme) {
   syncThemeColorMeta()
   // Mirror to a cookie (readable server-side, unlike localStorage) so
   // manifest.json's route handler can color the installed PWA's status bar
-  // to match instead of always shipping the dark-theme default.
+  // to match instead of always shipping the default palette.
   document.cookie = `${STORAGE_KEY}=${theme}; path=/; max-age=31536000; samesite=lax`
 }
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>('dark')
+  const [theme, setTheme] = usePersistedPreference<Theme>({
+    storageKey: STORAGE_KEY,
+    defaultValue: 'system',
+    normalize: (raw) => (THEMES as unknown[]).includes(raw) ? (raw as Theme) : null,
+  })
 
+  // The inline script in layout.tsx applies the class before paint; this
+  // keeps the class, theme-color meta and cookie in sync with later changes.
   useEffect(() => {
-    const stored = (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? 'dark'
-    setTheme(stored)
-    applyTheme(stored)
-  }, [])
+    applyTheme(theme)
+  }, [theme])
 
   // When following the OS ("system"), keep the tab color live as the OS
-  // scheme flips while the app is open — CSS re-resolves --t-surface on its
+  // scheme flips while the app is open — CSS re-resolves --t-bg on its
   // own, but the theme-color meta tag needs an explicit re-read to catch up.
   useEffect(() => {
     if (theme !== 'system' || typeof window === 'undefined') return
@@ -56,12 +64,5 @@ export function useTheme() {
     return () => mq.removeEventListener('change', onChange)
   }, [theme])
 
-  const cycleTheme = () => {
-    const next = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length] ?? 'dark'
-    setTheme(next)
-    applyTheme(next)
-    localStorage.setItem(STORAGE_KEY, next)
-  }
-
-  return { theme, cycleTheme }
+  return { theme, setTheme }
 }

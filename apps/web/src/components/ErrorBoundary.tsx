@@ -27,11 +27,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback
       return (
-        <div className="card border-dashed text-center py-6 space-y-2">
-          <p className="text-truffle-muted text-sm">Something went wrong loading this section.</p>
+        <div className="card m-4 space-y-2 py-6 text-center">
+          <p className="text-sm text-sproutine-text-secondary">
+            Something went wrong loading this part. That one&rsquo;s on us.
+          </p>
           <button
             onClick={() => this.setState({ hasError: false })}
-            className="text-xs text-truffle-amber hover:text-truffle-amber-light transition-colors"
+            className="btn-ghost h-11 text-sm"
           >
             Try again
           </button>

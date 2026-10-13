@@ -1,18 +1,23 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Hanken_Grotesk, Young_Serif } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 
-const inter = Inter({ subsets: ['latin'] })
+const hanken = Hanken_Grotesk({ subsets: ['latin'], variable: '--font-hanken' })
+// Soft cookbook serif for headlines — Rosie's voice on the page.
+const youngSerif = Young_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-young-serif',
+})
 
 export const metadata: Metadata = {
-  title: 'Truffle — Your finances, unearthed.',
+  title: 'Sproutine — Eat well, one sprout at a time.',
   description:
-    "Talk to your money. Truffle listens, understands, and surfaces what's hiding beneath the surface of your financial life — without the dread.",
+    'A voice-first healthy eating companion that logs your meals, plans your week and nudges you gently, without the guilt.',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon.svg', type: 'image/svg+xml' },
       { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
     ],
     apple: '/apple-touch-icon.png',
@@ -21,11 +26,11 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Truffle',
+    title: 'Sproutine',
   },
   openGraph: {
-    title: 'Truffle',
-    description: 'Your finances, unearthed.',
+    title: 'Sproutine',
+    description: 'Eat well, one sprout at a time.',
     type: 'website',
   },
 }
@@ -35,36 +40,47 @@ export const viewport: Viewport = {
   initialScale: 1,
   // Pinch-zoom is left at the browser default (no maximumScale/userScalable
   // lock) — locking it out blocks low-vision users from zooming the page.
-  // A single tag (not a media-query pair) — the in-app theme toggle can
-  // diverge from the OS color scheme. This is only the pre-JS fallback
-  // (matches --t-surface's dark value in globals.css, the default theme);
-  // the inline script below and `useTheme.ts` immediately replace it with
-  // whatever --t-surface actually resolves to, so it can never drift.
-  themeColor: '#1e1d1b',
+  // Light/dark pair for the pre-JS paint. The inline script below and
+  // useTheme.ts then sync the tag to whatever --t-bg actually resolves to,
+  // because the in-app theme can differ from the OS setting.
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f6efe4' },
+    { media: '(prefers-color-scheme: dark)', color: '#1c1612' },
+  ],
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
-        {/* Prevent theme flash on load — also seeds the tab/PWA chrome color
-            (meta[name=theme-color]) from the live --t-surface CSS variable
-            (same one the TopBar renders), ahead of useTheme's effect. */}
+        {/* Prevent theme flash on load. 'system' (the default) leaves <html>
+            without a class so globals.css follows the OS. Also syncs the
+            browser/PWA chrome colour to the page background. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){
-              var t = localStorage.getItem('truffle-theme') || 'dark';
-              if (t !== 'system') document.documentElement.classList.add(t);
-              var color = getComputedStyle(document.documentElement).getPropertyValue('--t-surface').trim();
+              try {
+                var t = localStorage.getItem('sproutine-theme') || 'system';
+                if (t === 'dark' || t === 'light') document.documentElement.classList.add(t);
+              } catch (e) {}
+              var color = getComputedStyle(document.documentElement).getPropertyValue('--t-bg').trim();
               if (color) {
-                var meta = document.querySelector('meta[name="theme-color"]');
-                if (meta) meta.setAttribute('content', color);
+                document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
+                  m.setAttribute('content', color);
+                });
               }
             })()`,
           }}
         />
+        <link
+          rel="preload"
+          href="/fonts/material-symbols-rounded.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
       </head>
-      <body className={`${inter.className} h-full`}>
+      <body className={`${hanken.variable} ${youngSerif.variable} font-sans h-full`}>
         <Providers>{children}</Providers>
       </body>
     </html>

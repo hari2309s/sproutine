@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@truffle/db'
+import { createServerClient } from '@sproutine/db'
 import { requireUser } from '@/lib/supabase-server'
 
 export const runtime = 'nodejs'

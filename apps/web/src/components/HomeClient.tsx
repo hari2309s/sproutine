@@ -1,16 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { LoadingDots } from './PageMotion'
-import { Dashboard } from './Dashboard'
+import { fetchOwnProfile } from '@/lib/profile'
+import { LoadingScreen } from './LoadingScreen'
+import { TodayPage } from './TodayPage'
 import { AuthPage } from './AuthPage'
 import { OnboardingPage } from './OnboardingPage'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { type Locale, translations } from '@/lib/i18n'
 
-type AppState = 'loading' | 'unauthenticated' | 'onboarding' | 'dashboard'
+type AppState = 'loading' | 'unauthenticated' | 'onboarding' | 'today'
 
 export function HomeClient() {
   const [state, setState] = useState<AppState>('loading')
@@ -20,50 +22,49 @@ export function HomeClient() {
   const searchParams = useSearchParams()
   const authError = searchParams.get('error')
 
-  const resolveState = (
-    session: { user: { id: string; user_metadata: Record<string, unknown> } } | null
-  ) => {
-    if (!session) {
-      setState('unauthenticated')
-      setUserId(null)
-      setName('')
-      return
-    }
-    setUserId(session.user.id)
-    const userName = (session.user.user_metadata?.name as string) ?? ''
-    setName(userName)
-
-    const savedLocale = session.user.user_metadata?.language as string | undefined
-    if (savedLocale && savedLocale in translations) {
-      setLocale(savedLocale as Locale)
-    } else {
-      // Existing user with no saved language preference — default to English
-      setLocale('en')
-    }
-
-    setState(userName ? 'dashboard' : 'onboarding')
-  }
+  // A user counts as onboarded once their profile row exists — onboarding
+  // creates it together with the health-data consent timestamp.
+  const resolveState = useCallback(
+    async (session: Session | null) => {
+      if (!session) {
+        setState('unauthenticated')
+        setUserId(null)
+        setName('')
+        return
+      }
+      setUserId(session.user.id)
+      try {
+        const profile = await fetchOwnProfile(session.user.id)
+        if (!profile) {
+          setState('onboarding')
+          return
+        }
+        setName(profile.displayName)
+        if (profile.locale in translations) setLocale(profile.locale as Locale)
+        setState('today')
+      } catch (e) {
+        console.error('[HomeClient] profile load failed:', e)
+        setState('onboarding')
+      }
+    },
+    [setLocale]
+  )
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      resolveState(session)
+      void resolveState(session)
     })
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_, session) => {
-      resolveState(session)
+      void resolveState(session)
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [resolveState])
 
-  if (state === 'loading')
-    return (
-      <div className="min-h-dvh bg-truffle-bg flex items-center justify-center">
-        <LoadingDots />
-      </div>
-    )
+  if (state === 'loading') return <LoadingScreen />
   if (state === 'unauthenticated') {
     const authErrorMessage =
       authError === 'auth_failed'
@@ -76,16 +77,16 @@ export function HomeClient() {
   if (state === 'onboarding' && userId) {
     return (
       <OnboardingPage
+        userId={userId}
         onComplete={async () => {
-          // Re-fetch session so user_metadata is fresh
           const {
             data: { session },
           } = await supabase.auth.getSession()
-          resolveState(session)
+          await resolveState(session)
         }}
       />
     )
   }
-  if (state === 'dashboard' && userId) return <Dashboard userId={userId} name={name} />
+  if (state === 'today' && userId) return <TodayPage userId={userId} name={name} />
   return null
 }

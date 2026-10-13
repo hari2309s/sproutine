@@ -2,31 +2,34 @@
 
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LOCALE_LABELS, type Locale } from '@/lib/i18n'
+import { Icon } from './Icon'
 
-interface LanguagePickerProps {
-  onChange: (locale: Locale) => void
-}
-
-export function LanguagePicker({ onChange }: LanguagePickerProps) {
+/** Segmented language control. */
+export function LanguagePicker({ onChange }: { onChange: (locale: Locale) => void }) {
   const { locale } = useLanguage()
   return (
-    <div className="flex gap-2">
+    <div role="radiogroup" className="flex gap-1 rounded-full bg-sproutine-surface p-1">
       {(Object.entries(LOCALE_LABELS) as [Locale, { flag: string; label: string }][]).map(
-        ([loc, { flag, label }]) => (
-          <button
-            key={loc}
-            type="button"
-            onClick={() => onChange(loc)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-              locale === loc
-                ? 'bg-truffle-amber text-truffle-bg'
-                : 'bg-truffle-surface text-truffle-muted border border-truffle-border'
-            }`}
-          >
-            <span>{flag}</span>
-            <span>{label}</span>
-          </button>
-        )
+        ([loc, { label }]) => {
+          const selected = locale === loc
+          return (
+            <button
+              key={loc}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onChange(loc)}
+              className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-[15px] ${
+                selected
+                  ? 'bg-sproutine-card font-semibold text-sproutine-text shadow-soft'
+                  : 'font-medium text-sproutine-text-secondary hover:text-sproutine-text'
+              }`}
+            >
+              {selected && <Icon name="check" size={18} />}
+              {label}
+            </button>
+          )
+        }
       )}
     </div>
   )

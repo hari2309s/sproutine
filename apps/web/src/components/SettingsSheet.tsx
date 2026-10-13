@@ -4,14 +4,15 @@ import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { signOut } from '@/lib/auth'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { useCurrency, type Currency } from '@/contexts/CurrencyContext'
 import { useVoicePreference } from '@/contexts/VoiceContext'
 import { type Locale } from '@/lib/i18n'
 import { type VoiceId } from '@/lib/voices'
 import { LanguagePicker } from './LanguagePicker'
+import { ThemeSegmented } from './ThemeToggle'
+import { Icon } from './Icon'
 import { VoicePicker } from './VoicePicker'
-import { CurrencyPicker } from './CurrencyPicker'
 import { supabase } from '@/lib/supabase'
+import { fetchOwnProfile } from '@/lib/profile'
 
 interface SettingsSheetProps {
   userId: string
@@ -20,14 +21,20 @@ interface SettingsSheetProps {
 
 export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
   const { t, setLocale } = useLanguage()
-  const { currency, setCurrency } = useCurrency()
   const { voiceId, setVoiceId } = useVoicePreference()
   const [isExporting, setIsExporting] = useState(false)
+  const [gentleMode, setGentleMode] = useState<boolean | null>(null)
   const [deleteInput, setDeleteInput] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    fetchOwnProfile(userId)
+      .then((p) => setGentleMode(p?.safetyMode ?? false))
+      .catch(() => setGentleMode(false))
+  }, [userId])
 
   // Move focus into the sheet on open, and let Escape close it.
   useEffect(() => {
@@ -58,37 +65,36 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
+  // GDPR Art. 20 export: everything stored about the user, read through RLS.
   const handleExport = async () => {
     setIsExporting(true)
     try {
-      const [txRes, goalsRes, budgetsRes, habitsRes] = await Promise.all([
-        fetch('/api/transactions'),
-        fetch('/api/goals'),
-        fetch('/api/budgets'),
-        fetch('/api/habits'),
+      const [profileRes, messagesRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+        supabase
+          .from('chat_messages')
+          .select('role, content, is_proactive, created_at')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: true }),
       ])
-      const [txData, goalsData, budgetsData, habitsData] = await Promise.all([
-        txRes.json(),
-        goalsRes.json(),
-        budgetsRes.json(),
-        habitsRes.json(),
-      ])
+      if (profileRes.error) throw profileRes.error
+      if (messagesRes.error) throw messagesRes.error
       const exportData = {
         exportedAt: new Date().toISOString(),
-        transactions: txData.transactions ?? [],
-        goals: goalsData.goals ?? [],
-        budgets: budgetsData.budgets ?? [],
-        habits: habitsData.habits ?? [],
+        profile: profileRes.data,
+        chatMessages: messagesRes.data ?? [],
       }
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `truffle-export-${new Date().toISOString().slice(0, 10)}.json`
+      a.download = `sproutine-export-${new Date().toISOString().slice(0, 10)}.json`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
+    } catch (e) {
+      console.error('[settings] export failed:', e)
     } finally {
       setIsExporting(false)
     }
@@ -114,26 +120,40 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
 
   const handleLocaleChange = async (next: Locale) => {
     setLocale(next)
-    await supabase.auth.updateUser({ data: { language: next } })
-  }
-
-  const handleCurrencyChange = async (next: Currency) => {
-    setCurrency(next)
-    await supabase.auth.updateUser({ data: { currency: next } })
+    await Promise.all([
+      supabase.auth.updateUser({ data: { language: next } }),
+      supabase.from('profiles').update({ locale: next }).eq('user_id', userId),
+    ])
   }
 
   const handleVoiceChange = async (next: VoiceId) => {
     setVoiceId(next)
-    await supabase.auth.updateUser({ data: { voice: next } })
+    await Promise.all([
+      supabase.auth.updateUser({ data: { voice: next } }),
+      supabase.from('profiles').update({ voice_id: next }).eq('user_id', userId),
+    ])
   }
+
+  const handleGentleModeChange = async (next: boolean) => {
+    const previous = gentleMode
+    setGentleMode(next)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ safety_mode: next })
+      .eq('user_id', userId)
+    if (error) setGentleMode(previous)
+  }
+
+  const deleteArmed = deleteInput === t.settings.deleteConfirmWord
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col justify-end max-w-lg mx-auto"
+      className="fixed inset-0 z-50 mx-auto flex max-w-lg flex-col justify-end"
       onClick={onClose}
     >
       <motion.div
-        className="absolute inset-0 bg-black/50"
+        aria-hidden
+        className="absolute inset-0 bg-sproutine-overlay"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -143,117 +163,185 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-sheet-title"
-        className="relative bg-truffle-bg rounded-t-2xl border-t border-truffle-border px-4 pt-4 pb-10 space-y-6 overflow-y-auto max-h-[85dvh]"
-        style={{ overscrollBehavior: 'contain' }}
+        className="relative flex max-h-[92dvh] flex-col rounded-t-[28px] bg-sproutine-bg shadow-soft"
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between">
-          <h2 id="settings-sheet-title" className="font-semibold text-truffle-text">
+        <span
+          aria-hidden
+          className="mt-2.5 h-[5px] w-10 shrink-0 self-center rounded-full bg-sproutine-border-strong"
+        />
+        <div className="flex shrink-0 items-center justify-between border-b border-sproutine-border py-2 pr-3 pl-5">
+          <h2 id="settings-sheet-title" className="font-display text-[26px] text-sproutine-text">
             {t.settings.title}
           </h2>
           <button
             ref={closeButtonRef}
+            type="button"
             onClick={onClose}
-            aria-label="Close settings"
-            className="p-2 text-truffle-muted hover:text-truffle-text transition-colors"
+            aria-label={t.settings.close}
+            className="icon-btn bg-sproutine-surface text-sproutine-text"
           >
-            <XIcon />
+            <Icon name="close" size={22} />
           </button>
         </div>
 
-        {/* Language */}
-        <div className="space-y-2">
-          <h3 className="text-xs text-truffle-muted uppercase tracking-wide">
-            {t.settings.language}
-          </h3>
-          <LanguagePicker onChange={handleLocaleChange} />
-        </div>
+        <div
+          className="safe-bottom space-y-6 overflow-y-auto px-5 pt-4 pb-6"
+          style={{ overscrollBehavior: 'contain' }}
+        >
+          <section className="space-y-2.5">
+            <h3 className="eyebrow">{t.settings.language}</h3>
+            <LanguagePicker onChange={handleLocaleChange} />
+          </section>
 
-        {/* Currency */}
-        <div className="space-y-2">
-          <h3 className="text-xs text-truffle-muted uppercase tracking-wide">
-            {t.settings.currency}
-          </h3>
-          <CurrencyPicker value={currency} onChange={handleCurrencyChange} />
-        </div>
+          <section className="space-y-2.5">
+            <h3 className="eyebrow">{t.settings.appearance}</h3>
+            <ThemeSegmented />
+          </section>
 
-        {/* Voice */}
-        <div className="space-y-2">
-          <h3 className="text-xs text-truffle-muted uppercase tracking-wide">{t.settings.voice}</h3>
-          <p className="text-xs text-truffle-muted">{t.settings.voiceDesc}</p>
-          <VoicePicker value={voiceId} onChange={handleVoiceChange} />
-        </div>
+          <section className="space-y-2.5">
+            <h3 className="eyebrow">{t.settings.voice}</h3>
+            <VoicePicker value={voiceId} onChange={handleVoiceChange} variant="list" />
+          </section>
 
-        {/* Your data */}
-        <div className="space-y-2">
-          <h3 className="text-xs text-truffle-muted uppercase tracking-wide">
-            {t.settings.yourData}
-          </h3>
-          <div className="card space-y-3">
-            <div>
-              <p className="text-sm font-medium text-truffle-text">{t.settings.downloadData}</p>
-              <p className="text-xs text-truffle-muted mt-0.5">{t.settings.downloadDataDesc}</p>
-            </div>
+          <section className="card space-y-2 p-4 shadow-none">
+            <label className="flex min-h-11 cursor-pointer items-center gap-3">
+              <Icon
+                name="spa"
+                filled={!!gentleMode}
+                size={22}
+                className="text-sproutine-text-secondary"
+              />
+              <span className="flex-1 text-base font-semibold text-sproutine-text">
+                {t.settings.gentleMode}
+              </span>
+              <Toggle
+                checked={gentleMode ?? false}
+                disabled={gentleMode === null}
+                onChange={handleGentleModeChange}
+              />
+            </label>
+            <p className="text-sm leading-normal text-sproutine-text-secondary">
+              {gentleMode ? t.settings.gentleModeOn : t.settings.gentleModeDesc}
+            </p>
+          </section>
+
+          <section className="space-y-2.5">
+            <h3 className="eyebrow">{t.settings.yourData}</h3>
             <button
+              type="button"
               onClick={handleExport}
               disabled={isExporting}
-              className="btn-primary text-sm w-full disabled:opacity-50"
+              className="btn-secondary w-full"
             >
-              {isExporting ? t.settings.preparing : t.settings.exportData}
+              <Icon name="download" size={20} />
+              {isExporting ? t.settings.preparing : t.settings.downloadData}
             </button>
-          </div>
-        </div>
+          </section>
 
-        {/* Danger zone */}
-        <div className="space-y-2">
-          <h3 className="text-xs text-truffle-muted uppercase tracking-wide">
-            {t.settings.dangerZone}
-          </h3>
-          <div className="card border-truffle-red/30 space-y-3">
-            <div>
-              <p className="text-sm font-medium text-truffle-text">{t.settings.deleteAccount}</p>
-              <p className="text-xs text-truffle-muted mt-0.5">{t.settings.deleteAccountDesc}</p>
+          <section className="space-y-3 rounded-[22px] border-[1.5px] border-sproutine-red p-4">
+            <h3 className="flex items-center gap-2 text-xs font-semibold tracking-[0.06em] text-sproutine-red uppercase">
+              <Icon name="delete" size={18} />
+              {t.settings.dangerZone}
+            </h3>
+            <p className="text-[15px] leading-normal text-sproutine-text">
+              {t.settings.deleteAccountDesc}
+            </p>
+            <div className="space-y-1.5">
+              <label htmlFor="delete-confirm" className="text-sm font-semibold text-sproutine-text">
+                {t.settings.deleteConfirmLabel}
+              </label>
+              <input
+                id="delete-confirm"
+                type="text"
+                value={deleteInput}
+                onChange={(e) => setDeleteInput(e.target.value)}
+                autoComplete="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+                className="field font-mono tracking-[0.06em]"
+              />
             </div>
-            <input
-              type="text"
-              value={deleteInput}
-              onChange={(e) => setDeleteInput(e.target.value)}
-              placeholder={t.settings.deletePlaceholder}
-              className="w-full bg-truffle-surface border border-truffle-border rounded-xl px-3 py-2 text-sm text-truffle-text placeholder-truffle-muted focus:outline-none focus:border-truffle-red"
-            />
-            {deleteError && <p className="text-xs text-truffle-red">{deleteError}</p>}
+            {deleteError && (
+              <p
+                role="alert"
+                className="flex items-center gap-1.5 text-sm font-medium text-sproutine-red"
+              >
+                <Icon name="error" size={18} />
+                {deleteError}
+              </p>
+            )}
             <button
+              type="button"
               onClick={handleDelete}
-              disabled={deleteInput !== t.settings.deleteConfirmWord || isDeleting}
-              className="w-full py-2 rounded-xl text-sm font-medium bg-truffle-red/10 text-truffle-red border border-truffle-red/30 hover:bg-truffle-red/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={!deleteArmed || isDeleting}
+              className="btn-destructive w-full"
             >
+              <Icon name="delete" size={20} />
               {isDeleting ? t.settings.deleting : t.settings.deleteMyAccount}
             </button>
-          </div>
+            {deleteInput && (
+              <button
+                type="button"
+                onClick={() => setDeleteInput('')}
+                className="btn-ghost h-11 w-full text-[15px] text-sproutine-text-secondary"
+              >
+                {t.settings.keepAccount}
+              </button>
+            )}
+          </section>
+
+          <p className="text-center text-[13px] leading-normal text-sproutine-muted">
+            {t.settings.disclaimer}
+          </p>
         </div>
       </motion.div>
     </div>
   )
 }
 
-function XIcon() {
+/** 52×32 switch; the knob shows a check when on so state never relies on colour. */
+function Toggle({
+  checked,
+  disabled,
+  onChange,
+}: {
+  checked: boolean
+  disabled?: boolean
+  onChange: (next: boolean) => void
+}) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="w-4 h-4"
-    >
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
+    <span className="relative inline-flex">
+      <input
+        type="checkbox"
+        role="switch"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+        className="peer absolute inset-0 h-full w-full cursor-pointer appearance-none rounded-full"
+      />
+      <span
+        aria-hidden
+        className={`flex h-8 w-[52px] items-center rounded-full px-1 transition-colors peer-focus-visible:shadow-[0_0_0_2px_var(--t-bg),0_0_0_4px_var(--t-text)] ${
+          checked
+            ? 'justify-end bg-sproutine-accent'
+            : 'justify-start border-2 border-sproutine-border-strong bg-sproutine-surface'
+        } ${disabled ? 'opacity-50' : ''}`}
+      >
+        <span
+          className={`flex items-center justify-center rounded-full ${
+            checked
+              ? 'h-6 w-6 bg-sproutine-bg text-sproutine-accent'
+              : 'h-5 w-5 bg-sproutine-border-strong'
+          }`}
+        >
+          {checked && <Icon name="check" size={16} />}
+        </span>
+      </span>
+    </span>
   )
 }

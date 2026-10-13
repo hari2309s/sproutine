@@ -1,89 +1,121 @@
 'use client'
 
-import { useTheme, type Theme } from '@/hooks/useTheme'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { THEMES, useTheme, type Theme } from '@/hooks/useTheme'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { Icon, type IconName } from './Icon'
 
-function ThemeIcon({ theme }: { theme: Theme }) {
-  if (theme === 'light') {
-    return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        className="w-4 h-4"
-      >
-        <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.166 17.834a.75.75 0 00-1.06 1.06l1.59 1.591a.75.75 0 001.061-1.06l-1.59-1.591zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.166 6.106a.75.75 0 00-1.061 1.06l1.59 1.591a.75.75 0 001.061-1.06l-1.59-1.591z" />
-      </svg>
-    )
-  }
-  if (theme === 'system') {
-    return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        className="w-4 h-4"
-      >
-        <path
-          fillRule="evenodd"
-          d="M2.25 5.25a3 3 0 013-3h13.5a3 3 0 013 3V15a3 3 0 01-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 01-.53 1.28h-9a.75.75 0 01-.53-1.28l.621-.622a2.25 2.25 0 00.659-1.59V18h-3a3 3 0 01-3-3V5.25zm1.5 0v9.5a1.5 1.5 0 001.5 1.5H18a1.5 1.5 0 001.5-1.5v-9.5a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5z"
-          clipRule="evenodd"
-        />
-      </svg>
-    )
-  }
-  // dark (moon)
+export const THEME_ICONS: Record<Theme, IconName> = {
+  light: 'light_mode',
+  dark: 'dark_mode',
+  system: 'contrast',
+}
+
+/** Top-bar icon button that opens Light / Dark / System as a small menu. */
+export function ThemeMenu() {
+  const { t } = useLanguage()
+  const { theme, setTheme } = useTheme()
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onPointer = (e: PointerEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className="w-4 h-4"
-    >
-      <path
-        fillRule="evenodd"
-        d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z"
-        clipRule="evenodd"
-      />
-    </svg>
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`${t.theme.label}: ${t.theme[theme]}`}
+        className={`icon-btn ${open ? 'bg-sproutine-surface text-sproutine-text' : ''}`}
+      >
+        <Icon name={THEME_ICONS[theme]} filled={open} />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-12 z-40 flex w-48 flex-col rounded-2xl border border-sproutine-border bg-sproutine-card p-1.5 shadow-soft"
+        >
+          {THEMES.map((option) => {
+            const selected = option === theme
+            return (
+              <button
+                key={option}
+                type="button"
+                role="menuitemradio"
+                aria-checked={selected}
+                onClick={() => {
+                  setTheme(option)
+                  setOpen(false)
+                }}
+                className={`flex min-h-12 items-center gap-2.5 rounded-xl px-3 text-[15px] ${
+                  selected
+                    ? 'bg-sproutine-accent-soft font-semibold text-sproutine-text'
+                    : 'text-sproutine-text hover:bg-sproutine-surface'
+                }`}
+              >
+                <Icon
+                  name={THEME_ICONS[option]}
+                  filled={selected}
+                  size={20}
+                  className="text-sproutine-text-secondary"
+                />
+                <span className="flex-1 text-left">{t.theme[option]}</span>
+                {selected && <Icon name="check" size={20} className="text-sproutine-accent" />}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
-const LABELS: Record<Theme, string> = { dark: 'Dark', light: 'Light', system: 'System' }
-
-interface ThemeToggleProps {
-  /** Extra classes appended after `btn-ghost` — e.g. to override its hover
-   * background when the toggle sits on a surface that already matches it. */
-  className?: string
-}
-
-export function ThemeToggle({ className }: ThemeToggleProps = {}) {
-  const { theme, cycleTheme } = useTheme()
-  const [spinning, setSpinning] = useState(false)
-
-  const handleClick = () => {
-    setSpinning(true)
-    cycleTheme()
-    setTimeout(() => setSpinning(false), 400)
-  }
-
+/** Segmented Light / Dark / System control, used in Settings. */
+export function ThemeSegmented() {
+  const { t } = useLanguage()
+  const { theme, setTheme } = useTheme()
   return (
-    <button
-      onClick={handleClick}
-      title={`Theme: ${LABELS[theme]} — click to cycle`}
-      aria-label={`Theme: ${LABELS[theme]} — click to cycle`}
-      className={`btn-ghost flex items-center gap-1.5 text-xs px-2 py-2${className ? ` ${className}` : ''}`}
+    <div
+      role="radiogroup"
+      aria-label={t.theme.label}
+      className="flex gap-1 rounded-full bg-sproutine-surface p-1"
     >
-      <span
-        className="inline-flex"
-        style={{
-          transform: spinning ? 'rotate(360deg)' : 'rotate(0deg)',
-          transition: spinning ? 'transform 0.4s ease-in-out' : 'none',
-        }}
-      >
-        <ThemeIcon theme={theme} />
-      </span>
-      <span className="hidden sm:inline">{LABELS[theme]}</span>
-    </button>
+      {THEMES.map((option) => {
+        const selected = option === theme
+        return (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => setTheme(option)}
+            className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-sm ${
+              selected
+                ? 'bg-sproutine-card font-semibold text-sproutine-text shadow-soft'
+                : 'font-medium text-sproutine-text-secondary hover:text-sproutine-text'
+            }`}
+          >
+            <Icon name={THEME_ICONS[option]} filled={selected} size={20} />
+            {t.theme[option]}
+          </button>
+        )
+      })}
+    </div>
   )
 }

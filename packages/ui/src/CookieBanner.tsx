@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-const CONSENT_KEY = 'truffle-cookie-consent'
+const CONSENT_KEY = 'sproutine-cookie-consent'
 
 export interface CookieBannerProps {
   message: string
@@ -71,32 +71,45 @@ export function CookieBanner({
     setVisible(false)
   }
 
+  // Rendered inline at the top of the page column (not fixed), so it pushes
+  // content down instead of covering the sign-in button or the mic. The two
+  // choices get equal visual weight.
   return (
-    <div className="safe-bottom fixed bottom-0 inset-x-0 z-50 p-4 flex justify-center pointer-events-none">
-      <div className="w-full max-w-lg bg-truffle-surface border border-truffle-border rounded-2xl shadow-lg px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 pointer-events-auto">
-        <p className="flex-1 text-xs text-truffle-muted leading-relaxed">
-          {message}{' '}
-          <a
-            href={privacyHref}
-            {...(privacyExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-            className="text-truffle-amber hover:underline"
-          >
-            {privacyLabel}
-          </a>
-        </p>
-        <div className="flex gap-2 flex-shrink-0">
-          <button
-            onClick={reject}
-            className="px-3 py-1.5 rounded-lg text-xs text-truffle-muted border border-truffle-border hover:text-truffle-text transition-colors"
-          >
-            {rejectLabel}
-          </button>
-          <button
-            onClick={accept}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-truffle-amber text-truffle-bg hover:bg-truffle-amber-light transition-colors"
-          >
-            {acceptLabel}
-          </button>
+    <div
+      role="region"
+      aria-label="Cookie consent"
+      className="mx-auto w-full max-w-lg shrink-0 px-3 pt-2"
+    >
+      <div className="flex flex-col gap-2.5 rounded-[22px] bg-sproutine-surface px-3.5 pt-3.5 pb-3">
+        <div className="flex items-start gap-2.5">
+          <span aria-hidden className="icon text-[22px] text-sproutine-text-secondary">
+            cookie
+          </span>
+          <p className="text-sm leading-[1.45] text-sproutine-text">
+            {message}{' '}
+            <a
+              href={privacyHref}
+              {...(privacyExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              className="font-semibold text-sproutine-accent underline-offset-2 hover:underline"
+            >
+              {privacyLabel}
+            </a>
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: rejectLabel, onClick: reject },
+            { label: acceptLabel, onClick: accept },
+          ].map(({ label, onClick }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={onClick}
+              className="h-11 rounded-full border-[1.5px] border-sproutine-border-strong bg-sproutine-card text-sm font-semibold text-sproutine-text hover:bg-sproutine-bg"
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
     </div>

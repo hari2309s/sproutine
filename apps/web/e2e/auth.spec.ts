@@ -12,17 +12,17 @@ test.describe('Auth page', () => {
     )
   })
 
-  test('shows Truffle branding and email form', async ({ page }) => {
+  test('shows Sproutine branding and email form', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByRole('heading', { name: 'Truffle' })).toBeVisible()
-    await expect(page.getByText('Your finances, unearthed.', { exact: true })).toBeVisible()
-    await expect(page.getByPlaceholder('your@email.com')).toBeVisible()
+    await expect(page.getByText('Sproutine', { exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Eat well, one sprout at a time.' })).toBeVisible()
+    await expect(page.getByPlaceholder('you@example.com')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Continue with email' })).toBeVisible()
   })
 
   test('submit button is enabled with a valid email', async ({ page }) => {
     await page.goto('/')
-    const input = page.getByPlaceholder('your@email.com')
+    const input = page.getByPlaceholder('you@example.com')
     const button = page.getByRole('button', { name: 'Continue with email' })
 
     await input.fill('test@example.com')
@@ -31,23 +31,25 @@ test.describe('Auth page', () => {
 
   test('shows magic link confirmation after submission', async ({ page }) => {
     await page.goto('/')
-    await page.getByPlaceholder('your@email.com').fill('test@example.com')
+    await page.getByPlaceholder('you@example.com').fill('test@example.com')
     await page.getByRole('button', { name: 'Continue with email' }).click()
 
     await expect(page.getByText('Check your email')).toBeVisible()
-    await expect(page.getByText('test@example.com')).toBeVisible()
+    // The address shows as the user's reply bubble (and again inside Rosie's text).
+    await expect(page.getByText('test@example.com', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Use a different email' })).toBeVisible()
   })
 
   test('shows expired link error when ?error=auth_failed is in URL', async ({ page }) => {
     await page.goto('/?error=auth_failed')
     await expect(
-      page.getByText('Sign-in link expired or already used. Please request a new one.')
+      page.getByText('That sign-in link has expired or was already used. Ask me for a new one.')
     ).toBeVisible()
   })
 
   test('shows magic link hint text', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByText('Sign in with a magic link · No password needed')).toBeVisible()
+    await expect(page.getByText('No password needed')).toBeVisible()
   })
 
   // The submit button is intentionally not gated on email validity — see
@@ -62,7 +64,7 @@ test.describe('Auth page', () => {
 
   test('submit button is enabled with an invalid email format', async ({ page }) => {
     await page.goto('/')
-    await page.getByPlaceholder('your@email.com').fill('notanemail')
+    await page.getByPlaceholder('you@example.com').fill('notanemail')
     await expect(page.getByRole('button', { name: 'Continue with email' })).toBeEnabled()
   })
 })

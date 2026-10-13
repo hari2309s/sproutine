@@ -1,25 +1,25 @@
 /**
  * Runs the "agent-golden" Langfuse dataset as an experiment against the real
- * router and agent functions, and prints per-item + aggregate scores.
+ * intent router and safety gate, and prints per-item + aggregate scores.
  *
  * Requires the dataset to exist — run `pnpm eval:sync-dataset` first (or
  * after editing evals/dataset-items.ts).
  *
- * Run with: pnpm --filter @truffle/ai eval
+ * Run with: pnpm --filter @sproutine/ai eval
  */
 
 import { config } from 'dotenv'
 import { resolve } from 'path'
-config({ path: resolve(__dirname, '../../../.env.local') })
+config({ path: resolve(import.meta.dirname, '../../../.env.local') })
 
 import { runAgentItem } from './task'
 import {
   intentExactMatch,
-  numericFaithfulness,
-  responseQualityJudge,
+  safetyMatch,
   avgIntentAccuracy,
-  avgResponseQuality,
-  avgNumericFaithfulness,
+  avgSafetyRecall,
+  avgSafetyExactMatch,
+  avgSafetyFalsePositive,
 } from './evaluators'
 
 const DATASET_NAME = 'agent-golden'
@@ -39,9 +39,9 @@ async function run() {
       name: 'Local golden run',
       description: 'Manual run via pnpm eval',
       task: runAgentItem,
-      evaluators: [intentExactMatch, numericFaithfulness, responseQualityJudge],
-      runEvaluators: [avgIntentAccuracy, avgResponseQuality, avgNumericFaithfulness],
-      maxConcurrency: 2, // free-tier Gemini quota is 5 req/min; keep bursts well under that
+      evaluators: [intentExactMatch, safetyMatch],
+      runEvaluators: [avgIntentAccuracy, avgSafetyRecall, avgSafetyExactMatch, avgSafetyFalsePositive],
+      maxConcurrency: 2, // stay well under free-tier per-minute limits
     })
 
     console.log(await result.format())

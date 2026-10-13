@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { langfuseClient } from '@truffle/ai'
+import { langfuseClient } from '@sproutine/ai'
 import { requireUser } from '@/lib/supabase-server'
 
 export const runtime = 'nodejs'

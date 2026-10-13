@@ -13,7 +13,7 @@ interface UseVoiceRecorderReturn {
   error: string | null
 }
 
-export function useVoiceRecorder(userId: string): UseVoiceRecorderReturn {
+export function useVoiceRecorder(): UseVoiceRecorderReturn {
   const [isRecording, setIsRecording] = useState(false)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const [transcript, setTranscript] = useState<string | null>(null)
@@ -22,6 +22,34 @@ export function useVoiceRecorder(userId: string): UseVoiceRecorderReturn {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<BlobPart[]>([])
+
+  // Declared before startRecording, whose onstop handler calls it.
+  const transcribeAudio = useCallback(async (blob: Blob, mime: string) => {
+    setIsTranscribing(true)
+    try {
+      const ext = mime.includes('mp4') ? 'm4a' : mime.includes('ogg') ? 'ogg' : 'webm'
+      const formData = new FormData()
+      formData.append('audio', blob, `recording.${ext}`)
+
+      const response = await fetch('/api/voice', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const json = await response.json()
+      if (!response.ok) throw new Error(json.error ?? 'Transcription failed')
+
+      posthog.capture('voice_input_used', { mime_type: mime })
+
+      setTranscript(json.transcript)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not transcribe audio.'
+      setError(msg)
+      console.error('Transcription error:', err)
+    } finally {
+      setIsTranscribing(false)
+    }
+  }, [])
 
   const startRecording = useCallback(async () => {
     try {
@@ -59,7 +87,7 @@ export function useVoiceRecorder(userId: string): UseVoiceRecorderReturn {
       setError('Microphone access denied or unavailable')
       console.error('Recording error:', err)
     }
-  }, [])
+  }, [transcribeAudio])
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === 'recording') {
@@ -77,33 +105,6 @@ export function useVoiceRecorder(userId: string): UseVoiceRecorderReturn {
       }
     }
   }, [])
-
-  const transcribeAudio = async (blob: Blob, mime: string) => {
-    setIsTranscribing(true)
-    try {
-      const ext = mime.includes('mp4') ? 'm4a' : mime.includes('ogg') ? 'ogg' : 'webm'
-      const formData = new FormData()
-      formData.append('audio', blob, `recording.${ext}`)
-
-      const response = await fetch('/api/voice', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const json = await response.json()
-      if (!response.ok) throw new Error(json.error ?? 'Transcription failed')
-
-      posthog.capture('voice_input_used', { mime_type: mime })
-
-      setTranscript(json.transcript)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not transcribe audio.'
-      setError(msg)
-      console.error('Transcription error:', err)
-    } finally {
-      setIsTranscribing(false)
-    }
-  }
 
   return {
     isRecording,

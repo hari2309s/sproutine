@@ -8,17 +8,21 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
   const [posthogClient, setPosthogClient] = useState<PostHog | null>(null)
 
   useEffect(() => {
+    const key = process.env.NEXT_PUBLIC_POSTHOG_KEY
+    // Analytics are optional: without a key (local dev, previews) skip init
+    // entirely rather than run posthog unconfigured.
+    if (!key) return
     let cancelled = false
     // Loaded dynamically so posthog-js isn't part of the initial bundle —
     // it's only needed post-mount, never during first paint.
     import('posthog-js').then(({ default: posthog }) => {
       if (cancelled) return
-      posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+      posthog.init(key, {
         api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
         person_profiles: 'identified_only',
         capture_pageview: false,
         loaded: (ph) => {
-          if (localStorage.getItem('truffle-cookie-consent') !== 'accepted') {
+          if (localStorage.getItem('sproutine-cookie-consent') !== 'accepted') {
             ph.opt_out_capturing()
           }
         },

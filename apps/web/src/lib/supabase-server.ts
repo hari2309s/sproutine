@@ -3,8 +3,8 @@ import { createServerClient as createSSRClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 
 export function createServerClient() {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceRoleKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set')
+  const serviceRoleKey = process.env.SUPABASE_SECRET_KEY
+  if (!serviceRoleKey) throw new Error('SUPABASE_SECRET_KEY is not set')
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
@@ -19,7 +19,7 @@ type AuthFailure = { user: null; errorResponse: NextResponse }
 export async function requireUser(request: NextRequest): Promise<AuthSuccess | AuthFailure> {
   const supabase = createSSRClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {

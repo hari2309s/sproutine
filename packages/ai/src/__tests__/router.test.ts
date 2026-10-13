@@ -3,7 +3,15 @@ import { DAILY_LIMITS, PRIORITY_ORDER } from '../router'
 import type { Provider, TaskType } from '../types'
 
 const ALL_PROVIDERS: Provider[] = ['groq', 'gemini', 'cerebras', 'openrouter', 'mistral']
-const ALL_TASKS: TaskType[] = ['fast-chat', 'reasoning', 'vision', 'tool-calling']
+const ALL_TASKS: TaskType[] = [
+  'fast-chat',
+  'classify',
+  'safety',
+  'reasoning',
+  'structured',
+  'tool-calling',
+  'vision',
+]
 
 describe('DAILY_LIMITS', () => {
   it('has a limit defined for every provider', () => {

@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useMemo } from 'react'
 import { usePersistedPreference } from '@/hooks/usePersistedPreference'
 import { type Locale, type Translations, translations } from '@/lib/i18n'
 
-const STORAGE_KEY = 'truffle-locale'
+const STORAGE_KEY = 'sproutine-locale'
 
 const SUPPORTED_LOCALES = Object.keys(translations) as Locale[]
 
