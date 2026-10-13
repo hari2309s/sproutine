@@ -5,36 +5,41 @@ import type { ReadableSpan, Span, SpanProcessor } from '@opentelemetry/sdk-trace
 import { LangfuseSpanProcessor } from '@langfuse/otel'
 import { LangfuseClient } from '@langfuse/client'
 import { LangfuseVercelAiSdkIntegration } from '@langfuse/vercel-ai-sdk'
+import { maskContactDetails } from './mask'
+
+export { maskContactDetails } from './mask'
 
 // Langfuse tracing setup, shared by the web app and the eval/script runners.
 //
 // - The AI SDK 7 integration records every generateText/streamText call as a
 //   Langfuse generation (model, tokens, cost, reasoning) automatically.
 // - Users are identified only by their llm_pseudonym (set via
-//   propagateAttributes at the call site). The mask below is a second line of
-//   defence for contact details users type into chat.
+//   propagateAttributes at the call site). Contact details users type are
+//   masked (./mask.ts) in everything exported — see PrepareGenAiSpans.
 // - Environment comes from LANGFUSE_TRACING_ENVIRONMENT (development /
 //   preview / production) so test traffic stays out of production views.
 
-const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi
-// International or German-style phone numbers with at least 8 digits.
-const PHONE = /(?:\+|00)?\d[\d\s/()-]{6,}\d/g
-
-/** Replaces emails and phone numbers in any traced input, output or metadata. */
-export function maskContactDetails(data: string): string {
-  return data.replace(EMAIL, '[email]').replace(PHONE, (match) =>
-    match.replace(/\D/g, '').length >= 8 ? '[phone]' : match
-  )
-}
+// The AI SDK integration records prompts and replies as gen_ai.* attributes,
+// which the Langfuse processor's own `mask` option doesn't cover (it masks
+// langfuse.* input/output/metadata only).
+const GEN_AI_CONTENT_KEYS = [
+  'gen_ai.input.messages',
+  'gen_ai.output.messages',
+  'gen_ai.system_instructions',
+  'gen_ai.tool.call.arguments',
+  'gen_ai.tool.call.result',
+]
 
 /**
- * The AI SDK names its spans after the model ("invoke_agent openai/gpt-oss-120b",
- * "chat openai/gpt-oss-120b"). Langfuse best practice is stable, verb-first
- * names with the model kept as a field, so rename them at start: the agent
- * span takes the call's telemetry functionId (e.g. "generate-response") and
- * its model call becomes "call-model". The model is still on the generation.
+ * Runs before the Langfuse processor on every span:
+ * - onStart: the AI SDK names spans after the model ("invoke_agent
+ *   openai/gpt-oss-120b"). Langfuse best practice is stable, verb-first names
+ *   with the model kept as a field, so the agent span takes the call's
+ *   telemetry functionId (e.g. "generate-response") and its model call becomes
+ *   "call-model". The model stays on the generation.
+ * - onEnd: masks contact details in the gen_ai.* message attributes.
  */
-class NameGenAiSpans implements SpanProcessor {
+class PrepareGenAiSpans implements SpanProcessor {
   onStart(span: Span, _parentContext: Context): void {
     const attrs = span.attributes
     const op = attrs['gen_ai.operation.name']
@@ -45,7 +50,17 @@ class NameGenAiSpans implements SpanProcessor {
     }
   }
 
-  onEnd(_span: ReadableSpan): void {}
+  onEnd(span: ReadableSpan): void {
+    // Ended spans reject setAttribute, but processors run in order on the same
+    // attributes object, so the Langfuse processor after this one exports the
+    // masked values.
+    const attrs = span.attributes as Record<string, unknown>
+    for (const key of GEN_AI_CONTENT_KEYS) {
+      const value = attrs[key]
+      if (typeof value === 'string') attrs[key] = maskContactDetails(value)
+    }
+  }
+
   forceFlush(): Promise<void> {
     return Promise.resolve()
   }
@@ -71,8 +86,8 @@ function init(): LangfuseGlobals {
   })
   const sdk = new NodeSDK({
     serviceName: 'sproutine',
-    // Renaming must run before the Langfuse processor reads the span.
-    spanProcessors: [new NameGenAiSpans(), processor],
+    // Must run before the Langfuse processor reads the span.
+    spanProcessors: [new PrepareGenAiSpans(), processor],
   })
   sdk.start()
   registerTelemetry(new LangfuseVercelAiSdkIntegration())

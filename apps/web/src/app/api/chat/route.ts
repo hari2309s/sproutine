@@ -171,158 +171,184 @@ export async function POST(request: NextRequest) {
         startActiveObservation(
           'chat-turn',
           async (turn) => {
-            // Trace input/output = what a reviewer needs at a glance: the user's
-            // message in, Rosie's reply out.
-            turn.update({ input: message })
-            const meta = { traceId: turn.traceId }
+            // The turn outlives this callback while the reply streams, so it is
+            // ended explicitly. Every path goes through endTurn so it ends
+            // exactly once, with whatever it knows at that point.
+            let ended = false
+            const endTurn = (attrs: Parameters<typeof turn.update>[0]) => {
+              if (ended) return
+              ended = true
+              turn.update(attrs).end()
+            }
 
-            // Safety and intent are independent — run them together.
-            const [safety, intent] = await Promise.all([
-              startActiveObservation(
-                'check-safety',
-                async (guard) => {
-                  guard.update({ input: message })
-                  const verdict = await classifySafety(message, meta)
-                  guard.update({
-                    output: { category: verdict.category },
-                    metadata: { source: verdict.source, reason: verdict.reason },
-                  })
-                  return verdict
+            try {
+              // Trace input/output = what a reviewer needs at a glance: the user's
+              // message in, Rosie's reply out.
+              turn.update({ input: message })
+              const meta = { traceId: turn.traceId }
+
+              // Safety and intent are independent — run them together.
+              const [safety, intent] = await Promise.all([
+                startActiveObservation(
+                  'check-safety',
+                  async (guard) => {
+                    guard.update({ input: message })
+                    const verdict = await classifySafety(message, meta)
+                    guard.update({
+                      output: { category: verdict.category },
+                      metadata: { source: verdict.source, reason: verdict.reason },
+                    })
+                    return verdict
+                  },
+                  { asType: 'guardrail' }
+                ),
+                startActiveObservation('classify-intent', async (span) => {
+                  span.update({ input: message })
+                  const result = await classifyIntent(message, meta)
+                  span.update({ output: result.intent, metadata: { source: result.source } })
+                  return result
+                }),
+              ])
+              turn.update({
+                metadata: {
+                  intent: intent.intent,
+                  safety: safety.category,
+                  gentleMode: profile.safetyMode,
                 },
-                { asType: 'guardrail' }
-              ),
-              startActiveObservation('classify-intent', async (span) => {
-                span.update({ input: message })
-                const result = await classifyIntent(message, meta)
-                span.update({ output: result.intent, metadata: { source: result.source } })
-                return result
-              }),
-            ])
-            turn.update({
-              metadata: {
-                intent: intent.intent,
-                safety: safety.category,
-                gentleMode: profile.safetyMode,
-              },
-            })
-
-            if (safety.category === 'crisis' || safety.category === 'ed_risk') {
-              if (safety.category === 'ed_risk' && !profile.safetyMode) {
-                await enableSafetyMode(db, user.id)
-              }
-              turn.update({ output: SAFE_RESPONSES[safety.category] }).end()
-              return templatedResponse(SAFE_RESPONSES[safety.category], {
-                traceId: turn.traceId,
-                // The client renders a safety card (call rows, no feedback
-                // buttons) instead of a normal bubble for these.
-                safety: safety.category,
-                speechTone: 'reassuring' satisfies SpeechTone,
-                createdAt: new Date().toISOString(),
               })
-            }
 
-            const instructions = buildSystemPrompt({
-              profile,
-              intent: intent.intent,
-              medical: safety.category === 'medical',
-              today: new Date().toLocaleDateString('en-GB', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                timeZone: 'Europe/Berlin',
-              }),
-            })
-
-            // Only user/assistant text is replayed; empty turns are dropped (some
-            // providers reject them) and the history is bounded by turns and size.
-            const history = boundHistory(
-              clientMessages
-                .filter((m) => m.role === 'user' || m.role === 'assistant')
-                .slice(-HISTORY_LIMIT)
-            )
-            const modelMessages = await convertToModelMessages(history)
-            const speechTone: SpeechTone = safety.category === 'medical' ? 'reassuring' : 'neutral'
-
-            // Try candidates in priority order. A provider that fails before
-            // sending any text (e.g. a per-minute rate limit) falls through to
-            // the next; errors after text has started surface via onError.
-            // Each attempt is recorded as its own `generate-response` generation
-            // (model, tokens, reasoning) by the Langfuse AI SDK integration.
-            let lastError: unknown = null
-            for (const { model, provider } of await candidatesPromise) {
-              try {
-                const start = Date.now()
-
-                const result = streamText({
-                  model,
-                  instructions,
-                  messages: modelMessages,
-                  // GPT-OSS spends part of the budget on (parsed-out) reasoning.
-                  maxOutputTokens: 1400,
-                  temperature: 0.7,
-                  providerOptions: groqChatProviderOptions,
-                  telemetry: { functionId: 'generate-response' },
-                  onEnd: ({ text, usage }) => {
-                    turn.update({ output: text, metadata: { provider } }).end()
-                    Promise.all([
-                      incrementUsage(provider),
-                      logEval({
-                        provider,
-                        task: 'fast-chat',
-                        latencyMs: Date.now() - start,
-                        tokensUsed: (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0),
-                        traceId: turn.traceId,
-                      }),
-                    ]).catch((e) => console.error('[chat/eval log error]', e))
-                  },
-                })
-
-                const first = await firstSignal(result.stream)
-                if (first.error) {
-                  first.stream.cancel().catch(() => {})
-                  throw first.error
+              if (safety.category === 'crisis' || safety.category === 'ed_risk') {
+                if (safety.category === 'ed_risk' && !profile.safetyMode) {
+                  await enableSafetyMode(db, user.id)
                 }
-
-                const stream = toUIMessageStream({
-                  stream: first.stream,
-                  // Tone (for TTS), trace id (for feedback) and a timestamp ride
-                  // on the assistant message.
-                  messageMetadata: ({ part }) =>
-                    part.type === 'start'
-                      ? {
-                          traceId: turn.traceId,
-                          // Proves to /api/chat/feedback that this trace is the caller's.
-                          feedbackToken: signTrace(turn.traceId, profile.llmPseudonym),
-                          speechTone,
-                          createdAt: new Date().toISOString(),
-                        }
-                      : undefined,
-                  onError: (error: unknown) => {
-                    console.error('[chat/stream error]', error)
-                    turn.update({ level: 'ERROR', statusMessage: String(error) }).end()
-                    return 'Rosie had trouble answering. Please try again.'
-                  },
+                endTurn({ output: SAFE_RESPONSES[safety.category] })
+                return templatedResponse(SAFE_RESPONSES[safety.category], {
+                  traceId: turn.traceId,
+                  // The client renders a safety card (call rows, no feedback
+                  // buttons) instead of a normal bubble for these.
+                  safety: safety.category,
+                  speechTone: 'reassuring' satisfies SpeechTone,
+                  createdAt: new Date().toISOString(),
                 })
-                return createUIMessageStreamResponse({ stream })
-              } catch (e) {
-                lastError = e
-                console.warn(
-                  `[chat] provider ${provider} failed, trying next:`,
-                  (e as Error).message
-                )
               }
-            }
 
-            console.error('[chat] all providers failed:', lastError)
-            turn.update({ level: 'ERROR', statusMessage: 'all providers failed' }).end()
-            return json(
-              { error: 'All providers are currently unavailable. Please try again shortly.' },
-              503
-            )
+              const instructions = buildSystemPrompt({
+                profile,
+                intent: intent.intent,
+                medical: safety.category === 'medical',
+                today: new Date().toLocaleDateString('en-GB', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  timeZone: 'Europe/Berlin',
+                }),
+              })
+
+              // Only user/assistant text is replayed; empty turns are dropped (some
+              // providers reject them) and the history is bounded by turns and size.
+              const history = boundHistory(
+                clientMessages
+                  .filter((m) => m.role === 'user' || m.role === 'assistant')
+                  .slice(-HISTORY_LIMIT)
+              )
+              const modelMessages = await convertToModelMessages(history)
+              const speechTone: SpeechTone =
+                safety.category === 'medical' ? 'reassuring' : 'neutral'
+
+              // Try candidates in priority order. A provider that fails before
+              // sending any text (e.g. a per-minute rate limit) falls through to
+              // the next; errors after text has started surface via onError.
+              // Each attempt is recorded as its own `generate-response` generation
+              // (model, tokens, reasoning) by the Langfuse AI SDK integration.
+              let lastError: unknown = null
+              for (const { model, provider } of await candidatesPromise) {
+                try {
+                  const start = Date.now()
+
+                  const result = streamText({
+                    model,
+                    instructions,
+                    messages: modelMessages,
+                    // GPT-OSS spends part of the budget on (parsed-out) reasoning.
+                    maxOutputTokens: 1400,
+                    temperature: 0.7,
+                    providerOptions: groqChatProviderOptions,
+                    telemetry: { functionId: 'generate-response' },
+                    // Usage bookkeeping only; the turn is ended by the UI stream's
+                    // onEnd, which also fires when the client disconnects.
+                    onEnd: ({ usage }) => {
+                      Promise.all([
+                        incrementUsage(provider),
+                        logEval({
+                          provider,
+                          task: 'fast-chat',
+                          latencyMs: Date.now() - start,
+                          tokensUsed: (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0),
+                          traceId: turn.traceId,
+                        }),
+                      ]).catch((e) => console.error('[chat/eval log error]', e))
+                    },
+                  })
+
+                  const first = await firstSignal(result.stream)
+                  if (first.error) {
+                    first.stream.cancel().catch(() => {})
+                    throw first.error
+                  }
+
+                  const stream = toUIMessageStream({
+                    stream: first.stream,
+                    // Tone (for TTS), trace id (for feedback) and a timestamp ride
+                    // on the assistant message.
+                    messageMetadata: ({ part }) =>
+                      part.type === 'start'
+                        ? {
+                            traceId: turn.traceId,
+                            // Proves to /api/chat/feedback that this trace is the caller's.
+                            feedbackToken: signTrace(turn.traceId, profile.llmPseudonym),
+                            speechTone,
+                            createdAt: new Date().toISOString(),
+                          }
+                        : undefined,
+                    onError: (error: unknown) => {
+                      console.error('[chat/stream error]', error)
+                      endTurn({ level: 'ERROR', statusMessage: String(error) })
+                      return 'Rosie had trouble answering. Please try again.'
+                    },
+                    // Fires on completion, abort and client disconnect alike.
+                    onEnd: ({ responseMessage, isAborted, isCancelled }) => {
+                      const interrupted = isAborted || isCancelled === true
+                      endTurn({
+                        output: textOf(responseMessage),
+                        metadata: { provider, ...(interrupted ? { interrupted: true } : {}) },
+                        ...(interrupted
+                          ? { level: 'WARNING' as const, statusMessage: 'stream ended early' }
+                          : {}),
+                      })
+                    },
+                  })
+                  return createUIMessageStreamResponse({ stream })
+                } catch (e) {
+                  lastError = e
+                  console.warn(
+                    `[chat] provider ${provider} failed, trying next:`,
+                    (e as Error).message
+                  )
+                }
+              }
+
+              console.error('[chat] all providers failed:', lastError)
+              endTurn({ level: 'ERROR', statusMessage: 'all providers failed' })
+              return json(
+                { error: 'All providers are currently unavailable. Please try again shortly.' },
+                503
+              )
+            } catch (error) {
+              endTurn({ level: 'ERROR', statusMessage: String(error) })
+              throw error
+            }
           },
-          // The turn outlives this callback while the reply streams; it is
-          // ended explicitly in onEnd / onError / the failure paths above.
           { endOnExit: false }
         )
     )
