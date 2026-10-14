@@ -142,6 +142,9 @@ export interface Translations {
     noRecipe: (slot: string) => string
     overBudget: (cost: string, budget: string) => string
     planFailed: string
+    cardTitle: string
+    cardTitleNext: string
+    openWeek: string
     loadFailed: string
     retry: string
     swapFailed: string
@@ -470,6 +473,9 @@ export const translations: Record<Locale, Translations> = {
       overBudget: (cost, budget) =>
         `This week comes to about ${cost}, a little over your ${budget} budget.`,
       planFailed: "I couldn't make a plan just now. Please try again.",
+      cardTitle: 'Dinners this week',
+      cardTitleNext: 'Dinners next week',
+      openWeek: 'Open my week',
       loadFailed: "I couldn't load your plan just now.",
       retry: 'Try again',
       swapFailed: "I couldn't swap that just now. Please try again.",

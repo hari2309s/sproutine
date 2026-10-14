@@ -4,11 +4,17 @@ import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { staggerItemVariants, staggerListVariants } from '@/lib/motion'
-import { mealProposalOf, useSproutineChat, type SproutineUIMessage } from '@/hooks/useSproutineChat'
+import {
+  mealProposalOf,
+  planSummaryOf,
+  useSproutineChat,
+  type SproutineUIMessage,
+} from '@/hooks/useSproutineChat'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
 import { ChatBubble } from './ChatBubble'
 import { SafetyCard } from './SafetyCard'
 import { MealLogCard } from './MealLogCard'
+import { MealPlanCard } from './MealPlanCard'
 import { VoiceDock, type VoiceButtonStatus } from './VoiceButton'
 import { AppColumn } from './AppColumn'
 import { BottomNav } from './BottomNav'
@@ -164,6 +170,21 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
 
             if (message.role === 'assistant' && safety) {
               return <SafetyCard key={message.id} category={safety} />
+            }
+
+            const planSummary = message.role === 'assistant' ? planSummaryOf(message) : null
+            if (planSummary) {
+              return (
+                <div key={message.id} className="flex flex-col gap-2">
+                  <ChatBubble
+                    role="assistant"
+                    content={clean}
+                    timestamp={message.metadata?.createdAt}
+                    speaking={chat.isSpeaking && message.id === lastAssistantId}
+                  />
+                  <MealPlanCard summary={planSummary} />
+                </div>
+              )
             }
 
             const mealProposal = message.role === 'assistant' ? mealProposalOf(message) : null

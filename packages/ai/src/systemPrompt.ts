@@ -27,12 +27,13 @@ const NOT_YET: Partial<Record<Intent, string>> = {
     "Logged meals can't be changed in chat yet. They can remove one on the Today screen and log it again. Never claim you changed it.",
   daily_review:
     "You can't see their logged meals in chat yet. Their meals for today are on the Today screen. Ask how their day went instead.",
+  // Reached only when the plan couldn't be built (the card handles the rest).
   plan_week:
-    "Weekly meal plans aren't available yet. You can chat through ideas for a few simple meals that fit their profile, but don't present it as a saved plan.",
+    "You couldn't build their plan just now. Say so kindly and suggest they try again, or open the Week tab and tap Plan my week. Don't invent a plan in chat.",
   adjust_plan:
-    "Saved meal plans aren't available yet, so there's nothing to adjust. Offer to chat through ideas instead.",
+    "Changes to their plan happen in the Week tab: tap the swap icon next to any meal for another one that fits. Explain that briefly. Don't claim you changed anything.",
   shopping_list:
-    "Shopping lists aren't available yet. You may suggest a short list of staples in plain text, but say it's not saved.",
+    "Their shopping list is built from their weekly plan, in the Week tab under Shopping list, grouped by aisle with estimated prices. If they have no plan yet, they can say \"plan my week\". Don't write out a list yourself.",
   set_habit:
     "Habit tracking isn't available yet. Talk through the habit they want, but don't claim you set it up.",
 }

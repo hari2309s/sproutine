@@ -25,11 +25,15 @@ import {
   SAFE_RESPONSES,
   SAFETY_MAX_CHARS,
   parseMeal,
+  parsePlanRequest,
 } from '@sproutine/ai'
 import {
+  generatePlan,
+  isSafePlan,
   mealSlotAt,
   proposalWithoutNutrients,
   proposeMealLog,
+  validatePlan,
   type MealLogProposal,
 } from '@sproutine/food'
 import {
@@ -37,12 +41,15 @@ import {
   createServerClient,
   getProfile,
   loadRecentMessages,
+  saveActivePlan,
   saveMessage,
   type StoredMessage,
 } from '@sproutine/db'
 import { requireUser } from '@/lib/supabase-server'
 import { signTrace } from '@/lib/feedbackToken'
 import { foodExternalLimiter } from '@/lib/foodLimits'
+import { toPlanProfile } from '@/lib/planProfile'
+import { summarisePlan, weekToPlan, type MealPlanSummary } from '@/lib/planSummary'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -120,11 +127,11 @@ async function enableSafetyMode(db: ReturnType<typeof createServerClient>, userI
  * Streams a fixed, pre-written reply — safety responses and the meal card's
  * caption, never model output. A meal proposal rides along as a data part.
  */
-function templatedResponse(
-  text: string,
-  metadata: Record<string, unknown>,
-  mealLog?: MealLogProposal
-) {
+type CardPart =
+  | { type: 'data-meal-log'; data: MealLogProposal }
+  | { type: 'data-meal-plan'; data: MealPlanSummary }
+
+function templatedResponse(text: string, metadata: Record<string, unknown>, card?: CardPart) {
   const stream = createUIMessageStream({
     execute: ({ writer }) => {
       const id = generateId()
@@ -132,7 +139,7 @@ function templatedResponse(
       writer.write({ type: 'text-start', id })
       writer.write({ type: 'text-delta', id, delta: text })
       writer.write({ type: 'text-end', id })
-      if (mealLog) writer.write({ type: 'data-meal-log', data: mealLog })
+      if (card) writer.write(card)
       writer.write({ type: 'finish' })
     },
   })
@@ -140,6 +147,8 @@ function templatedResponse(
 }
 
 const MEAL_CARD_TEXT = "Here's what I found. Check the amounts, then save it."
+const PLAN_CARD_TEXT =
+  "Here's your week. These are the dinners; the Week tab has every meal, swaps and your shopping list."
 // External food lookups stop after this long so the turn (safety, intent,
 // parsing, lookups) stays inside maxDuration even when OFF is slow. Items
 // after the cut-off are matched from the cache only.
@@ -303,6 +312,57 @@ export async function POST(request: NextRequest) {
               // and nutrients are code. Nothing is saved until the user
               // confirms the card. If no food could be matched, Rosie answers
               // normally and asks for more detail.
+              // Weekly plan: the model only reads wishes ("quick", "no pasta");
+              // the planner (code) picks dishes that fit the profile.
+              if (intent.intent === 'plan_week') {
+                const planned = await startActiveObservation('plan-week', async (span) => {
+                  span.update({ input: message })
+                  try {
+                    const prefs = await parsePlanRequest(message, meta)
+                    const { weekStart, fromDate, nextWeek } = weekToPlan()
+                    const planProfile = toPlanProfile(profile)
+                    const { plan, issues } = generatePlan(planProfile, {
+                      weekStart,
+                      fromDate,
+                      prefs,
+                      seed: Math.floor(Math.random() * 2 ** 31),
+                    })
+                    if (!isSafePlan(validatePlan(plan, planProfile))) throw new Error('unsafe plan')
+                    await saveActivePlan(db, user.id, plan, prefs)
+                    const summary = summarisePlan(plan, issues, nextWeek)
+                    span.update({
+                      output: { weekStart, prefs, dinners: summary.dinners.length, issues },
+                    })
+                    return summary
+                  } catch (e) {
+                    span.update({ level: 'WARNING', statusMessage: String(e) })
+                    return null
+                  }
+                })
+                if (planned) {
+                  endTurn({ output: PLAN_CARD_TEXT, metadata: { planWeek: planned.weekStart } })
+                  // History keeps a plain record; the card itself isn't stored.
+                  pendingWrites.push(
+                    saveMessage(db, user.id, {
+                      role: 'assistant',
+                      content: `I planned your week of ${planned.weekStart}. Dinners: ${planned.dinners
+                        .map((d) => d.name)
+                        .join(', ')}.`,
+                    })
+                  )
+                  return templatedResponse(
+                    PLAN_CARD_TEXT,
+                    {
+                      traceId: turn.traceId,
+                      feedbackToken: signTrace(turn.traceId, profile.llmPseudonym),
+                      speechTone: 'neutral' satisfies SpeechTone,
+                      createdAt: new Date().toISOString(),
+                    },
+                    { type: 'data-meal-plan', data: planned }
+                  )
+                }
+              }
+
               if (intent.intent === 'log_meal') {
                 const proposal = await startActiveObservation('propose-meal-log', async (span) => {
                   span.update({ input: message })
@@ -352,7 +412,10 @@ export async function POST(request: NextRequest) {
                       speechTone: 'neutral' satisfies SpeechTone,
                       createdAt: new Date().toISOString(),
                     },
-                    profile.safetyMode ? proposalWithoutNutrients(proposal) : proposal
+                    {
+                      type: 'data-meal-log',
+                      data: profile.safetyMode ? proposalWithoutNutrients(proposal) : proposal,
+                    }
                   )
                 }
               }

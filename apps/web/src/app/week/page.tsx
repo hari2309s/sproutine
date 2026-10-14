@@ -1,13 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { WeekPage } from '@/components/WeekPage'
 import { LoadingScreen } from '@/components/LoadingScreen'
 
-export default function Week() {
+function Week() {
   const router = useRouter()
+  const startNextWeek = useSearchParams().get('week') === 'next'
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -18,5 +19,13 @@ export default function Week() {
   }, [router])
 
   if (!userId) return <LoadingScreen />
-  return <WeekPage userId={userId} />
+  return <WeekPage userId={userId} startNextWeek={startNextWeek} />
+}
+
+export default function WeekRoute() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <Week />
+    </Suspense>
+  )
 }

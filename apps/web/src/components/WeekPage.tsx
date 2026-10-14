@@ -66,10 +66,16 @@ function useTicked(planId: string | undefined) {
   return { ticked, toggle }
 }
 
-export function WeekPage({ userId }: { userId: string }) {
+export function WeekPage({
+  userId,
+  startNextWeek = false,
+}: {
+  userId: string
+  startNextWeek?: boolean
+}) {
   const { t, locale } = useLanguage()
   const thisWeek = weekStartOf(new Date())
-  const [week, setWeek] = useState(thisWeek)
+  const [week, setWeek] = useState(() => (startNextWeek ? addWeeks(thisWeek, 1) : thisWeek))
   const [tab, setTab] = useState<'meals' | 'shopping'>('meals')
   const [stored, setStored] = useState<StoredPlan | null | undefined>(undefined)
   const [issues, setIssues] = useState<PlanIssue[]>([])
@@ -131,7 +137,7 @@ export function WeekPage({ userId }: { userId: string }) {
       setTab('meals')
     } catch (e) {
       console.warn('[week] plan failed:', e)
-      setNotice(t.week.planFailed)
+      if (weekRef.current === forWeek) setNotice(t.week.planFailed)
     } finally {
       setBusy(null)
     }
@@ -160,7 +166,7 @@ export function WeekPage({ userId }: { userId: string }) {
       if (weekRef.current === forWeek) setStored(updated)
     } catch (e) {
       console.warn('[week] swap failed:', e)
-      setNotice(t.week.swapFailed)
+      if (weekRef.current === forWeek) setNotice(t.week.swapFailed)
     } finally {
       setBusy(null)
     }

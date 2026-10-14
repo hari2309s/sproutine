@@ -6,6 +6,7 @@ import { useRef, useEffect, useCallback } from 'react'
 import { usePersistedPreference } from './usePersistedPreference'
 import { useTextToSpeech, type SpeechTone } from './useTextToSpeech'
 import type { MealLogProposal } from '@sproutine/food/client'
+import type { MealPlanSummary } from '@/lib/planSummary'
 
 // Metadata the chat route attaches to each assistant message (see chat/route.ts).
 export type ChatMetadata = {
@@ -24,12 +25,19 @@ export type ChatMetadata = {
 export type ChatDataParts = {
   /** A meal to confirm; rendered as a MealLogCard. */
   'meal-log': MealLogProposal
+  /** A new weekly plan; rendered as a MealPlanCard. */
+  'meal-plan': MealPlanSummary
 }
 
 export type SproutineUIMessage = UIMessage<ChatMetadata, ChatDataParts>
 
 export function mealProposalOf(m: SproutineUIMessage): MealLogProposal | null {
   for (const p of m.parts) if (p.type === 'data-meal-log') return p.data
+  return null
+}
+
+export function planSummaryOf(m: SproutineUIMessage): MealPlanSummary | null {
+  for (const p of m.parts) if (p.type === 'data-meal-plan') return p.data
   return null
 }
 
