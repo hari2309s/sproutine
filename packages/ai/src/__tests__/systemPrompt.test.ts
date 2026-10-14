@@ -48,7 +48,7 @@ describe('buildSystemPrompt', () => {
   })
 
   it('tells the model not to claim features that are not built yet', () => {
-    expect(buildSystemPrompt({ ...base, intent: 'log_meal' })).toContain("isn't switched on yet")
+    expect(buildSystemPrompt({ ...base, intent: 'log_meal' })).toContain('Never claim you saved it')
     expect(buildSystemPrompt(base)).not.toContain('What you can do right now')
   })
 })

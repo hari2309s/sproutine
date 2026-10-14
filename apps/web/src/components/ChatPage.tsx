@@ -4,10 +4,11 @@ import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { staggerItemVariants, staggerListVariants } from '@/lib/motion'
-import { useSproutineChat, type SproutineUIMessage } from '@/hooks/useSproutineChat'
+import { mealProposalOf, useSproutineChat, type SproutineUIMessage } from '@/hooks/useSproutineChat'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
 import { ChatBubble } from './ChatBubble'
 import { SafetyCard } from './SafetyCard'
+import { MealLogCard, type SavedMeal } from './MealLogCard'
 import { VoiceDock, type VoiceButtonStatus } from './VoiceButton'
 import { AppColumn } from './AppColumn'
 import { BottomNav } from './BottomNav'
@@ -21,9 +22,11 @@ const SUGGESTION_ICONS: IconName[] = ['restaurant', 'calendar_view_week', 'nutri
 interface ChatPageProps {
   userId: string
   initialMessages: SproutineUIMessage[]
+  /** Gentle mode: meal cards show no numbers. */
+  safetyMode: boolean
 }
 
-export function ChatPage({ userId, initialMessages }: ChatPageProps) {
+export function ChatPage({ userId, initialMessages, safetyMode }: ChatPageProps) {
   const { t, locale } = useLanguage()
   const chat = useSproutineChat(userId, initialMessages, locale)
   const voice = useVoiceRecorder()
@@ -35,6 +38,18 @@ export function ChatPage({ userId, initialMessages }: ChatPageProps) {
   // anything that depends on the hook's messages/status.
   const [input, setInput] = useState('')
   const sendText = chat.sendText
+  const startVoice = chat.startVoice
+  const saveAssistantNote = chat.saveAssistantNote
+
+  // Keeps a record in history once a meal is saved (the card itself isn't
+  // persisted, so a reload shows this line instead).
+  const handleMealSaved = useCallback(
+    ({ slot, names }: SavedMeal) => {
+      const where = t.meal.savedTo.replace('{slot}', t.meal.slots[slot].toLowerCase())
+      void saveAssistantNote(`${where}: ${names.join(', ')}.`)
+    },
+    [saveAssistantNote, t]
+  )
 
   const status: VoiceButtonStatus = voice.isRecording
     ? 'recording'
@@ -66,11 +81,14 @@ export function ChatPage({ userId, initialMessages }: ChatPageProps) {
   useEffect(() => {
     if (voice.transcript && voice.transcript !== processedTranscriptRef.current) {
       processedTranscriptRef.current = voice.transcript
-      sendText(voice.transcript)
+      startVoice(voice.transcript)
     }
-  }, [voice.transcript, sendText])
+  }, [voice.transcript, startVoice])
 
   const lastAssistantId = [...chat.messages].reverse().find((m) => m.role === 'assistant')?.id
+  // An eating-disorder signal this session turns gentle mode on server-side;
+  // honour it straight away rather than after a reload.
+  const gentle = safetyMode || chat.messages.some((m) => m.metadata?.safety === 'ed_risk')
   const isEmpty = chat.messages.length === 0
 
   return (
@@ -158,6 +176,26 @@ export function ChatPage({ userId, initialMessages }: ChatPageProps) {
 
             if (message.role === 'assistant' && safety) {
               return <SafetyCard key={message.id} category={safety} />
+            }
+
+            const mealProposal = message.role === 'assistant' ? mealProposalOf(message) : null
+            if (mealProposal) {
+              return (
+                <div key={message.id} className="flex flex-col gap-2">
+                  <ChatBubble
+                    role="assistant"
+                    content={clean}
+                    timestamp={message.metadata?.createdAt}
+                    speaking={chat.isSpeaking && message.id === lastAssistantId}
+                  />
+                  <MealLogCard
+                    proposal={mealProposal}
+                    safetyMode={gentle}
+                    traceId={message.metadata?.traceId}
+                    onSaved={handleMealSaved}
+                  />
+                </div>
+              )
             }
 
             return (

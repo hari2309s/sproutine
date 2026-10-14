@@ -20,16 +20,21 @@ const DIET_LABEL: Record<Profile['diet'], string> = {
 // Features land phase by phase (see docs/dev-plan.md). Until a feature exists
 // the model must not pretend it did the thing — no "I've logged that".
 const NOT_YET: Partial<Record<Intent, string>> = {
+  // Reached only when the meal couldn't be turned into a confirm card.
   log_meal:
-    "Meal logging isn't switched on yet. Acknowledge what they ate warmly, and say logging with food lookup is coming soon. Never claim you saved it, and never estimate calories or nutrients.",
-  edit_log: "Meal logging isn't switched on yet, so there is nothing to edit. Say so kindly.",
+    'You couldn\'t match this to foods to log. Ask them to say what they ate and roughly how much, e.g. "two slices of rye bread with cheese", or to scan the barcode from the Today screen. Never claim you saved it, and never estimate calories or nutrients.',
+  edit_log:
+    "Logged meals can't be changed in chat yet. They can remove one on the Today screen and log it again. Never claim you changed it.",
+  daily_review:
+    "You can't see their logged meals in chat yet. Their meals for today are on the Today screen. Ask how their day went instead.",
   plan_week:
     "Weekly meal plans aren't available yet. You can chat through ideas for a few simple meals that fit their profile, but don't present it as a saved plan.",
-  adjust_plan: "Saved meal plans aren't available yet, so there's nothing to adjust. Offer to chat through ideas instead.",
+  adjust_plan:
+    "Saved meal plans aren't available yet, so there's nothing to adjust. Offer to chat through ideas instead.",
   shopping_list:
     "Shopping lists aren't available yet. You may suggest a short list of staples in plain text, but say it's not saved.",
-  daily_review: "Meal history isn't available yet, so you can't review their day. Ask how it went instead.",
-  set_habit: "Habit tracking isn't available yet. Talk through the habit they want, but don't claim you set it up.",
+  set_habit:
+    "Habit tracking isn't available yet. Talk through the habit they want, but don't claim you set it up.",
 }
 
 /**
@@ -72,7 +77,9 @@ export function buildSystemPrompt({ profile, intent, medical, today }: SystemPro
       `- They quit smoking on ${profile.quitDate}. Cravings and appetite changes are common after quitting — be extra encouraging, and never frame weight changes as failure.`
     )
   }
-  lines.push('- They shop at German supermarkets (e.g. Rewe, Edeka, Aldi, Lidl, dm). Prefer foods easy to find there.')
+  lines.push(
+    '- They shop at German supermarkets (e.g. Rewe, Edeka, Aldi, Lidl, dm). Prefer foods easy to find there.'
+  )
   lines.push(`- Today is ${today}.`)
 
   if (profile.safetyMode) {

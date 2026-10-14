@@ -26,6 +26,7 @@
     "@opentelemetry/exporter-trace-otlp-http": "^0.223.0",
     "@opentelemetry/sdk-node": "^0.223.0",
     "@opentelemetry/sdk-trace-base": "^2.12.0",
+    "@sproutine/food": "workspace:*",
     "@sproutine/types": "workspace:*",
     "@supabase/supabase-js": "^2.117.3",
     "ai": "^7.0.137",

@@ -35,6 +35,7 @@ export const ICONS = [
   'play_arrow',
   'refresh',
   'restaurant',
+  'search_off',
   'shopping_basket',
   'spa',
   'stop',

@@ -24,10 +24,13 @@ import {
   consumeUserQuota,
   SAFE_RESPONSES,
   SAFETY_MAX_CHARS,
+  parseMeal,
 } from '@sproutine/ai'
-import { createServerClient, getProfile } from '@sproutine/db'
+import { mealSlotAt, proposeMealLog, type MealLogProposal } from '@sproutine/food'
+import { createFoodCache, createServerClient, getProfile } from '@sproutine/db'
 import { requireUser } from '@/lib/supabase-server'
 import { signTrace } from '@/lib/feedbackToken'
+import { foodExternalLimiter } from '@/lib/foodLimits'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -101,8 +104,15 @@ async function enableSafetyMode(db: ReturnType<typeof createServerClient>, userI
   if (error) console.error('[chat] failed to enable safety mode:', error.message)
 }
 
-/** Streams a fixed, pre-written reply — used for safety responses, never model output. */
-function templatedResponse(text: string, metadata: Record<string, unknown>) {
+/**
+ * Streams a fixed, pre-written reply — safety responses and the meal card's
+ * caption, never model output. A meal proposal rides along as a data part.
+ */
+function templatedResponse(
+  text: string,
+  metadata: Record<string, unknown>,
+  mealLog?: MealLogProposal
+) {
   const stream = createUIMessageStream({
     execute: ({ writer }) => {
       const id = generateId()
@@ -110,11 +120,14 @@ function templatedResponse(text: string, metadata: Record<string, unknown>) {
       writer.write({ type: 'text-start', id })
       writer.write({ type: 'text-delta', id, delta: text })
       writer.write({ type: 'text-end', id })
+      if (mealLog) writer.write({ type: 'data-meal-log', data: mealLog })
       writer.write({ type: 'finish' })
     },
   })
   return createUIMessageStreamResponse({ stream })
 }
+
+const MEAL_CARD_TEXT = "Here's what I found. Check the amounts, then save it."
 
 export async function POST(request: NextRequest) {
   try {
@@ -124,7 +137,9 @@ export async function POST(request: NextRequest) {
     const { messages: clientMessages } = (await request.json()) as { messages?: UIMessage[] }
     if (!Array.isArray(clientMessages)) return json({ error: 'messages required' }, 400)
 
-    const message = textOf([...clientMessages].reverse().find((m) => m.role === 'user')).trim()
+    const lastUser = [...clientMessages].reverse().find((m) => m.role === 'user')
+    const message = textOf(lastUser).trim()
+    const viaVoice = (lastUser?.metadata as { viaVoice?: unknown } | undefined)?.viaVoice === true
     if (!message) return json({ error: 'message required' }, 400)
     if (message.length > MAX_MESSAGE_CHARS) return json({ error: 'message too long' }, 413)
 
@@ -230,6 +245,60 @@ export async function POST(request: NextRequest) {
                   speechTone: 'reassuring' satisfies SpeechTone,
                   createdAt: new Date().toISOString(),
                 })
+              }
+
+              // Meal logging: the model only lists the foods; matching, grams
+              // and nutrients are code. Nothing is saved until the user
+              // confirms the card. If no food could be matched, Rosie answers
+              // normally and asks for more detail.
+              if (intent.intent === 'log_meal') {
+                const proposal = await startActiveObservation('propose-meal-log', async (span) => {
+                  span.update({ input: message })
+                  try {
+                    const parsed = await parseMeal(message, meta)
+                    if (!parsed?.items.length) {
+                      span.update({ output: null, metadata: { reason: 'no items parsed' } })
+                      return null
+                    }
+                    const result = await proposeMealLog(
+                      {
+                        slot: parsed.slot ?? mealSlotAt(new Date()),
+                        source: viaVoice ? 'voice' : 'text',
+                        items: parsed.items,
+                      },
+                      createFoodCache(db, user.id),
+                      { canCallExternal: () => foodExternalLimiter.tryAcquire(user.id) }
+                    )
+                    span.update({
+                      output: result.items.map((i) => ({
+                        query: i.query,
+                        match: i.match ? `${i.match.source}:${i.match.sourceId}` : null,
+                        grams: i.grams,
+                        basis: i.portion.basis,
+                      })),
+                    })
+                    return result.items.some((i) => i.match) ? result : null
+                  } catch (e) {
+                    span.update({ level: 'WARNING', statusMessage: String(e) })
+                    return null
+                  }
+                })
+                if (proposal) {
+                  endTurn({
+                    output: MEAL_CARD_TEXT,
+                    metadata: { mealItems: proposal.items.length },
+                  })
+                  return templatedResponse(
+                    MEAL_CARD_TEXT,
+                    {
+                      traceId: turn.traceId,
+                      feedbackToken: signTrace(turn.traceId, profile.llmPseudonym),
+                      speechTone: 'neutral' satisfies SpeechTone,
+                      createdAt: new Date().toISOString(),
+                    },
+                    proposal
+                  )
+                }
               }
 
               const instructions = buildSystemPrompt({

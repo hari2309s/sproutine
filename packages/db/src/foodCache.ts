@@ -4,7 +4,7 @@ import type { createServerClient } from './client'
 
 type Db = ReturnType<typeof createServerClient>
 
-interface FoodRow {
+export interface FoodRow {
   source: FoodRecord['source']
   source_id: string
   barcode: string | null
@@ -20,7 +20,7 @@ interface FoodRow {
   quality: FoodRecord['quality']
 }
 
-const COLUMNS =
+export const FOOD_COLUMNS =
   'source, source_id, barcode, name, name_de, brand, per_100g, estimated_nutrients, allergens_known, allergens, traces, serving_g, quality'
 
 export function rowToFood(r: FoodRow): FoodRecord {
@@ -70,7 +70,7 @@ export function createFoodCache(db: Db, userId?: string): FoodCache {
     async findByBarcode(barcode) {
       const { data, error } = await db
         .from('foods')
-        .select(COLUMNS)
+        .select(FOOD_COLUMNS)
         .eq('barcode', barcode)
         .neq('source', 'user')
         .limit(1)

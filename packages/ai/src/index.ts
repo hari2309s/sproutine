@@ -17,3 +17,4 @@ export {
 export type { ModelCandidate } from './router'
 export { logEval, incrementUsage, getGlobalUsage, consumeUserQuota } from './eval'
 export type { Provider, TaskType, EvalLogEntry } from './types'
+export { parseMeal, normalizeParsedMeal, ParsedMealSchema } from './mealParse'

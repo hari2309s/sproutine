@@ -1,6 +1,7 @@
 import type { Allergen, Diet } from '@sproutine/types'
 import type { VoiceId } from './voices'
 import type { Theme } from '@/hooks/useTheme'
+import type { MealSlot } from '@sproutine/food'
 
 export type Locale = 'en'
 
@@ -178,6 +179,33 @@ export interface Translations {
     lookUp: string
     tellRosie: string
     cameraUnavailable: string
+  }
+  meal: {
+    slots: Record<MealSlot, string>
+    mealLabel: string
+    gramsOf: string
+    remove: string
+    notThisOne: string
+    notFound: string
+    total: string
+    atLeast: string
+    kcal: string
+    protein: string
+    carbs: string
+    fat: string
+    estimateNote: string
+    save: string
+    saving: string
+    notNow: string
+    savedTo: string
+    notSaved: string
+    saveFailed: string
+    lookupFailed: string
+    notFoundBarcode: string
+    scanAction: string
+    mealsToday: string
+    removeMeal: string
+    removeFailed: string
   }
   states: {
     loading: string
@@ -430,6 +458,33 @@ export const translations: Record<Locale, Translations> = {
       lookUp: 'Look up',
       tellRosie: 'Or just tell Rosie what it is',
       cameraUnavailable: "I can't use the camera here. You can type the barcode instead.",
+    },
+    meal: {
+      slots: { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' },
+      mealLabel: 'Which meal',
+      gramsOf: 'Grams of',
+      remove: 'Remove',
+      notThisOne: 'Not this one?',
+      notFound: "Couldn't find “{name}”. Try saying it differently, or scan the pack.",
+      total: 'Total',
+      atLeast: 'at least',
+      kcal: 'kcal',
+      protein: 'protein',
+      carbs: 'carbs',
+      fat: 'fat',
+      estimateNote: 'Amounts are my best guess. Change them if you know better.',
+      save: 'Save',
+      saving: 'Saving…',
+      notNow: 'Not now',
+      savedTo: 'Saved to {slot}',
+      notSaved: 'Not saved',
+      saveFailed: "Couldn't save that. Please try again.",
+      lookupFailed: "Couldn't look that up right now. Please try again in a moment.",
+      notFoundBarcode: "I don't know this product yet. Tell Rosie what it is instead.",
+      scanAction: 'Scan',
+      mealsToday: 'Today',
+      removeMeal: 'Remove this meal',
+      removeFailed: "Couldn't remove that. Please try again.",
     },
     states: {
       loading: 'Setting the table…',

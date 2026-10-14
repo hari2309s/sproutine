@@ -34,3 +34,21 @@ export {
   createKeyedRateLimiter,
   createTtlSet,
 } from './rateLimit'
+export {
+  MEAL_SLOTS,
+  MEAL_SOURCES,
+  MAX_MEAL_ITEMS,
+  MAX_ITEM_GRAMS,
+  mealSlotAt,
+  proposeMealLog,
+  buildMealLog,
+} from './meal'
+export type {
+  MealSlot,
+  MealSource,
+  ParsedMealItem,
+  ProposedItem,
+  MealLogProposal,
+  LoggedItem,
+  MealLogRecord,
+} from './meal'

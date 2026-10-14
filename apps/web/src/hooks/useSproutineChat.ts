@@ -6,6 +6,7 @@ import { useRef, useEffect, useCallback } from 'react'
 import { usePersistedPreference } from './usePersistedPreference'
 import { useTextToSpeech, type SpeechTone } from './useTextToSpeech'
 import { supabase } from '@/lib/supabase'
+import type { MealLogProposal } from '@sproutine/food'
 
 // Metadata the chat route attaches to each assistant message (see chat/route.ts).
 export type ChatMetadata = {
@@ -17,14 +18,28 @@ export type ChatMetadata = {
   createdAt?: string
   /** Set on templated safety replies; the UI shows a safety card. */
   safety?: 'crisis' | 'ed_risk'
+  /** On user messages that came from the mic (meal logs record the source). */
+  viaVoice?: boolean
 }
 
-export type SproutineUIMessage = UIMessage<ChatMetadata>
+export type ChatDataParts = {
+  /** A meal to confirm; rendered as a MealLogCard. */
+  'meal-log': MealLogProposal
+}
+
+export type SproutineUIMessage = UIMessage<ChatMetadata, ChatDataParts>
+
+export function mealProposalOf(m: SproutineUIMessage): MealLogProposal | null {
+  for (const p of m.parts) if (p.type === 'data-meal-log') return p.data
+  return null
+}
 
 /** Concatenate the text parts of a UI message (v5 messages have no `content`). */
 export function messageText(m: SproutineUIMessage): string {
   return m.parts
-    .filter((p): p is { type: 'text'; text: string; state?: 'streaming' | 'done' } => p.type === 'text')
+    .filter(
+      (p): p is { type: 'text'; text: string; state?: 'streaming' | 'done' } => p.type === 'text'
+    )
     .map((p) => p.text)
     .join('')
 }
@@ -75,8 +90,9 @@ export function useSproutineChat(
       }
 
       // Skip saving empty (tool-only) responses and aborted/errored streams.
-      // Card components persist their own acknowledgement messages to Supabase.
-      if (isAbort || isError || !text.trim()) return
+      // Card components persist their own acknowledgement messages to Supabase,
+      // so a meal card's caption isn't saved (a reload can't show the card).
+      if (isAbort || isError || !text.trim() || mealProposalOf(message)) return
 
       // supabase-js reports failures in `error`; it only throws on network faults.
       const { error } = await supabase.from('chat_messages').insert({
@@ -104,7 +120,7 @@ export function useSproutineChat(
   // Stable identity (userId/chat.sendMessage rarely change) so consumers can
   // safely depend on it without re-running effects on every render.
   const sendText = useCallback(
-    (text: string) => {
+    (text: string, opts: { viaVoice?: boolean } = {}) => {
       const trimmed = text.trim()
       if (!trimmed) return
       // Persist in the background — don't block the send on a DB round-trip.
@@ -112,12 +128,29 @@ export function useSproutineChat(
       // Stamp the user message locally so the bubble shows a time immediately —
       // otherwise the timestamp only appears after a refresh reloads it from the DB
       // (the server only attaches `createdAt` to assistant messages).
-      sendMessage({ text: trimmed, metadata: { createdAt: new Date().toISOString() } })
+      sendMessage({
+        text: trimmed,
+        metadata: {
+          createdAt: new Date().toISOString(),
+          ...(opts.viaVoice ? { viaVoice: true } : {}),
+        },
+      })
     },
     [saveUserMessage, sendMessage]
   )
 
-  const startVoice = sendText
+  const startVoice = useCallback((text: string) => sendText(text, { viaVoice: true }), [sendText])
+
+  /** Records a short assistant note in history, e.g. after a meal card is saved. */
+  const saveAssistantNote = useCallback(
+    async (content: string) => {
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({ user_id: userId, role: 'assistant', content })
+      if (error) console.warn('Failed to save note:', error.message)
+    },
+    [userId]
+  )
 
   const isLoading = chat.status === 'submitted' || chat.status === 'streaming'
 
@@ -125,6 +158,7 @@ export function useSproutineChat(
     ...chat,
     messageText,
     sendText,
+    saveAssistantNote,
     isLoading,
     isSpeaking,
     cancelSpeech: cancel,

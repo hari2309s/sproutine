@@ -10,7 +10,10 @@ import { LoadingScreen } from '@/components/LoadingScreen'
 export default function Chat() {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null | undefined>(undefined)
-  const [initialMessages, setInitialMessages] = useState<SproutineUIMessage[] | undefined>(undefined)
+  const [initialMessages, setInitialMessages] = useState<SproutineUIMessage[] | undefined>(
+    undefined
+  )
+  const [safetyMode, setSafetyMode] = useState<boolean | undefined>(undefined)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -42,12 +45,19 @@ export default function Chat() {
             metadata: {
               createdAt: row.created_at as string,
               proactive: Boolean(row.is_proactive),
-              safety:
-                row.safety === 'crisis' || row.safety === 'ed_risk' ? row.safety : undefined,
+              safety: row.safety === 'crisis' || row.safety === 'ed_risk' ? row.safety : undefined,
             },
           }))
         )
       })
+
+    supabase
+      .from('profiles')
+      .select('safety_mode')
+      .eq('user_id', userId)
+      .maybeSingle()
+      // If the flag can't be read, err on the gentle side: no numbers.
+      .then(({ data, error }) => setSafetyMode(error ? true : Boolean(data?.safety_mode)))
 
     // Mark all unread proactive messages as read
     supabase
@@ -61,7 +71,9 @@ export default function Chat() {
 
   // Wait for both auth and history before mounting ChatPage so useChat
   // receives a stable initialMessages and never resets mid-conversation.
-  if (!userId || initialMessages === undefined) return <LoadingScreen />
+  if (!userId || initialMessages === undefined || safetyMode === undefined) {
+    return <LoadingScreen />
+  }
 
-  return <ChatPage userId={userId} initialMessages={initialMessages} />
+  return <ChatPage userId={userId} initialMessages={initialMessages} safetyMode={safetyMode} />
 }
