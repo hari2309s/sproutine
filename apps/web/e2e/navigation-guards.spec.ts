@@ -24,6 +24,11 @@ test.describe('Navigation guards (unauthenticated)', () => {
     await expect(page).toHaveURL('/')
   })
 
+  test('/week redirects to / when not authenticated', async ({ page }) => {
+    await page.goto('/week')
+    await expect(page).toHaveURL('/')
+  })
+
   test('/ shows auth page when not authenticated', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByPlaceholder('you@example.com')).toBeVisible({ timeout: 10_000 })

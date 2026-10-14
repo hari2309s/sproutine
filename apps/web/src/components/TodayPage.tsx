@@ -23,7 +23,7 @@ import { MealLogCard } from './MealLogCard'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { supabase } from '@/lib/supabase'
 
-const UPCOMING_ICONS: IconName[] = ['calendar_view_week', 'shopping_basket', 'eco']
+const UPCOMING_ICONS: IconName[] = ['eco', 'spa']
 
 interface TodayLog {
   id: string

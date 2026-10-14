@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Icon, type IconName } from './Icon'
 
-type Tab = 'today' | 'chat'
+type Tab = 'today' | 'week' | 'chat'
 
 async function fetchUnreadCount(): Promise<number> {
   const {
@@ -36,12 +36,13 @@ export function BottomNav({ active }: { active: Tab }) {
 
   const tabs: { id: Tab; href: string; icon: IconName; label: string; badge?: number }[] = [
     { id: 'today', href: '/', icon: 'wb_sunny', label: t.nav.today },
+    { id: 'week', href: '/week', icon: 'calendar_view_week', label: t.nav.week },
     { id: 'chat', href: '/chat', icon: 'chat_bubble', label: t.nav.chat, badge: unreadCount },
   ]
 
   return (
     <nav className="safe-bottom shrink-0 border-t border-sproutine-border bg-sproutine-surface">
-      <div className="grid h-[72px] grid-cols-2">
+      <div className="grid h-[72px] grid-cols-3">
         {tabs.map((tab) => {
           const isActive = tab.id === active
           return (

@@ -94,6 +94,16 @@ describe('generatePlan', () => {
     expect(a.issues).toEqual([])
   })
 
+  it('leaves days before fromDate empty, for a week already under way', () => {
+    const { plan, shopping } = generatePlan(omni, { weekStart: WEEK, fromDate: '2026-10-21' })
+    expect(plan.days.slice(0, 2).every((d) => Object.keys(d.meals).length === 0)).toBe(true)
+    expect(
+      plan.days.slice(2).every((d) => d.meals.breakfast && d.meals.lunch && d.meals.dinner)
+    ).toBe(true)
+    const full = generatePlan(omni, { weekStart: WEEK }).shopping.totalCents
+    expect(shopping.totalCents).toBeLessThan(full)
+  })
+
   it('varies with the seed', () => {
     const seeds = [1, 2, 3, 4, 5].map((seed) =>
       JSON.stringify(generatePlan(omni, { weekStart: WEEK, seed }).plan)

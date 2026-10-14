@@ -118,7 +118,18 @@ export interface GeneratedPlan {
  */
 export function generatePlan(
   profile: PlanProfile,
-  { weekStart, prefs = {}, seed = 1 }: { weekStart: string; prefs?: PlanPreferences; seed?: number }
+  {
+    weekStart,
+    prefs = {},
+    seed = 1,
+    fromDate,
+  }: {
+    weekStart: string
+    prefs?: PlanPreferences
+    seed?: number
+    /** Plan from this day (YYYY-MM-DD) on; earlier days stay empty. For a week already under way. */
+    fromDate?: string
+  }
 ): GeneratedPlan {
   const random = rng(seed)
   const pools = {
@@ -152,6 +163,7 @@ export function generatePlan(
   }
 
   for (let d = 0; d < 7; d++) {
+    if (fromDate && days[d]!.date < fromDate) continue
     for (const slot of PLAN_SLOTS) {
       const kind = slotKind(slot)
       const pool = pools[kind]

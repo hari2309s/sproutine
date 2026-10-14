@@ -1,7 +1,7 @@
 import type { Allergen, Diet } from '@sproutine/types'
 import type { VoiceId } from './voices'
 import type { Theme } from '@/hooks/useTheme'
-import type { MealSlot } from '@sproutine/food/client'
+import type { Aisle, MealSlot, PlanSlot } from '@sproutine/food/client'
 
 export type Locale = 'en'
 
@@ -118,7 +118,39 @@ export interface Translations {
   }
   nav: {
     today: string
+    week: string
     chat: string
+  }
+  week: {
+    title: string
+    thisWeek: string
+    nextWeek: string
+    meals: string
+    shopping: string
+    emptyTitle: string
+    emptyBody: string
+    quickOnly: string
+    planWeek: string
+    planning: string
+    newPlan: string
+    newPlanConfirm: string
+    swap: (meal: string) => string
+    swapping: string
+    leftovers: string
+    minutes: (n: number) => string
+    ingredients: string
+    noRecipe: (slot: string) => string
+    overBudget: (cost: string, budget: string) => string
+    planFailed: string
+    swapFailed: string
+    nothingElse: string
+    planChanged: string
+    estimateTotal: (cost: string) => string
+    estimateNote: string
+    checkPantry: string
+    packs: (n: number, size: string) => string
+    aisles: Record<Aisle, string>
+    slots: Record<PlanSlot, string>
   }
   topBar: {
     settings: string
@@ -404,11 +436,55 @@ export const translations: Record<Locale, Translations> = {
       emptyBody: 'Tell Rosie what you had. A quick note or a voice message is plenty.',
       talkToRosie: 'Talk to Rosie',
       comingSoon: 'Coming soon',
-      upcoming: ['Weekly meal plan', 'Shopping lists for Rewe, Edeka, Aldi, Lidl', 'Gentle nudges'],
+      upcoming: ['Gentle nudges', 'Habits and streaks'],
     },
     nav: {
       today: 'Today',
+      week: 'Week',
       chat: 'Chat',
+    },
+    week: {
+      title: 'Your week',
+      thisWeek: 'This week',
+      nextWeek: 'Next week',
+      meals: 'Meals',
+      shopping: 'Shopping list',
+      emptyTitle: 'No plan yet',
+      emptyBody:
+        "I'll put together breakfasts, lunches and dinners that fit your diet, allergies and budget, from simple dishes you can shop for at Aldi, Lidl, Rewe or Edeka.",
+      quickOnly: 'Quick meals only (25 min or less)',
+      planWeek: 'Plan my week',
+      planning: 'Planning…',
+      newPlan: 'New plan',
+      newPlanConfirm: 'Replace this week with a fresh plan?',
+      swap: (meal) => `Swap ${meal}`,
+      swapping: 'Swapping…',
+      leftovers: 'Leftovers',
+      minutes: (n) => `${n} min`,
+      ingredients: 'For one',
+      noRecipe: (slot) => `I couldn't find a ${slot} that fits everything you told me. Tell Rosie what you like and I'll learn.`,
+      overBudget: (cost, budget) => `This week comes to about ${cost}, a little over your ${budget} budget.`,
+      planFailed: "I couldn't make a plan just now. Please try again.",
+      swapFailed: "I couldn't swap that just now. Please try again.",
+      nothingElse: 'Nothing else fits that slot right now.',
+      planChanged: 'Your plan changed in another tab, so I reloaded it.',
+      estimateTotal: (cost) => `About ${cost}`,
+      estimateNote: 'Estimated discounter prices, for whole packs. Some will last beyond this week.',
+      checkPantry: 'Check you have',
+      packs: (n, size) => `${n} × ${size}`,
+      aisles: {
+        produce: 'Fruit and veg',
+        bakery: 'Bakery',
+        chilled: 'Chilled',
+        meat: 'Meat',
+        fish: 'Fish',
+        dry: 'Pasta, rice and grains',
+        tins: 'Tins and jars',
+        frozen: 'Frozen',
+        spreads: 'Spreads',
+        pantry: 'Pantry',
+      },
+      slots: { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner' },
     },
     topBar: {
       settings: 'Settings',
