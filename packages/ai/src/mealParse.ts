@@ -21,6 +21,7 @@ const UNITS = [
   'slice',
   'piece',
   'handful',
+  'bar',
   'portion',
 ] as const satisfies readonly NonNullable<ParsedMealItem['unit']>[]
 
@@ -44,7 +45,7 @@ Rules:
 - One item per distinct food or drink. Split combinations: "Brot mit Käse" is bread and cheese; "muesli with milk" is muesli and milk. Keep a dish whole when it is one dish ("Spaghetti Bolognese", "Döner", "Caesar salad").
 - name: the food as the person named it, in their language, singular, without the amount ("zwei Scheiben Vollkornbrot" → "Vollkornbrot"). Keep a brand if they said one.
 - quantity: the number they said ("zwei" → 2, "half" → 0.5, "a"/"ein" → 1). null if they gave no amount. Never guess a weight.
-- unit: only a unit they said, mapped to: g, kg, ml, l, tsp, tbsp, cup, glass, mug, bowl, plate, slice, piece, handful, portion ("Scheibe" → slice, "Stück" → piece, "Glas" → glass, "Tasse" → mug, "Schüssel"/"Schale" → bowl, "EL" → tbsp, "TL" → tsp). null if none.
+- unit: only a unit they said, mapped to: g, kg, ml, l, tsp, tbsp, cup, glass, mug, bowl, plate, slice, piece, handful, bar, portion ("Scheibe" → slice, "Stück" → piece, "Glas" → glass, "Tasse" → cup, "Becher" → mug for drinks and cup for yoghurt, "Schüssel"/"Schale" → bowl, "Teller" → plate, "Handvoll" → handful, "Tafel"/"Riegel" → bar, "EL" → tbsp, "TL" → tsp). null if none.
 - slot: breakfast, lunch, dinner or snack if they said which meal ("Frühstück" → breakfast, "Mittagessen" → lunch, "Abendessen" → dinner). null if they didn't.
 - Leave out foods they only plan to eat, didn't eat, or mention for another reason.
 - If they mention no food they consumed, return an empty items list.`

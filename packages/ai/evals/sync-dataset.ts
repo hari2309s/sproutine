@@ -32,7 +32,7 @@ async function run() {
     await langfuse.api.datasets.create({
       name: DATASET_NAME,
       description:
-        'Intent-routing and safety-gate cases (must-trigger and must-not-trigger). Source of truth: packages/ai/evals/dataset-items.ts.',
+        'Intent routing, safety gate (must-trigger and must-not-trigger) and meal logging cases. Source of truth: packages/ai/evals/dataset-items.ts and logging-items.ts.',
     })
     console.log(`Created dataset "${DATASET_NAME}"`)
   }

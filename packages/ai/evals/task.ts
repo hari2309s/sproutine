@@ -1,6 +1,8 @@
 import type { ExperimentTaskParams } from '@langfuse/client'
 import { routeIntent } from '../src/intent'
 import { classifySafety } from '../src/safety'
+import { parseMeal } from '../src/mealParse'
+import { estimatePortion } from '@sproutine/food'
 import type { EvalItemInput, EvalItemMetadata } from './dataset-items'
 
 // Dispatches a dataset item to the real production function it names.
@@ -16,5 +18,17 @@ export async function runAgentItem(
       return routeIntent(input.query)
     case 'safetyGate':
       return (await classifySafety(input.query)).category
+    case 'mealParser': {
+      // The same path as the chat route: parse, then grams in code.
+      const parsed = await parseMeal(input.query)
+      if (!parsed) return JSON.stringify({ failed: true })
+      return JSON.stringify({
+        slot: parsed.slot,
+        items: parsed.items.map((i) => ({
+          name: i.name,
+          grams: estimatePortion(i.name, i.quantity, i.unit).grams,
+        })),
+      })
+    }
   }
 }

@@ -20,6 +20,8 @@ import {
   avgSafetyRecall,
   avgSafetyExactMatch,
   avgSafetyFalsePositive,
+  mealParseMatch,
+  avgMealParseAccuracy,
 } from './evaluators'
 
 const DATASET_NAME = 'agent-golden'
@@ -39,8 +41,14 @@ async function run() {
       name: 'Local golden run',
       description: 'Manual run via pnpm eval',
       task: runAgentItem,
-      evaluators: [intentExactMatch, safetyMatch],
-      runEvaluators: [avgIntentAccuracy, avgSafetyRecall, avgSafetyExactMatch, avgSafetyFalsePositive],
+      evaluators: [intentExactMatch, safetyMatch, mealParseMatch],
+      runEvaluators: [
+        avgIntentAccuracy,
+        avgSafetyRecall,
+        avgSafetyExactMatch,
+        avgSafetyFalsePositive,
+        avgMealParseAccuracy,
+      ],
       maxConcurrency: 2, // stay well under free-tier per-minute limits
     })
 

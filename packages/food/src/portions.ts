@@ -22,6 +22,7 @@ export type PortionUnit =
   | 'slice'
   | 'piece'
   | 'handful'
+  | 'bar'
   | 'portion'
 
 export interface PortionEstimate {
@@ -44,6 +45,7 @@ const GENERIC_UNITS: Partial<Record<PortionUnit, number>> = {
   bowl: 250,
   plate: 350,
   handful: 30,
+  bar: 50,
   slice: 30,
   piece: 100,
   portion: 150,
@@ -72,7 +74,11 @@ export const FOOD_PORTIONS: FoodPortion[] = [
     units: { piece: 60 },
     default: 60,
   },
-  { match: ['brezel', 'breze', 'pretzel'], units: { piece: 85 }, default: 85 },
+  {
+    match: ['brezel', 'brezeln', 'breze', 'pretzel', 'pretzels'],
+    units: { piece: 85 },
+    default: 85,
+  },
   { match: ['croissant'], units: { piece: 60 }, default: 60 },
   { match: ['bagel'], units: { piece: 90 }, default: 90 },
   { match: ['baguette'], units: { slice: 30, piece: 250 }, default: 60 },
@@ -92,6 +98,11 @@ export const FOOD_PORTIONS: FoodPortion[] = [
   },
   { match: ['kuchen', 'cake', 'torte'], units: { slice: 100, piece: 100 }, default: 100 },
   { match: ['muffin'], units: { piece: 80 }, default: 80 },
+  {
+    match: ['riegel', 'müsliriegel', 'granola bar', 'cereal bar', 'protein bar', 'energy bar'],
+    units: { piece: 30, bar: 30 },
+    default: 30,
+  },
   { match: ['keks', 'kekse', 'cookie', 'biscuit'], units: { piece: 12 }, default: 25 },
 
   // Breakfast
@@ -116,6 +127,27 @@ export const FOOD_PORTIONS: FoodPortion[] = [
     default: 20,
   },
   { match: ['butter', 'margarine'], units: { tsp: 5, tbsp: 14, portion: 10 }, default: 10 },
+  {
+    match: ['erdnussbutter', 'peanut butter', 'nussbutter', 'nut butter', 'mandelmus', 'tahini'],
+    units: { tsp: 7, tbsp: 16 },
+    default: 20,
+  },
+  { match: ['pesto'], units: { tsp: 5, tbsp: 15 }, default: 30 },
+  {
+    match: [
+      'soße',
+      'sosse',
+      'sauce',
+      'dressing',
+      'ketchup',
+      'mayo',
+      'mayonnaise',
+      'senf',
+      'mustard',
+    ],
+    units: { tsp: 5, tbsp: 15 },
+    default: 30,
+  },
 
   // Dairy
   {
@@ -138,11 +170,15 @@ export const FOOD_PORTIONS: FoodPortion[] = [
   { match: ['milch', 'milk'], units: { glass: 200, cup: 240, mug: 250, tbsp: 15 }, default: 200 },
 
   // Fruit
-  { match: ['banane', 'banana'], units: { piece: 120 }, default: 120 },
-  { match: ['apfel', 'äpfel', 'apple'], units: { piece: 180 }, default: 180 },
-  { match: ['birne', 'pear'], units: { piece: 180 }, default: 180 },
-  { match: ['orange', 'apfelsine'], units: { piece: 150 }, default: 150 },
-  { match: ['mandarine', 'clementine'], units: { piece: 70 }, default: 70 },
+  { match: ['banane', 'bananen', 'banana', 'bananas'], units: { piece: 120 }, default: 120 },
+  { match: ['apfel', 'äpfel', 'apple', 'apples'], units: { piece: 180 }, default: 180 },
+  { match: ['birne', 'birnen', 'pear', 'pears'], units: { piece: 180 }, default: 180 },
+  { match: ['orange', 'orangen', 'apfelsine', 'oranges'], units: { piece: 150 }, default: 150 },
+  {
+    match: ['mandarine', 'mandarinen', 'clementine', 'clementinen'],
+    units: { piece: 70 },
+    default: 70,
+  },
   { match: ['kiwi'], units: { piece: 75 }, default: 75 },
   {
     match: [
@@ -155,19 +191,24 @@ export const FOOD_PORTIONS: FoodPortion[] = [
       'himbeeren',
     ],
     units: { handful: 60, cup: 145, bowl: 150 },
-    default: 125,
+    // A topping-sized serving; a whole punnet is 250 g.
+    default: 100,
   },
   { match: ['trauben', 'grapes'], units: { handful: 80 }, default: 100 },
 
   // Vegetables
-  { match: ['tomate', 'tomato'], units: { piece: 100 }, default: 100 },
+  { match: ['tomate', 'tomaten', 'tomato', 'tomatoes'], units: { piece: 100 }, default: 100 },
   {
-    match: ['cherrytomate', 'cherry tomato', 'cherry tomatoes'],
+    match: ['cherrytomate', 'cherrytomaten', 'cherry tomato', 'cherry tomatoes'],
     units: { piece: 15, handful: 80 },
     default: 80,
   },
   { match: ['gurke', 'cucumber'], units: { slice: 10, piece: 300 }, default: 100 },
-  { match: ['karotte', 'möhre', 'mohrrübe', 'carrot'], units: { piece: 70 }, default: 70 },
+  {
+    match: ['karotte', 'karotten', 'möhre', 'möhren', 'mohrrübe', 'carrot', 'carrots'],
+    units: { piece: 70 },
+    default: 70,
+  },
   { match: ['paprika', 'bell pepper'], units: { piece: 160 }, default: 160 },
   { match: ['kartoffel', 'kartoffeln', 'potato', 'potatoes'], units: { piece: 100 }, default: 200 },
   { match: ['salat', 'salad'], units: { bowl: 150, plate: 200, portion: 150 }, default: 150 },
@@ -220,7 +261,7 @@ export const FOOD_PORTIONS: FoodPortion[] = [
   },
   {
     match: ['schokolade', 'chocolate'],
-    units: { piece: 6, slice: 6, portion: 25 },
+    units: { piece: 6, slice: 6, bar: 100, portion: 25 },
     default: 25,
     countsServings: true,
   },
@@ -243,22 +284,26 @@ export const FOOD_PORTIONS: FoodPortion[] = [
 /**
  * Finds the portion entry for a food name. Accompaniments are dropped first
  * ("Müsli mit Milch" is muesli, "bread with butter" is bread). Within what's
- * left, the keyword appearing last wins, since the head noun comes last in
- * English compounds ("milk chocolate" is chocolate); ties go to the longer
- * keyword. German compounds are single words and match whole only.
+ * left, the keyword ending last wins, since the head noun comes last in
+ * English and German compounds ("milk chocolate" is chocolate,
+ * "Linsensuppe" is soup). Ties go to the longer, more specific keyword
+ * ("Toastbrot" is toast, not bread; "Cherrytomate" isn't a whole tomato).
  */
 const ACCOMPANIMENT = /\s+(?:mit|with|und|and)\s+|,/
 
 function findFood(name: string): FoodPortion | undefined {
   const text = name.toLowerCase().split(ACCOMPANIMENT)[0]!.trim()
-  let best: { entry: FoodPortion; at: number; len: number } | undefined
+  let best: { entry: FoodPortion; end: number; len: number } | undefined
   for (const entry of FOOD_PORTIONS) {
     for (const word of entry.match) {
-      const re = new RegExp(`(^|[^\\p{L}])${word}(?=[^\\p{L}]|$)`, 'gu')
+      // German compounds put the food last ("Linsensuppe" is a soup,
+      // "Orangensaft" a juice), so longer keywords also match a word's end.
+      const prefix = word.length >= 4 ? '\\p{L}*' : ''
+      const re = new RegExp(`(^|[^\\p{L}])${prefix}${word}(?=[^\\p{L}]|$)`, 'gu')
       for (const m of text.matchAll(re)) {
-        const at = m.index + m[1]!.length
-        if (!best || at > best.at || (at === best.at && word.length > best.len)) {
-          best = { entry, at, len: word.length }
+        const end = m.index + m[0].length
+        if (!best || end > best.end || (end === best.end && word.length > best.len)) {
+          best = { entry, end, len: word.length }
         }
       }
     }

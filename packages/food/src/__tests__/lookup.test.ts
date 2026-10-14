@@ -339,3 +339,22 @@ describe('fair use of the shared OFF budget', () => {
     ).rejects.toBeInstanceOf(UserRateLimitedError)
   })
 })
+
+describe('estimatePortion with German compounds', () => {
+  it('reads the food from the end of a compound word', () => {
+    expect(estimatePortion('Linsensuppe', undefined, 'bowl').grams).toBe(300)
+    expect(estimatePortion('Orangensaft', 1, 'glass').grams).toBe(200)
+    expect(estimatePortion('Käsekuchen', 1, 'slice').grams).toBe(100)
+    expect(estimatePortion('Hafermilch', 1, 'glass').grams).toBe(200)
+    expect(estimatePortion('Müsliriegel', 1).grams).toBe(30)
+    expect(estimatePortion('Schokoriegel').grams).toBe(30)
+  })
+
+  it('prefers the more specific keyword when both end together', () => {
+    expect(estimatePortion('Toastbrot', 2, 'slice').grams).toBe(50)
+    expect(estimatePortion('Cherrytomaten', 10).grams).toBe(150)
+    expect(estimatePortion('Cherrytomate', 10).grams).toBe(150)
+    expect(estimatePortion('Frischkäse', 1, 'tbsp').grams).toBe(20)
+    expect(estimatePortion('Knäckebrot', 2, 'slice').grams).toBe(20)
+  })
+})
