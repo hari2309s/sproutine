@@ -49,7 +49,6 @@ export const maxDuration = 30
 
 const MAX_MESSAGE_CHARS = SAFETY_MAX_CHARS
 const HISTORY_LIMIT = 10
-const RESEND_WINDOW_MS = 2 * 60 * 1000
 // Earlier turns are context only; cap them so a client can't inflate token use.
 const MAX_HISTORY_CHARS = 16_000
 // Per-user cap so one account can't drain the shared free-tier LLM budget.
@@ -151,7 +150,10 @@ export async function POST(request: NextRequest) {
     const { user, errorResponse } = await requireUser(request)
     if (errorResponse) return errorResponse
 
-    const { messages: clientMessages } = (await request.json()) as { messages?: UIMessage[] }
+    const { messages: clientMessages, trigger } = (await request.json()) as {
+      messages?: UIMessage[]
+      trigger?: unknown
+    }
     if (!Array.isArray(clientMessages)) return json({ error: 'messages required' }, 400)
 
     const lastUser = [...clientMessages].reverse().find((m) => m.role === 'user')
@@ -173,14 +175,15 @@ export async function POST(request: NextRequest) {
       return [] as StoredMessage[]
     })
     const last = stored.at(-1)
-    // A resend after a failed reply arrives with the same text; don't store it twice.
+    // "Resend" after a failed reply regenerates the same message; if it was
+    // already stored, don't store it twice. A new message with the same text
+    // ("a banana", then another) is a new message.
     const isResend =
-      last?.role === 'user' &&
-      last.content === message &&
-      Date.now() - Date.parse(last.createdAt) < RESEND_WINDOW_MS
+      trigger === 'regenerate-message' && last?.role === 'user' && last.content === message
     const priorTurns = isResend ? stored.slice(0, -1) : stored
-    if (!isResend) await saveMessage(db, user.id, { role: 'user', content: message })
-    const replyWith = async (text: string, safety: 'crisis' | 'ed_risk') =>
+    const saveUserTurn = () =>
+      isResend ? Promise.resolve() : saveMessage(db, user.id, { role: 'user', content: message })
+    const replyWith = (text: string, safety: 'crisis' | 'ed_risk') =>
       saveMessage(db, user.id, { role: 'assistant', content: text, safety })
 
     if (!(await consumeUserQuota(user.id, 'chat', CHAT_DAILY_LIMIT))) {
@@ -190,6 +193,8 @@ export async function POST(request: NextRequest) {
       if (urgent?.category === 'crisis' || urgent?.category === 'ed_risk') {
         if (urgent.category === 'ed_risk' && !profile.safetyMode)
           await enableSafetyMode(db, user.id)
+        // In order: the message, then the reply.
+        await saveUserTurn()
         await replyWith(SAFE_RESPONSES[urgent.category], urgent.category)
         return templatedResponse(SAFE_RESPONSES[urgent.category], {
           safety: urgent.category,
@@ -199,6 +204,9 @@ export async function POST(request: NextRequest) {
       }
       return json({ error: "You've reached today's chat limit. Rosie will be back tomorrow." }, 429)
     }
+    // Stored only once the quota allows the turn, so an over-limit client
+    // can't keep adding rows.
+    await saveUserTurn()
 
     // Candidate selection only depends on the task, so start it now. The no-op
     // catch stops an early return below from leaving an unhandled rejection.
@@ -280,7 +288,7 @@ export async function POST(request: NextRequest) {
                   await enableSafetyMode(db, user.id)
                 }
                 endTurn({ output: SAFE_RESPONSES[safety.category] })
-                await replyWith(SAFE_RESPONSES[safety.category], safety.category)
+                pendingWrites.push(replyWith(SAFE_RESPONSES[safety.category], safety.category))
                 return templatedResponse(SAFE_RESPONSES[safety.category], {
                   traceId: turn.traceId,
                   // The client renders a safety card (call rows, no feedback

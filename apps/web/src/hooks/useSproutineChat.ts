@@ -73,8 +73,9 @@ export function useSproutineChat(initialMessages: SproutineUIMessage[], locale: 
       body: { locale },
       // The server keeps the history and stores every turn; it only needs
       // the new message.
-      prepareSendMessagesRequest: ({ messages, body }) => ({
-        body: { ...body, messages: messages.slice(-1) },
+      // `trigger` tells a resend apart from a new message with the same text.
+      prepareSendMessagesRequest: ({ messages, body, trigger }) => ({
+        body: { ...body, trigger, messages: messages.slice(-1) },
       }),
     }),
     onError: (error) => {
