@@ -75,5 +75,5 @@ export default function Chat() {
     return <LoadingScreen />
   }
 
-  return <ChatPage userId={userId} initialMessages={initialMessages} safetyMode={safetyMode} />
+  return <ChatPage initialMessages={initialMessages} safetyMode={safetyMode} />
 }

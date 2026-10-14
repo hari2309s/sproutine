@@ -5,7 +5,6 @@ import { DefaultChatTransport, type UIMessage } from 'ai'
 import { useRef, useEffect, useCallback } from 'react'
 import { usePersistedPreference } from './usePersistedPreference'
 import { useTextToSpeech, type SpeechTone } from './useTextToSpeech'
-import { supabase } from '@/lib/supabase'
 import type { MealLogProposal } from '@sproutine/food/client'
 
 // Metadata the chat route attaches to each assistant message (see chat/route.ts).
@@ -44,11 +43,7 @@ export function messageText(m: SproutineUIMessage): string {
     .join('')
 }
 
-export function useSproutineChat(
-  userId: string,
-  initialMessages: SproutineUIMessage[],
-  locale: string = 'en'
-) {
+export function useSproutineChat(initialMessages: SproutineUIMessage[], locale: string = 'en') {
   const { speak, isSpeaking, cancel } = useTextToSpeech()
   const lastAssistantMessageRef = useRef<string>('')
 
@@ -76,55 +71,34 @@ export function useSproutineChat(
     transport: new DefaultChatTransport({
       api: '/api/chat',
       body: { locale },
+      // The server keeps the history and stores every turn; it only needs
+      // the new message.
+      prepareSendMessagesRequest: ({ messages, body }) => ({
+        body: { ...body, messages: messages.slice(-1) },
+      }),
     }),
     onError: (error) => {
       console.error('[useSproutineChat] stream error:', error, error?.message, error?.cause)
     },
-    onFinish: async ({ message, isAbort, isError }) => {
+    // The chat route stores both sides of the conversation; the client only
+    // reads the reply aloud.
+    onFinish: ({ message }) => {
       if (message.role !== 'assistant') return
       const text = messageText(message)
-
       if (text && text !== lastAssistantMessageRef.current) {
         lastAssistantMessageRef.current = text
         if (!isMutedRef.current) speak(text, { tone: message.metadata?.speechTone })
       }
-
-      // Skip saving empty (tool-only) responses and aborted/errored streams.
-      // Card components persist their own acknowledgement messages to Supabase,
-      // so a meal card's caption isn't saved (a reload can't show the card).
-      if (isAbort || isError || !text.trim() || mealProposalOf(message)) return
-
-      // supabase-js reports failures in `error`; it only throws on network faults.
-      const { error } = await supabase.from('chat_messages').insert({
-        user_id: userId,
-        role: message.role,
-        content: text,
-        // Lets a reload re-render the safety card instead of a plain bubble.
-        safety: message.metadata?.safety ?? null,
-      })
-      if (error) console.warn('Failed to save chat message:', error.message)
     },
   })
   const { sendMessage } = chat
 
-  const saveUserMessage = useCallback(
-    async (content: string) => {
-      const { error } = await supabase
-        .from('chat_messages')
-        .insert({ user_id: userId, role: 'user', content })
-      if (error) console.warn('Failed to save user message:', error.message)
-    },
-    [userId]
-  )
-
-  // Stable identity (userId/chat.sendMessage rarely change) so consumers can
+  // Stable identity (chat.sendMessage rarely changes) so consumers can
   // safely depend on it without re-running effects on every render.
   const sendText = useCallback(
     (text: string, opts: { viaVoice?: boolean } = {}) => {
       const trimmed = text.trim()
       if (!trimmed) return
-      // Persist in the background — don't block the send on a DB round-trip.
-      void saveUserMessage(trimmed)
       // Stamp the user message locally so the bubble shows a time immediately —
       // otherwise the timestamp only appears after a refresh reloads it from the DB
       // (the server only attaches `createdAt` to assistant messages).
@@ -136,7 +110,7 @@ export function useSproutineChat(
         },
       })
     },
-    [saveUserMessage, sendMessage]
+    [sendMessage]
   )
 
   const startVoice = useCallback((text: string) => sendText(text, { viaVoice: true }), [sendText])

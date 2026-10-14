@@ -20,15 +20,14 @@ import { useLanguage } from '@/contexts/LanguageContext'
 const SUGGESTION_ICONS: IconName[] = ['restaurant', 'calendar_view_week', 'nutrition']
 
 interface ChatPageProps {
-  userId: string
   initialMessages: SproutineUIMessage[]
   /** Gentle mode: meal cards show no numbers. */
   safetyMode: boolean
 }
 
-export function ChatPage({ userId, initialMessages, safetyMode }: ChatPageProps) {
+export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
   const { t, locale } = useLanguage()
-  const chat = useSproutineChat(userId, initialMessages, locale)
+  const chat = useSproutineChat(initialMessages, locale)
   const voice = useVoiceRecorder()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const processedTranscriptRef = useRef<string | null>(null)

@@ -32,7 +32,14 @@ import {
   proposeMealLog,
   type MealLogProposal,
 } from '@sproutine/food'
-import { createFoodCache, createServerClient, getProfile } from '@sproutine/db'
+import {
+  createFoodCache,
+  createServerClient,
+  getProfile,
+  loadRecentMessages,
+  saveMessage,
+  type StoredMessage,
+} from '@sproutine/db'
 import { requireUser } from '@/lib/supabase-server'
 import { signTrace } from '@/lib/feedbackToken'
 import { foodExternalLimiter } from '@/lib/foodLimits'
@@ -42,6 +49,7 @@ export const maxDuration = 30
 
 const MAX_MESSAGE_CHARS = SAFETY_MAX_CHARS
 const HISTORY_LIMIT = 10
+const RESEND_WINDOW_MS = 2 * 60 * 1000
 // Earlier turns are context only; cap them so a client can't inflate token use.
 const MAX_HISTORY_CHARS = 16_000
 // Per-user cap so one account can't drain the shared free-tier LLM budget.
@@ -157,6 +165,24 @@ export async function POST(request: NextRequest) {
     // No health data goes to any model without recorded consent (GDPR Art. 9).
     if (!profile || !profile.consentHealthAt) return json({ error: 'onboarding required' }, 409)
 
+    // History comes from the database, which only the server writes: the
+    // model never sees turns a client made up. The client sends only its new
+    // message, which is stored here.
+    const stored = await loadRecentMessages(db, user.id, HISTORY_LIMIT).catch((e) => {
+      console.error('[chat] history load failed:', (e as Error).message)
+      return [] as StoredMessage[]
+    })
+    const last = stored.at(-1)
+    // A resend after a failed reply arrives with the same text; don't store it twice.
+    const isResend =
+      last?.role === 'user' &&
+      last.content === message &&
+      Date.now() - Date.parse(last.createdAt) < RESEND_WINDOW_MS
+    const priorTurns = isResend ? stored.slice(0, -1) : stored
+    if (!isResend) await saveMessage(db, user.id, { role: 'user', content: message })
+    const replyWith = async (text: string, safety: 'crisis' | 'ed_risk') =>
+      saveMessage(db, user.id, { role: 'assistant', content: text, safety })
+
     if (!(await consumeUserQuota(user.id, 'chat', CHAT_DAILY_LIMIT))) {
       // The quota never blocks a crisis reply. The keyword screen is
       // deterministic and makes no model call, so it can't drain the budget.
@@ -164,6 +190,7 @@ export async function POST(request: NextRequest) {
       if (urgent?.category === 'crisis' || urgent?.category === 'ed_risk') {
         if (urgent.category === 'ed_risk' && !profile.safetyMode)
           await enableSafetyMode(db, user.id)
+        await replyWith(SAFE_RESPONSES[urgent.category], urgent.category)
         return templatedResponse(SAFE_RESPONSES[urgent.category], {
           safety: urgent.category,
           speechTone: 'reassuring' satisfies SpeechTone,
@@ -178,8 +205,15 @@ export async function POST(request: NextRequest) {
     const candidatesPromise = selectModelCandidates('fast-chat')
     candidatesPromise.catch(() => {})
 
-    // Serverless: export spans after the response (including the stream) is done.
-    after(() => langfuseSpanProcessor.forceFlush())
+    // Writes started while the reply streams (saving it to history). after()
+    // runs once the response is finished, so they are all registered by then.
+    const pendingWrites: Promise<unknown>[] = []
+    // Serverless: finish those writes and export spans after the response
+    // (including the stream) is done.
+    after(async () => {
+      await Promise.allSettled(pendingWrites)
+      await langfuseSpanProcessor.forceFlush()
+    })
 
     // One trace per chat turn; turns from the same day form one session.
     // Users are identified only by their pseudonym, never auth id or email.
@@ -246,6 +280,7 @@ export async function POST(request: NextRequest) {
                   await enableSafetyMode(db, user.id)
                 }
                 endTurn({ output: SAFE_RESPONSES[safety.category] })
+                await replyWith(SAFE_RESPONSES[safety.category], safety.category)
                 return templatedResponse(SAFE_RESPONSES[safety.category], {
                   traceId: turn.traceId,
                   // The client renders a safety card (call rows, no feedback
@@ -327,13 +362,16 @@ export async function POST(request: NextRequest) {
                 }),
               })
 
-              // Only user/assistant text is replayed; empty turns are dropped (some
-              // providers reject them) and the history is bounded by turns and size.
-              const history = boundHistory(
-                clientMessages
-                  .filter((m) => m.role === 'user' || m.role === 'assistant')
-                  .slice(-HISTORY_LIMIT)
-              )
+              // Stored turns plus this message; empty turns are dropped (some
+              // providers reject them) and the history is bounded by size.
+              const history = boundHistory([
+                ...priorTurns.map((m, i): UIMessage => ({
+                  id: `h${i}`,
+                  role: m.role,
+                  parts: [{ type: 'text', text: m.content }],
+                })),
+                { id: 'current', role: 'user', parts: [{ type: 'text', text: message }] },
+              ])
               const modelMessages = await convertToModelMessages(history)
               const speechTone: SpeechTone =
                 safety.category === 'medical' ? 'reassuring' : 'neutral'
@@ -402,6 +440,13 @@ export async function POST(request: NextRequest) {
                     onEnd: ({ responseMessage, isAborted, isCancelled, outcome }) => {
                       const interrupted = isAborted || isCancelled === true
                       const failed = outcome.status === 'failed'
+                      const reply = textOf(responseMessage).trim()
+                      // Only complete replies become history.
+                      if (!interrupted && !failed && reply) {
+                        pendingWrites.push(
+                          saveMessage(db, user.id, { role: 'assistant', content: reply })
+                        )
+                      }
                       endTurn({
                         output: textOf(responseMessage),
                         metadata: { provider, ...(interrupted ? { interrupted: true } : {}) },
