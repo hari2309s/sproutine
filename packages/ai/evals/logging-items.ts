@@ -99,12 +99,7 @@ export const LOGGING_CASES: LoggingCase[] = [
     it(['kartoffel'], 300, 'Kartoffeln', 3),
     it(['quark'], 150, 'Quark'),
   ]),
-  c(
-    'de-15',
-    'Ein Stück Käsekuchen am Nachmittag',
-    [it(['kuchen'], 110, 'Käsekuchen', 1, 'piece')],
-    'snack'
-  ),
+  c('de-15', 'Ein Stück Käsekuchen am Nachmittag', [it(['kuchen'], 110, 'Käsekuchen', 1, 'piece')]),
   c('de-16', 'zwei Spiegeleier auf Toast', [
     it(['ei'], 110, 'Spiegeleier', 2),
     it(['toast'], 45, 'Toast'),
@@ -119,7 +114,10 @@ export const LOGGING_CASES: LoggingCase[] = [
     it(['marmelade'], 25, 'Marmelade'),
     it(['butter'], 10, 'Butter'),
   ]),
-  c('de-21', 'Ein Teller Nudeln mit Tomatensoße', [it(['nudel'], 250, 'Nudeln', 1, 'plate')]),
+  c('de-21', 'Ein Teller Nudeln mit Tomatensoße', [
+    it(['nudel'], 250, 'Nudeln', 1, 'plate'),
+    it(['soße', 'sosse', 'sauce'], 100, 'Tomatensoße'),
+  ]),
   c(
     'de-22',
     'Abends Lachs mit Reis und Brokkoli',

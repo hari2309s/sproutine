@@ -66,7 +66,9 @@ export const mealParseMatch: ItemEvaluator = async ({ input, output, metadata })
 
   const problems: string[] = []
   const unused = [...parsed.items]
-  for (const want of expected.items) {
+  // Most specific first, so a short alias ("ei") can't claim another food's item.
+  const longest = (w: { aliases: string[] }) => Math.max(...w.aliases.map((a) => a.length))
+  for (const want of [...expected.items].sort((a, b) => longest(b) - longest(a))) {
     const named = unused.filter((p) => want.aliases.some((a) => p.name.toLowerCase().includes(a)))
     const hit = named.find((p) => Math.abs(p.grams - want.grams) / want.grams <= GRAMS_TOLERANCE)
     if (hit) unused.splice(unused.indexOf(hit), 1)

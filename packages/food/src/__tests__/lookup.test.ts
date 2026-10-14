@@ -357,4 +357,16 @@ describe('estimatePortion with German compounds', () => {
     expect(estimatePortion('Frischkäse', 1, 'tbsp').grams).toBe(20)
     expect(estimatePortion('Knäckebrot', 2, 'slice').grams).toBe(20)
   })
+
+  it('does not read English words or non-food endings as compounds', () => {
+    expect(estimatePortion('donuts', 2).basis).toBe('generic-unit')
+    expect(estimatePortion('coconuts', 1).basis).toBe('generic-unit')
+    expect(estimatePortion('Kokosnüsse', 1).basis).toBe('generic-unit')
+    expect(estimatePortion('Käseplatte').basis).toBe('generic-unit')
+    expect(estimatePortion('pineapple', 1).basis).toBe('generic-unit')
+    expect(estimatePortion('licorice').basis).toBe('generic-unit')
+    expect(estimatePortion('pancakes', 2).basis).toBe('generic-unit')
+    expect(estimatePortion('Weintrauben').grams).toBe(100)
+    expect(estimatePortion('Tomatensoße').grams).toBe(100)
+  })
 })

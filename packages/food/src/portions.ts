@@ -134,6 +134,11 @@ export const FOOD_PORTIONS: FoodPortion[] = [
   },
   { match: ['pesto'], units: { tsp: 5, tbsp: 15 }, default: 30 },
   {
+    match: ['tomatensoße', 'tomatensosse', 'tomatensauce', 'tomato sauce', 'pasta sauce'],
+    units: { tbsp: 15, portion: 100 },
+    default: 100,
+  },
+  {
     match: [
       'soße',
       'sosse',
@@ -291,14 +296,67 @@ export const FOOD_PORTIONS: FoodPortion[] = [
  */
 const ACCOMPANIMENT = /\s+(?:mit|with|und|and)\s+|,/
 
+// German words that may end a compound ("Linsensuppe", "Orangensaft",
+// "Weintrauben"). Only these match inside a word: English has no such
+// compounds, and suffixes like "nuts" (doughnuts), "latte" (Käseplatte) or
+// "apple" (pineapple) would match the wrong food.
+const COMPOUND_HEADS = new Set([
+  'brot',
+  'brötchen',
+  'brezel',
+  'kuchen',
+  'torte',
+  'kekse',
+  'keks',
+  'riegel',
+  'müsli',
+  'marmelade',
+  'konfitüre',
+  'butter',
+  'quark',
+  'joghurt',
+  'käse',
+  'milch',
+  'beeren',
+  'trauben',
+  'tomate',
+  'tomaten',
+  'kartoffeln',
+  'salat',
+  'gemüse',
+  'nudeln',
+  'reis',
+  'linsen',
+  'bohnen',
+  'suppe',
+  'eintopf',
+  'wurst',
+  'schnitzel',
+  'hähnchen',
+  'lachs',
+  'fisch',
+  'schinken',
+  'schokolade',
+  'chips',
+  'kaffee',
+  'tee',
+  'saft',
+  'schorle',
+  'limonade',
+  'bier',
+  'wein',
+  'eier',
+  'soße',
+  'sosse',
+  'mus',
+])
+
 function findFood(name: string): FoodPortion | undefined {
   const text = name.toLowerCase().split(ACCOMPANIMENT)[0]!.trim()
   let best: { entry: FoodPortion; end: number; len: number } | undefined
   for (const entry of FOOD_PORTIONS) {
     for (const word of entry.match) {
-      // German compounds put the food last ("Linsensuppe" is a soup,
-      // "Orangensaft" a juice), so longer keywords also match a word's end.
-      const prefix = word.length >= 4 ? '\\p{L}*' : ''
+      const prefix = COMPOUND_HEADS.has(word) ? '\\p{L}*' : ''
       const re = new RegExp(`(^|[^\\p{L}])${prefix}${word}(?=[^\\p{L}]|$)`, 'gu')
       for (const m of text.matchAll(re)) {
         const end = m.index + m[0].length
