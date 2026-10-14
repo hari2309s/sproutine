@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AISLES,
   buildShoppingList,
@@ -79,15 +79,26 @@ export function WeekPage({ userId }: { userId: string }) {
   const [open, setOpen] = useState<string | null>(null)
   const { ticked, toggle } = useTicked(stored?.id)
 
+  // A load failure is not "no plan": offering "Plan my week" then would
+  // silently replace a plan that exists.
+  const [loadFailed, setLoadFailed] = useState(false)
+  // The selected week, so a response that arrives after a switch is dropped.
+  const weekRef = useRef(week)
+  useEffect(() => {
+    weekRef.current = week
+  }, [week])
+
   const load = useCallback(async (weekStart: string) => {
     setStored(undefined)
+    setLoadFailed(false)
     try {
       const res = await fetch(`/api/plans?week=${weekStart}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      setStored(((await res.json()) as { plan: StoredPlan | null }).plan)
+      const { plan } = (await res.json()) as { plan: StoredPlan | null }
+      if (weekRef.current === weekStart) setStored(plan)
     } catch (e) {
       console.warn('[week] load failed:', e)
-      setStored(null)
+      if (weekRef.current === weekStart) setLoadFailed(true)
     }
   }, [])
 
@@ -98,6 +109,7 @@ export function WeekPage({ userId }: { userId: string }) {
   }, [week, load])
 
   const plan = async () => {
+    const forWeek = week
     setBusy('plan')
     setNotice(null)
     try {
@@ -113,6 +125,7 @@ export function WeekPage({ userId }: { userId: string }) {
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const body = (await res.json()) as { plan: StoredPlan; issues: PlanIssue[] }
+      if (weekRef.current !== forWeek) return
       setStored(body.plan)
       setIssues(body.issues)
       setTab('meals')
@@ -126,6 +139,7 @@ export function WeekPage({ userId }: { userId: string }) {
 
   const swap = async (date: string, slot: PlanSlot) => {
     if (!stored) return
+    const forWeek = week
     setBusy(`${date}:${slot}`)
     setNotice(null)
     try {
@@ -134,14 +148,16 @@ export function WeekPage({ userId }: { userId: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date, slot, updatedAt: stored.updatedAt }),
       })
+      if (weekRef.current !== forWeek) return
       if (res.status === 409) {
         setNotice(t.week.planChanged)
-        await load(week)
+        await load(forWeek)
         return
       }
       if (res.status === 422) return setNotice(t.week.nothingElse)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      setStored(((await res.json()) as { plan: StoredPlan }).plan)
+      const updated = ((await res.json()) as { plan: StoredPlan }).plan
+      if (weekRef.current === forWeek) setStored(updated)
     } catch (e) {
       console.warn('[week] swap failed:', e)
       setNotice(t.week.swapFailed)
@@ -214,7 +230,17 @@ export function WeekPage({ userId }: { userId: string }) {
             </p>
           )}
 
-          {stored === undefined ? (
+          {loadFailed ? (
+            <section className="card flex flex-col gap-3 px-5 py-6">
+              <p role="alert" className="text-[15px] text-sproutine-text">
+                {t.week.loadFailed}
+              </p>
+              <button type="button" onClick={() => void load(week)} className="btn-secondary h-11">
+                <Icon name="refresh" size={18} />
+                {t.week.retry}
+              </button>
+            </section>
+          ) : stored === undefined ? (
             <div className="h-40 animate-pulse rounded-[22px] bg-sproutine-surface" aria-hidden />
           ) : stored === null ? (
             <section className="card flex flex-col gap-3 px-5 py-6">

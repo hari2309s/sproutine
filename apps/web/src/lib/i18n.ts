@@ -142,6 +142,8 @@ export interface Translations {
     noRecipe: (slot: string) => string
     overBudget: (cost: string, budget: string) => string
     planFailed: string
+    loadFailed: string
+    retry: string
     swapFailed: string
     nothingElse: string
     planChanged: string
@@ -317,14 +319,15 @@ export const translations: Record<Locale, Translations> = {
       emailNotConfirmed: 'Confirm your email first: tap the link I sent you.',
       alreadyRegistered: "There's already an account with that email. Sign in instead.",
       rateLimited: 'Too many tries in a short time. Wait a minute, then try again.',
-      genericError: "Something went wrong on my side. Please try again.",
+      genericError: 'Something went wrong on my side. Please try again.',
       resetTitle: 'Set a new password',
       resetIntro: 'Choose a new password for your account.',
       newPasswordLabel: 'New password',
       savePassword: 'Save password',
       passwordSaved: 'Password saved. Taking you in…',
       passwordSameAsOld: 'Pick a password different from your old one.',
-      resetExpired: 'That reset link has expired or was already used. Ask for a new one from the sign-in page.',
+      resetExpired:
+        'That reset link has expired or was already used. Ask for a new one from the sign-in page.',
       demoButton: 'Explore the demo',
       demoHint: 'or look around first',
       disclaimer: 'Sproutine offers general food ideas, not medical advice.',
@@ -462,14 +465,19 @@ export const translations: Record<Locale, Translations> = {
       leftovers: 'Leftovers',
       minutes: (n) => `${n} min`,
       ingredients: 'For one',
-      noRecipe: (slot) => `I couldn't find a ${slot} that fits everything you told me. Tell Rosie what you like and I'll learn.`,
-      overBudget: (cost, budget) => `This week comes to about ${cost}, a little over your ${budget} budget.`,
+      noRecipe: (slot) =>
+        `I couldn't find a ${slot} that fits everything you told me. Tell Rosie what you like and I'll learn.`,
+      overBudget: (cost, budget) =>
+        `This week comes to about ${cost}, a little over your ${budget} budget.`,
       planFailed: "I couldn't make a plan just now. Please try again.",
+      loadFailed: "I couldn't load your plan just now.",
+      retry: 'Try again',
       swapFailed: "I couldn't swap that just now. Please try again.",
       nothingElse: 'Nothing else fits that slot right now.',
       planChanged: 'Your plan changed in another tab, so I reloaded it.',
       estimateTotal: (cost) => `About ${cost}`,
-      estimateNote: 'Estimated discounter prices, for whole packs. Some will last beyond this week.',
+      estimateNote:
+        'Estimated discounter prices, for whole packs. Some will last beyond this week.',
       checkPantry: 'Check you have',
       packs: (n, size) => `${n} × ${size}`,
       aisles: {

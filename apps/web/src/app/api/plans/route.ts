@@ -57,6 +57,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'invalid request' }, { status: 400 })
     }
 
+    // A start day outside the week would plan nothing and wipe the week.
+    const { weekStart, fromDate } = body.data
+    const weekEnd = new Date(`${weekStart}T00:00:00Z`)
+    weekEnd.setUTCDate(weekEnd.getUTCDate() + 6)
+    if (fromDate && fromDate > weekEnd.toISOString().slice(0, 10)) {
+      return NextResponse.json({ error: 'fromDate outside the week' }, { status: 400 })
+    }
+
     const db = createServerClient()
     const profile = await getProfile(db, user.id)
     // Diet and allergies are health data: only used with recorded consent.
@@ -70,7 +78,7 @@ export async function POST(request: NextRequest) {
       weekStart: body.data.weekStart,
       prefs,
       seed: Math.floor(Math.random() * 2 ** 31),
-      fromDate: body.data.fromDate,
+      fromDate: fromDate && fromDate > weekStart ? fromDate : undefined,
     })
     if (!isSafePlan(validatePlan(plan, planProfile))) {
       // Can't happen by construction; never store a plan that fails the check.
@@ -78,12 +86,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Planning failed' }, { status: 500 })
     }
 
-    const id = await saveActivePlan(db, user.id, plan, prefs)
+    await saveActivePlan(db, user.id, plan, prefs)
+    // Read back for the version (updated_at) that swaps must quote.
     const stored = await getActivePlan(db, user.id, plan.weekStart)
-    return NextResponse.json(
-      { plan: stored ?? { id, plan, prefs, updatedAt: null }, issues },
-      { status: 201 }
-    )
+    if (!stored) throw new Error('saved plan not found on read-back')
+    return NextResponse.json({ plan: stored, issues }, { status: 201 })
   } catch (error) {
     console.error('[plans:post]', error instanceof Error ? error.message : error)
     return NextResponse.json({ error: 'Planning failed' }, { status: 500 })
