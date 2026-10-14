@@ -113,6 +113,7 @@ export interface Translations {
     emptyTitle: string
     emptyBody: string
     talkToRosie: string
+    onTheMenu: string
     comingSoon: string
     upcoming: string[]
   }
@@ -442,6 +443,7 @@ export const translations: Record<Locale, Translations> = {
       emptyTitle: 'Nothing logged yet',
       emptyBody: 'Tell Rosie what you had. A quick note or a voice message is plenty.',
       talkToRosie: 'Talk to Rosie',
+      onTheMenu: 'On the menu today',
       comingSoon: 'Coming soon',
       upcoming: ['Gentle nudges', 'Habits and streaks'],
     },

@@ -8,6 +8,10 @@ import { AnimatePresence } from 'framer-motion'
 import {
   MEAL_SLOTS,
   mealSlotAt,
+  PLAN_SLOTS,
+  RECIPES_BY_ID,
+  weekStartOf,
+  type MealPlan,
   type FoodRecord,
   type MealLogProposal,
   type MealSlot,
@@ -93,6 +97,21 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
     void load()
   }, [load])
 
+  // Today's meals from this week's plan, if there is one.
+  const [planned, setPlanned] = useState<Partial<
+    Record<(typeof PLAN_SLOTS)[number], string>
+  > | null>(null)
+  useEffect(() => {
+    const today = new Date().toLocaleDateString('sv-SE')
+    fetch(`/api/plans?week=${weekStartOf(new Date())}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body: { plan: { plan: MealPlan } | null } | null) => {
+        const day = body?.plan?.plan.days.find((d) => d.date === today)
+        setPlanned(day && Object.keys(day.meals).length ? day.meals : null)
+      })
+      .catch(() => setPlanned(null))
+  }, [])
+
   const handleDetected = async (code: string) => {
     setScanning(false)
     setNotice(null)
@@ -175,6 +194,26 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
               }}
               onDiscard={() => setScanned(null)}
             />
+          )}
+
+          {planned && (
+            <Link href="/week" className="card block space-y-1 px-4 py-3">
+              <h2 className="eyebrow">{t.today.onTheMenu}</h2>
+              <ul>
+                {PLAN_SLOTS.map((slot) =>
+                  planned[slot] ? (
+                    <li key={slot} className="flex gap-3 py-0.5 text-[15px]">
+                      <span className="w-20 shrink-0 text-sproutine-text-secondary">
+                        {t.week.slots[slot]}
+                      </span>
+                      <span className="text-sproutine-text">
+                        {RECIPES_BY_ID[planned[slot]!]?.name ?? planned[slot]}
+                      </span>
+                    </li>
+                  ) : null
+                )}
+              </ul>
+            </Link>
           )}
 
           {hasLogs ? (
