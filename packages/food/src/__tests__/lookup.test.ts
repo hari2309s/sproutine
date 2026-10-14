@@ -1,8 +1,14 @@
 import { describe, it, expect, vi } from 'vitest'
 import { allergensFromOffTags } from '../allergens'
 import { escapeLucene, isValidBarcode, normalizeOffProduct } from '../off'
+import { normalizeUsdaFood } from '../usda'
 import { estimatePortion } from '../portions'
-import { createRateLimiter, RateLimitedError } from '../rateLimit'
+import {
+  createKeyedRateLimiter,
+  createRateLimiter,
+  createTtlSet,
+  RateLimitedError,
+} from '../rateLimit'
 import { lookupBarcode, rankFood, searchFood, type FoodCache } from '../search'
 import type { FoodRecord } from '../types'
 
@@ -15,6 +21,7 @@ const record = (name: string, extra: Partial<FoodRecord> = {}): FoodRecord => ({
   brand: null,
   per100g: { kcal: 100, protein: 5, fat: 2, carbs: 14, fiber: 1, sugar: 1, salt: 0.1 },
   estimatedNutrients: [],
+  allergensKnown: true,
   allergens: [],
   traces: [],
   servingG: null,
@@ -83,6 +90,29 @@ describe('normalizeOffProduct', () => {
     expect(food.estimatedNutrients).toEqual(['fiber'])
   })
 
+  it('marks allergens unknown when OFF has no ingredient list', () => {
+    const bare = normalizeOffProduct({
+      code: '4000000000000',
+      product_name: 'Mystery bar',
+      allergens_tags: [],
+    })!
+    expect(bare.allergensKnown).toBe(false)
+    const analysed = normalizeOffProduct({
+      code: '4000000000000',
+      product_name: 'Oats',
+      allergens_tags: [],
+      ingredients_n: 1,
+    })!
+    expect(analysed.allergensKnown).toBe(true)
+    expect(analysed.allergens).toEqual([])
+  })
+
+  it('stores non-standard OFF codes without a barcode', () => {
+    const food = normalizeOffProduct({ code: '123', product_name: 'Loose bread' })!
+    expect(food.barcode).toBeNull()
+    expect(food.sourceId).toBe('123')
+  })
+
   it('rejects products with no name or barcode', () => {
     expect(normalizeOffProduct({ code: '4000000000000' })).toBeNull()
   })
@@ -126,6 +156,20 @@ describe('estimatePortion', () => {
       confidence: 'low',
     })
   })
+  it('uses a typical serving, not one piece, when no unit is given', () => {
+    expect(estimatePortion('nuts').grams).toBe(30)
+    expect(estimatePortion('chocolate').grams).toBe(25)
+    expect(estimatePortion('pizza').grams).toBe(330)
+    expect(estimatePortion('pizza', 1, 'slice').grams).toBe(110)
+  })
+
+  it('picks the head noun when several foods are named', () => {
+    expect(estimatePortion('milk chocolate').grams).toBe(25)
+    expect(estimatePortion('chicken soup').grams).toBe(300)
+    expect(estimatePortion('apple juice').grams).toBe(250)
+    expect(estimatePortion('egg noodles').grams).toBe(250)
+  })
+
   it('rejects nonsense quantities', () => {
     expect(() => estimatePortion('apple', 0)).toThrow()
   })
@@ -180,6 +224,14 @@ describe('searchFood', () => {
 })
 
 describe('lookupBarcode', () => {
+  it('still returns the product if caching it fails', async () => {
+    const cache = { ...memoryCache(), upsert: vi.fn().mockRejectedValue(new Error('db down')) }
+    const fetchOffProduct = vi
+      .fn()
+      .mockResolvedValue(record('Nutella', { barcode: '4008400404127' }))
+    expect((await lookupBarcode('4008400404127', cache, { fetchOffProduct }))?.name).toBe('Nutella')
+  })
+
   it('serves from cache, otherwise fetches from OFF and caches', async () => {
     const cache = memoryCache()
     const fetchOffProduct = vi
@@ -193,5 +245,66 @@ describe('lookupBarcode', () => {
     const fetchOffProduct = vi.fn()
     expect(await lookupBarcode('abc', memoryCache(), { fetchOffProduct })).toBeNull()
     expect(fetchOffProduct).not.toHaveBeenCalled()
+  })
+})
+
+describe('normalizeUsdaFood', () => {
+  it('subtracts fibre from carbohydrate-by-difference and marks allergens unknown', () => {
+    const food = normalizeUsdaFood({
+      fdcId: 1,
+      description: 'Chickpeas, cooked',
+      foodNutrients: [
+        { nutrientId: 1008, value: 164 },
+        { nutrientId: 1005, value: 27.4 },
+        { nutrientId: 1079, value: 7.6 },
+      ],
+    })
+    expect(food.per100g.carbs).toBeCloseTo(19.8)
+    expect(food.allergensKnown).toBe(false)
+  })
+})
+
+describe('fair use of the shared OFF budget', () => {
+  it('limits each key separately', () => {
+    const t = 0
+    const rl = createKeyedRateLimiter(1, () => t)
+    expect(rl.tryAcquire('a')).toBe(true)
+    expect(rl.tryAcquire('a')).toBe(false)
+    expect(rl.tryAcquire('b')).toBe(true)
+  })
+
+  it('remembers unknown barcodes so they are not looked up again', async () => {
+    const unknownBarcodes = createTtlSet(60_000)
+    const fetchOffProduct = vi.fn().mockResolvedValue(null)
+    const cache = memoryCache()
+    expect(
+      await lookupBarcode('4000000000017', cache, { fetchOffProduct }, { unknownBarcodes })
+    ).toBeNull()
+    expect(
+      await lookupBarcode('4000000000017', cache, { fetchOffProduct }, { unknownBarcodes })
+    ).toBeNull()
+    expect(fetchOffProduct).toHaveBeenCalledTimes(1)
+  })
+
+  it('expires remembered entries', () => {
+    let t = 0
+    const set = createTtlSet(1000, 10, () => t)
+    set.add('x')
+    expect(set.has('x')).toBe(true)
+    t = 1000
+    expect(set.has('x')).toBe(false)
+  })
+
+  it('stays cache-only when the per-user external share is used up', async () => {
+    const sources = { searchOff: vi.fn(), searchUsda: vi.fn(), fetchOffProduct: vi.fn() }
+    const res = await searchFood('lentils', memoryCache(), {
+      sources,
+      canCallExternal: () => false,
+    })
+    expect(sources.searchOff).not.toHaveBeenCalled()
+    expect(res.sources.off).toBe('skipped')
+    await expect(
+      lookupBarcode('4008400404127', memoryCache(), sources, { canCallExternal: () => false })
+    ).rejects.toBeInstanceOf(RateLimitedError)
   })
 })

@@ -32,7 +32,13 @@ export interface FoodRecord {
   per100g: Nutrients
   /** Nutrients whose value was estimated by the source rather than read from a label. */
   estimatedNutrients: NutrientKey[]
-  /** Allergens the food contains (EU-14 codes). */
+  /**
+   * Whether the source actually analysed allergens. When false, an empty
+   * `allergens` list means "unknown", not "none" — callers must treat the
+   * food as unsafe for anyone with allergies.
+   */
+  allergensKnown: boolean
+  /** Allergens the food contains (EU-14 codes). Only meaningful if allergensKnown. */
   allergens: Allergen[]
   /** "May contain traces of" — kept separate so plans can treat them strictly. */
   traces: Allergen[]

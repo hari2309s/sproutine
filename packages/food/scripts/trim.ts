@@ -2,6 +2,8 @@
 // Shared by the recorder; keeps fixtures small and reviewable.
 
 const OFF_NUTRIENTS = [
+  'alcohol',
+  'polyols',
   'energy-kcal',
   'energy-kj',
   'proteins',
@@ -24,6 +26,8 @@ export function trimOffProduct(p: Record<string, unknown>) {
     brands: p.brands,
     allergens_tags: p.allergens_tags,
     traces_tags: p.traces_tags,
+    ingredients_n: p.ingredients_n,
+    states_tags: ((p.states_tags as string[] | undefined) ?? []).filter((t) => t.startsWith('en:ingredients')),
     serving_quantity: p.serving_quantity,
     nutrition: {
       aggregated_set: {

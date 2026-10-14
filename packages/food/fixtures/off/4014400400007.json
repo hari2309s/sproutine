@@ -14,6 +14,11 @@
     "en:peanuts",
     "en:En-nuts-en-peanuts-en-en-nuts-en-peanuts"
   ],
+  "ingredients_n": 18,
+  "states_tags": [
+    "en:ingredients-completed",
+    "en:ingredients-photo-selected"
+  ],
   "serving_quantity": 8,
   "nutrition": {
     "aggregated_set": {

@@ -9,10 +9,31 @@
   "traces_tags": [
     "de:Schalenfrüchte (keine Erdnüsse)"
   ],
+  "ingredients_n": 13,
+  "states_tags": [
+    "en:ingredients-completed",
+    "en:ingredients-photo-selected"
+  ],
   "serving_quantity": 100,
   "nutrition": {
     "aggregated_set": {
       "nutrients": {
+        "alcohol": {
+          "modifier": "~",
+          "source": "estimate",
+          "source_index": 3,
+          "source_per": "100g",
+          "unit": "% vol",
+          "value": 0
+        },
+        "polyols": {
+          "modifier": "~",
+          "source": "estimate",
+          "source_index": 3,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0
+        },
         "energy-kcal": {
           "source": "packaging",
           "source_index": 0,

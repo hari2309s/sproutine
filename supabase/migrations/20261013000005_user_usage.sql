@@ -3,7 +3,7 @@
 create table if not exists public.user_usage (
   user_id  uuid not null references auth.users(id) on delete cascade,
   day      date not null default current_date,
-  kind     text not null check (kind in ('chat', 'voice', 'food')),
+  kind     text not null check (kind in ('chat', 'voice')),
   count    int  not null default 0,
   primary key (user_id, day, kind)
 );

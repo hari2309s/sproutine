@@ -64,14 +64,19 @@ function nutrientMap(food: FdcFood): Map<number, number> {
 
 export function normalizeUsdaFood(food: FdcFood): FoodRecord {
   const m = nutrientMap(food)
-  const first = (ids: readonly number[]) => ids.map((id) => m.get(id)).find((v) => v != null) ?? null
+  const first = (ids: readonly number[]) =>
+    ids.map((id) => m.get(id)).find((v) => v != null) ?? null
   const per100g: Nutrients = { ...EMPTY_NUTRIENTS }
   per100g.kcal = first(ID.kcal)
   if (per100g.kcal == null && m.has(ID.kj)) per100g.kcal = m.get(ID.kj)! / 4.184
   per100g.protein = m.get(ID.protein) ?? null
   per100g.fat = m.get(ID.fat) ?? null
-  per100g.carbs = m.get(ID.carbs) ?? null
   per100g.fiber = m.get(ID.fiber) ?? null
+  // FDC carbohydrate is "by difference" and includes fibre; EU labels (and
+  // OFF) list fibre separately, so subtract it to keep sources comparable.
+  const carbsByDifference = m.get(ID.carbs)
+  per100g.carbs =
+    carbsByDifference == null ? null : Math.max(0, carbsByDifference - (per100g.fiber ?? 0))
   per100g.sugar = first(ID.sugar)
   // FDC reports sodium in mg; EU labels use salt in g (salt = sodium × 2.5).
   per100g.salt = m.has(ID.sodiumMg) ? (m.get(ID.sodiumMg)! * 2.5) / 1000 : null
@@ -85,7 +90,8 @@ export function normalizeUsdaFood(food: FdcFood): FoodRecord {
     brand: null,
     per100g,
     estimatedNutrients: [],
-    // FDC generic foods carry no allergen declarations.
+    // FDC generic foods carry no allergen declarations: unknown, not none.
+    allergensKnown: false,
     allergens: [],
     traces: [],
     servingG: null,

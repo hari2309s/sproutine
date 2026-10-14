@@ -25,27 +25,39 @@ export interface SearchResult {
   sources: { cache: number; off: number | 'skipped'; usda: number | 'skipped' }
 }
 
+/** Guards for the shared external-API budget. */
+export interface ExternalGuards {
+  /** Return false to stay cache-only (e.g. this user's external share is used up). */
+  canCallExternal?: () => boolean
+  /** Barcodes OFF recently didn't know, so they aren't looked up again. */
+  unknownBarcodes?: { has(code: string): boolean; add(code: string): void }
+}
+
 /** Barcode scan: cache first, then Open Food Facts; caches what it finds. */
 export async function lookupBarcode(
   barcode: string,
   cache: FoodCache,
-  sources: Pick<SearchSources, 'fetchOffProduct'> = LIVE_SOURCES
+  sources: Pick<SearchSources, 'fetchOffProduct'> = LIVE_SOURCES,
+  { canCallExternal = () => true, unknownBarcodes }: ExternalGuards = {}
 ): Promise<FoodRecord | null> {
   const code = barcode.trim()
   if (!isValidBarcode(code)) return null
   const cached = await cache.findByBarcode(code)
   if (cached) return cached
+  if (unknownBarcodes?.has(code)) return null
+  if (!canCallExternal()) throw new RateLimitedError('openfoodfacts (per-user)')
   const food = await sources.fetchOffProduct(code)
-  if (food) await cache.upsert([food])
+  if (!food) unknownBarcodes?.add(code)
+  // A cache write failure must not turn a successful lookup into an error.
+  if (food) {
+    await cache
+      .upsert([food])
+      .catch((e) => console.warn('[food cache upsert]', (e as Error).message))
+  }
   return food
 }
 
-const normalise = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/\p{M}/gu, '')
-    .trim()
+const normalise = (s: string) => s.toLowerCase().normalize('NFKD').replace(/\p{M}/gu, '').trim()
 
 /** Higher is better. Name match dominates; data quality breaks ties. */
 export function rankFood(food: FoodRecord, query: string): number {
@@ -85,7 +97,11 @@ async function trySource(fn: () => Promise<FoodRecord[]>): Promise<FoodRecord[] 
 export async function searchFood(
   query: string,
   cache: FoodCache,
-  { limit = 8, sources = LIVE_SOURCES }: { limit?: number; sources?: SearchSources } = {}
+  {
+    limit = 8,
+    sources = LIVE_SOURCES,
+    canCallExternal = () => true,
+  }: { limit?: number; sources?: SearchSources } & Pick<ExternalGuards, 'canCallExternal'> = {}
 ): Promise<SearchResult> {
   const q = query.trim().slice(0, 120)
   if (!q) return { foods: [], sources: { cache: 0, off: 0, usda: 0 } }
@@ -99,13 +115,22 @@ export async function searchFood(
     }
   }
 
+  if (!canCallExternal()) {
+    return {
+      foods: rank(cached, q).slice(0, limit),
+      sources: { cache: cached.length, off: 'skipped', usda: 'skipped' },
+    }
+  }
+
   const [off, usda] = await Promise.all([
     trySource(() => sources.searchOff(q, limit)),
     trySource(() => sources.searchUsda(q, limit)),
   ])
   const fresh = [...(off === 'skipped' ? [] : off), ...(usda === 'skipped' ? [] : usda)]
   if (fresh.length) {
-    await cache.upsert(fresh).catch((e) => console.warn('[food cache upsert]', (e as Error).message))
+    await cache
+      .upsert(fresh)
+      .catch((e) => console.warn('[food cache upsert]', (e as Error).message))
   }
 
   const seen = new Set<string>()

@@ -86,28 +86,46 @@ export function BarcodeScanner({
   const [manual, setManual] = useState(false)
   const [typed, setTyped] = useState('')
 
+  // Callbacks and copy live in refs so a parent re-render (an inline
+  // onDetected, a language switch) never restarts the camera.
+  const onDetectedRef = useRef(onDetected)
+  const unavailableRef = useRef(t.scanner.cameraUnavailable)
+  useEffect(() => {
+    onDetectedRef.current = onDetected
+    unavailableRef.current = t.scanner.cameraUnavailable
+  })
+  const streamRef = useRef<MediaStream | null>(null)
+
+  /** Turns the camera (and its indicator light) off. */
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach((tr) => tr.stop())
+    streamRef.current = null
+    trackRef.current = null
+  }, [])
+
   const finish = useCallback(
     (code: string) => {
       if (doneRef.current) return
       doneRef.current = true
+      stopCamera()
       navigator.vibrate?.(30)
-      onDetected(code)
+      onDetectedRef.current(code)
     },
-    [onDetected]
+    [stopCamera]
   )
 
   useEffect(() => {
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | undefined
-    let stream: MediaStream | undefined
 
     ;(async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
           audio: false,
         })
-        if (cancelled) return stream.getTracks().forEach((tr) => tr.stop())
+        if (cancelled || doneRef.current) return stream.getTracks().forEach((tr) => tr.stop())
+        streamRef.current = stream
         const track = stream.getVideoTracks()[0]
         trackRef.current = track ?? null
         const caps = track?.getCapabilities?.() as { torch?: boolean } | undefined
@@ -132,7 +150,9 @@ export function BarcodeScanner({
       } catch (e) {
         if (cancelled) return
         console.warn('[scanner]', e)
-        setError(t.scanner.cameraUnavailable)
+        // Camera or decoder unavailable: release the camera, offer typing.
+        stopCamera()
+        setError(unavailableRef.current)
         setManual(true)
       }
     })()
@@ -140,9 +160,9 @@ export function BarcodeScanner({
     return () => {
       cancelled = true
       clearTimeout(timer)
-      stream?.getTracks().forEach((tr) => tr.stop())
+      stopCamera()
     }
-  }, [finish, decoder, t.scanner.cameraUnavailable])
+  }, [decoder, finish, stopCamera])
 
   const toggleTorch = async () => {
     const track = trackRef.current

@@ -45,6 +45,9 @@ interface OffProduct {
   brands?: string | string[]
   allergens_tags?: string[]
   traces_tags?: string[]
+  /** Number of parsed ingredients; > 0 means allergens were analysed. */
+  ingredients_n?: number
+  states_tags?: string[]
   serving_quantity?: number | string
   /** v3.6 product reads. */
   nutrition?: { aggregated_set?: { nutrients?: Record<string, AggregatedNutrient> } }
@@ -66,7 +69,10 @@ function readNutrients(p: OffProduct): { per100g: Nutrients; estimated: Nutrient
   for (const key of Object.keys(NUTRIENT_IDS) as NutrientKey[]) {
     const id = NUTRIENT_IDS[key]
     const entry = agg?.[id]
-    if (entry && (entry.source_per === '100g' || entry.source_per === '100ml' || !entry.source_per)) {
+    if (
+      entry &&
+      (entry.source_per === '100g' || entry.source_per === '100ml' || !entry.source_per)
+    ) {
       per100g[key] = num(entry.value)
       if (per100g[key] != null && entry.source === 'estimate') estimated.push(key)
     } else if (p.nutriments) {
@@ -86,6 +92,22 @@ function readNutrients(p: OffProduct): { per100g: Nutrients; estimated: Nutrient
   return { per100g, estimated }
 }
 
+/** Allergens are only known once OFF has the ingredient list. */
+function allergensKnown(p: OffProduct): boolean {
+  return (p.ingredients_n ?? 0) > 0 || (p.states_tags ?? []).includes('en:ingredients-completed')
+}
+
+/** Alcohol and polyols, only for the kcal sanity check. */
+function extraEnergy(p: OffProduct) {
+  const agg = p.nutrition?.aggregated_set?.nutrients
+  const alcoholVol = num(agg?.alcohol?.value) ?? num(p.nutriments?.alcohol_100g)
+  return {
+    // OFF stores alcohol as % vol; ethanol is ~0.789 g/ml.
+    alcoholG: alcoholVol == null ? null : alcoholVol * 0.789,
+    polyolsG: num(agg?.polyols?.value) ?? num(p.nutriments?.polyols_100g),
+  }
+}
+
 export function normalizeOffProduct(p: OffProduct): FoodRecord | null {
   const code = p.code?.trim()
   const name = (p.product_name_de || p.product_name || '').trim()
@@ -95,16 +117,18 @@ export function normalizeOffProduct(p: OffProduct): FoodRecord | null {
   return {
     source: 'off',
     sourceId: code,
-    barcode: code,
+    // OFF has some non-standard codes; only real barcodes are stored as such.
+    barcode: isValidBarcode(code) ? code : null,
     name,
     nameDe: p.product_name_de?.trim() || null,
     brand: brands.map((b) => b.trim()).filter(Boolean)[0] ?? null,
     per100g,
     estimatedNutrients: estimated,
+    allergensKnown: allergensKnown(p),
     allergens: allergensFromOffTags(p.allergens_tags),
     traces: allergensFromOffTags(p.traces_tags),
     servingG: num(p.serving_quantity),
-    quality: assessQuality(per100g),
+    quality: assessQuality(per100g, extraEnergy(p)),
   }
 }
 
@@ -146,7 +170,7 @@ export async function searchOff(query: string, limit = 10): Promise<FoodRecord[]
     langs: 'de,en',
     page_size: String(limit),
     fields:
-      'code,product_name,product_name_de,brands,nutriments,allergens_tags,traces_tags,serving_quantity',
+      'code,product_name,product_name_de,brands,nutriments,allergens_tags,traces_tags,ingredients_n,states_tags,serving_quantity',
   })
   const res = await fetch(`${SEARCH_URL}?${params}`, {
     headers: { 'User-Agent': userAgent() },

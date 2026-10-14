@@ -7,10 +7,31 @@
   "traces_tags": [
     "en:none"
   ],
+  "ingredients_n": 2,
+  "states_tags": [
+    "en:ingredients-completed",
+    "en:ingredients-photo-selected"
+  ],
   "serving_quantity": 400,
   "nutrition": {
     "aggregated_set": {
       "nutrients": {
+        "alcohol": {
+          "modifier": "~",
+          "source": "estimate",
+          "source_index": 2,
+          "source_per": "100g",
+          "unit": "% vol",
+          "value": 0
+        },
+        "polyols": {
+          "modifier": "~",
+          "source": "estimate",
+          "source_index": 2,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.012974
+        },
         "energy-kcal": {
           "source": "packaging",
           "source_index": 0,

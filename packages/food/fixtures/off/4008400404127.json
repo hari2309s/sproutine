@@ -10,10 +10,31 @@
     "de:Fruits à coque"
   ],
   "traces_tags": [],
+  "ingredients_n": 7,
+  "states_tags": [
+    "en:ingredients-completed",
+    "en:ingredients-photo-selected"
+  ],
   "serving_quantity": 15,
   "nutrition": {
     "aggregated_set": {
       "nutrients": {
+        "alcohol": {
+          "modifier": "~",
+          "source": "estimate",
+          "source_index": 1,
+          "source_per": "100g",
+          "unit": "% vol",
+          "value": 0
+        },
+        "polyols": {
+          "modifier": "~",
+          "source": "estimate",
+          "source_index": 1,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.017875
+        },
         "energy-kcal": {
           "source": "packaging",
           "source_index": 0,

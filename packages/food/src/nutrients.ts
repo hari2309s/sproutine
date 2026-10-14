@@ -73,17 +73,26 @@ export function roundForDisplay(n: Nutrients): Nutrients {
 }
 
 // EU Regulation 1169/2011 Annex XIV conversion factors (kcal per gram).
-const KCAL_PER_G = { protein: 4, carbs: 4, fat: 9, fiber: 2 } as const
+const KCAL_PER_G = { protein: 4, carbs: 4, fat: 9, fiber: 2, alcohol: 7, polyols: 2.4 } as const
+
+/** Energy sources outside the core label set, used only by the quality check. */
+export interface ExtraEnergy {
+  /** Grams of alcohol per 100 g (OFF gives % vol; ~0.789 g per % vol). */
+  alcoholG?: number | null
+  polyolsG?: number | null
+}
 const QUALITY_TOLERANCE = 0.15
 
 /** Energy implied by the macros, using the factors EU labels are built from. */
-export function kcalFromMacros(n: Nutrients): number | null {
+export function kcalFromMacros(n: Nutrients, extra: ExtraEnergy = {}): number | null {
   if (n.protein == null || n.carbs == null || n.fat == null) return null
   return (
     n.protein * KCAL_PER_G.protein +
     n.carbs * KCAL_PER_G.carbs +
     n.fat * KCAL_PER_G.fat +
-    (n.fiber ?? 0) * KCAL_PER_G.fiber
+    (n.fiber ?? 0) * KCAL_PER_G.fiber +
+    (extra.alcoholG ?? 0) * KCAL_PER_G.alcohol +
+    (extra.polyolsG ?? 0) * KCAL_PER_G.polyols
   )
 }
 
@@ -92,9 +101,14 @@ export function kcalFromMacros(n: Nutrients): number | null {
  * 15% (typos, kJ entered as kcal, per-serving values in per-100 g fields).
  * Small absolute differences on low-energy foods are tolerated.
  */
-export function assessQuality(n: Nutrients): 'ok' | 'inconsistent' | 'incomplete' {
+export function assessQuality(
+  n: Nutrients,
+  extra: ExtraEnergy = {}
+): 'ok' | 'inconsistent' | 'incomplete' {
   if (n.kcal == null || n.protein == null || n.carbs == null || n.fat == null) return 'incomplete'
-  const implied = kcalFromMacros(n)!
+  // Alcohol (7 kcal/g) and polyols (2.4) carry energy beer, wine and
+  // sugar-free products would otherwise be flagged for.
+  const implied = kcalFromMacros(n, extra)!
   const diff = Math.abs(n.kcal - implied)
   if (diff <= 15) return 'ok'
   return diff / Math.max(n.kcal, implied) <= QUALITY_TOLERANCE ? 'ok' : 'inconsistent'

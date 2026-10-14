@@ -27,6 +27,7 @@ const food = (name: string, n: Partial<Nutrients>): FoodRecord => ({
   brand: null,
   per100g: per100g(n),
   estimatedNutrients: [],
+  allergensKnown: true,
   allergens: [],
   traces: [],
   servingG: null,
@@ -86,7 +87,10 @@ describe('computeNutrients', () => {
 
 describe('roundForDisplay', () => {
   it('handles values JavaScript prints in exponent form', () => {
-    expect(roundForDisplay(per100g({ salt: 5e-7, kcal: 1e21 }))).toMatchObject({ salt: 0, kcal: 1e21 })
+    expect(roundForDisplay(per100g({ salt: 5e-7, kcal: 1e21 }))).toMatchObject({
+      salt: 0,
+      kcal: 1e21,
+    })
   })
 
   it('rounds kcal to whole, grams to one decimal, salt to two', () => {
@@ -117,6 +121,12 @@ describe('quality check', () => {
   })
   it('tolerates small absolute gaps on low-energy foods', () => {
     expect(assessQuality(per100g({ kcal: 20, protein: 1, carbs: 2, fat: 0 }))).toBe('ok')
+  })
+  it('counts alcohol energy (7 kcal/g) so beer and wine are not flagged', () => {
+    // Pils: ~42 kcal, 0.5 g protein, 3 g carbs, 0 fat, 4.9 % vol ≈ 3.9 g alcohol
+    const beer = per100g({ kcal: 42, protein: 0.5, carbs: 3, fat: 0 })
+    expect(assessQuality(beer, { alcoholG: 4.9 * 0.789 })).toBe('ok')
+    expect(assessQuality(beer)).toBe('inconsistent')
   })
   it('reports incomplete data', () => {
     expect(assessQuality(per100g({ kcal: 100 }))).toBe('incomplete')

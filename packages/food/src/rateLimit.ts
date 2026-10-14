@@ -21,11 +21,61 @@ export function createRateLimiter(maxPerMinute: number, now: () => number = Date
       stamps.push(t)
       return true
     },
+    /** True while any request is still inside the window. */
+    busy(): boolean {
+      const t = now()
+      while (stamps.length && t - stamps[0]! >= 60_000) stamps.shift()
+      return stamps.length > 0
+    },
     /** Milliseconds until a slot frees up (0 if one is free now). */
     waitMs(): number {
       const t = now()
       while (stamps.length && t - stamps[0]! >= 60_000) stamps.shift()
       return stamps.length < maxPerMinute ? 0 : 60_000 - (t - stamps[0]!)
+    },
+  }
+}
+
+/**
+ * One sliding-window limiter per key (e.g. per user), so one account can't
+ * use up a budget every user shares. Idle keys are pruned as it goes.
+ */
+export function createKeyedRateLimiter(maxPerMinute: number, now: () => number = Date.now) {
+  const buckets = new Map<string, ReturnType<typeof createRateLimiter>>()
+  let lastPrune = now()
+  return {
+    tryAcquire(key: string): boolean {
+      const t = now()
+      if (t - lastPrune > 60_000) {
+        for (const [k, b] of buckets) if (b.waitMs() === 0 && !b.busy()) buckets.delete(k)
+        lastPrune = t
+      }
+      let bucket = buckets.get(key)
+      if (!bucket) buckets.set(key, (bucket = createRateLimiter(maxPerMinute, now)))
+      return bucket.tryAcquire()
+    },
+  }
+}
+
+/** Remembers keys for a while (e.g. barcodes OFF doesn't know). Bounded. */
+export function createTtlSet(ttlMs: number, maxSize = 5000, now: () => number = Date.now) {
+  const expiries = new Map<string, number>()
+  return {
+    has(key: string): boolean {
+      const exp = expiries.get(key)
+      if (exp == null) return false
+      if (exp <= now()) {
+        expiries.delete(key)
+        return false
+      }
+      return true
+    },
+    add(key: string): void {
+      if (expiries.size >= maxSize) {
+        // Maps iterate in insertion order: drop the oldest entry.
+        expiries.delete(expiries.keys().next().value!)
+      }
+      expiries.set(key, now() + ttlMs)
     },
   }
 }

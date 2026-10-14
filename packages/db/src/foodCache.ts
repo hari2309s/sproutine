@@ -13,6 +13,7 @@ interface FoodRow {
   brand: string | null
   per_100g: Nutrients
   estimated_nutrients: NutrientKey[]
+  allergens_known: boolean
   allergens: Allergen[]
   traces: Allergen[]
   serving_g: number | null
@@ -20,7 +21,7 @@ interface FoodRow {
 }
 
 const COLUMNS =
-  'source, source_id, barcode, name, name_de, brand, per_100g, estimated_nutrients, allergens, traces, serving_g, quality'
+  'source, source_id, barcode, name, name_de, brand, per_100g, estimated_nutrients, allergens_known, allergens, traces, serving_g, quality'
 
 export function rowToFood(r: FoodRow): FoodRecord {
   return {
@@ -32,6 +33,7 @@ export function rowToFood(r: FoodRow): FoodRecord {
     brand: r.brand,
     per100g: r.per_100g,
     estimatedNutrients: r.estimated_nutrients ?? [],
+    allergensKnown: r.allergens_known === true,
     allergens: r.allergens ?? [],
     traces: r.traces ?? [],
     servingG: r.serving_g == null ? null : Number(r.serving_g),
@@ -49,6 +51,7 @@ function foodToRow(f: FoodRecord): FoodRow & { fetched_at: string } {
     brand: f.brand,
     per_100g: f.per100g,
     estimated_nutrients: f.estimatedNutrients,
+    allergens_known: f.allergensKnown,
     allergens: f.allergens,
     traces: f.traces,
     serving_g: f.servingG,

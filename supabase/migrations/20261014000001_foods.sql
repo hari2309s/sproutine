@@ -16,6 +16,9 @@ create table if not exists public.foods (
   -- {kcal, protein, fat, carbs, fiber, sugar, salt} per 100 g; null = unknown.
   per_100g            jsonb not null,
   estimated_nutrients text[] not null default '{}',
+  -- false = the source never analysed allergens; an empty list then means
+  -- "unknown", not "none", and must be treated as unsafe.
+  allergens_known     boolean not null default false,
   allergens           text[] not null default '{}',
   traces              text[] not null default '{}',
   serving_g           numeric check (serving_g is null or serving_g > 0),

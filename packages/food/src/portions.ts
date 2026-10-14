@@ -64,26 +64,72 @@ const FOOD_PORTIONS: FoodPortion[] = [
   { match: ['toast', 'toastbrot'], units: { slice: 25 }, default: 50 },
   { match: ['knäckebrot', 'crispbread'], units: { slice: 10, piece: 10 }, default: 20 },
   { match: ['pumpernickel'], units: { slice: 40 }, default: 80 },
-  { match: ['brötchen', 'semmel', 'schrippe', 'bread roll', 'roll', 'bun'], units: { piece: 60 }, default: 60 },
+  {
+    match: ['brötchen', 'semmel', 'schrippe', 'bread roll', 'roll', 'bun'],
+    units: { piece: 60 },
+    default: 60,
+  },
   { match: ['brezel', 'breze', 'pretzel'], units: { piece: 85 }, default: 85 },
   { match: ['croissant'], units: { piece: 60 }, default: 60 },
   { match: ['bagel'], units: { piece: 90 }, default: 90 },
   { match: ['baguette'], units: { slice: 30, piece: 60 }, default: 60 },
-  { match: ['vollkornbrot', 'roggenbrot', 'mischbrot', 'sauerteigbrot', 'brot', 'bread', 'rye bread', 'sourdough'], units: { slice: 45 }, default: 90 },
+  {
+    match: [
+      'vollkornbrot',
+      'roggenbrot',
+      'mischbrot',
+      'sauerteigbrot',
+      'brot',
+      'bread',
+      'rye bread',
+      'sourdough',
+    ],
+    units: { slice: 45 },
+    default: 90,
+  },
   { match: ['kuchen', 'cake', 'torte'], units: { slice: 100, piece: 100 }, default: 100 },
   { match: ['muffin'], units: { piece: 80 }, default: 80 },
   { match: ['keks', 'kekse', 'cookie', 'biscuit'], units: { piece: 12 }, default: 25 },
 
   // Breakfast
-  { match: ['müsli', 'muesli', 'granola', 'haferflocken', 'oats', 'porridge', 'cornflakes', 'cereal'], units: { bowl: 50, cup: 80, tbsp: 10, portion: 50 }, default: 50 },
+  {
+    match: [
+      'müsli',
+      'muesli',
+      'granola',
+      'haferflocken',
+      'oats',
+      'porridge',
+      'cornflakes',
+      'cereal',
+    ],
+    units: { bowl: 50, cup: 80, tbsp: 10, portion: 50 },
+    default: 50,
+  },
   { match: ['ei', 'eier', 'egg', 'eggs'], units: { piece: 55 }, default: 55 },
-  { match: ['marmelade', 'konfitüre', 'jam', 'honig', 'honey', 'nutella'], units: { tsp: 7, tbsp: 20, portion: 20 }, default: 20 },
+  {
+    match: ['marmelade', 'konfitüre', 'jam', 'honig', 'honey', 'nutella'],
+    units: { tsp: 7, tbsp: 20, portion: 20 },
+    default: 20,
+  },
   { match: ['butter', 'margarine'], units: { tsp: 5, tbsp: 14, portion: 10 }, default: 10 },
 
   // Dairy
-  { match: ['quark', 'magerquark', 'skyr'], units: { tbsp: 30, bowl: 250, portion: 150 }, default: 150 },
-  { match: ['joghurt', 'jogurt', 'yoghurt', 'yogurt'], units: { tbsp: 20, bowl: 150, cup: 150, portion: 150 }, default: 150 },
-  { match: ['käse', 'kaese', 'cheese', 'gouda', 'emmentaler', 'cheddar'], units: { slice: 20, piece: 30 }, default: 30 },
+  {
+    match: ['quark', 'magerquark', 'skyr'],
+    units: { tbsp: 30, bowl: 250, portion: 150 },
+    default: 150,
+  },
+  {
+    match: ['joghurt', 'jogurt', 'yoghurt', 'yogurt'],
+    units: { tbsp: 20, bowl: 150, cup: 150, portion: 150 },
+    default: 150,
+  },
+  {
+    match: ['käse', 'kaese', 'cheese', 'gouda', 'emmentaler', 'cheddar'],
+    units: { slice: 20, piece: 30 },
+    default: 30,
+  },
   { match: ['frischkäse', 'cream cheese'], units: { tsp: 10, tbsp: 20 }, default: 30 },
   { match: ['feta', 'hirtenkäse', 'mozzarella'], units: { slice: 25, piece: 125 }, default: 50 },
   { match: ['milch', 'milk'], units: { glass: 200, cup: 240, mug: 250, tbsp: 15 }, default: 200 },
@@ -95,50 +141,117 @@ const FOOD_PORTIONS: FoodPortion[] = [
   { match: ['orange', 'apfelsine'], units: { piece: 150 }, default: 150 },
   { match: ['mandarine', 'clementine'], units: { piece: 70 }, default: 70 },
   { match: ['kiwi'], units: { piece: 75 }, default: 75 },
-  { match: ['beeren', 'berries', 'erdbeeren', 'strawberries', 'heidelbeeren', 'blueberries', 'himbeeren'], units: { handful: 60, cup: 145, bowl: 150 }, default: 125 },
+  {
+    match: [
+      'beeren',
+      'berries',
+      'erdbeeren',
+      'strawberries',
+      'heidelbeeren',
+      'blueberries',
+      'himbeeren',
+    ],
+    units: { handful: 60, cup: 145, bowl: 150 },
+    default: 125,
+  },
   { match: ['trauben', 'grapes'], units: { handful: 80 }, default: 100 },
 
   // Vegetables
   { match: ['tomate', 'tomato'], units: { piece: 100 }, default: 100 },
-  { match: ['cherrytomate', 'cherry tomato', 'cherry tomatoes'], units: { piece: 15, handful: 80 }, default: 80 },
+  {
+    match: ['cherrytomate', 'cherry tomato', 'cherry tomatoes'],
+    units: { piece: 15, handful: 80 },
+    default: 80,
+  },
   { match: ['gurke', 'cucumber'], units: { slice: 10, piece: 300 }, default: 100 },
   { match: ['karotte', 'möhre', 'mohrrübe', 'carrot'], units: { piece: 70 }, default: 70 },
   { match: ['paprika', 'bell pepper'], units: { piece: 160 }, default: 160 },
   { match: ['kartoffel', 'kartoffeln', 'potato', 'potatoes'], units: { piece: 100 }, default: 200 },
   { match: ['salat', 'salad'], units: { bowl: 150, plate: 200, portion: 150 }, default: 150 },
-  { match: ['rosenkohl', 'brussels sprouts', 'brokkoli', 'broccoli', 'gemüse', 'vegetables'], units: { handful: 60, cup: 90, portion: 150 }, default: 150 },
+  {
+    match: ['rosenkohl', 'brussels sprouts', 'brokkoli', 'broccoli', 'gemüse', 'vegetables'],
+    units: { handful: 60, cup: 90, portion: 150 },
+    default: 150,
+  },
 
   // Mains & sides
-  { match: ['nudeln', 'pasta', 'spaghetti', 'penne'], units: { plate: 250, portion: 250, bowl: 250 }, default: 250 },
+  {
+    match: ['nudeln', 'pasta', 'spaghetti', 'penne', 'noodles'],
+    units: { plate: 250, portion: 250, bowl: 250 },
+    default: 250,
+  },
   { match: ['reis', 'rice'], units: { cup: 185, bowl: 200, portion: 180 }, default: 180 },
-  { match: ['linsen', 'lentils', 'kichererbsen', 'chickpeas', 'bohnen', 'beans'], units: { cup: 200, tbsp: 15, portion: 150 }, default: 150 },
-  { match: ['suppe', 'soup', 'eintopf', 'stew'], units: { bowl: 300, plate: 300, portion: 300 }, default: 300 },
+  {
+    match: ['linsen', 'lentils', 'kichererbsen', 'chickpeas', 'bohnen', 'beans'],
+    units: { cup: 200, tbsp: 15, portion: 150 },
+    default: 150,
+  },
+  {
+    match: ['suppe', 'soup', 'eintopf', 'stew'],
+    units: { bowl: 300, plate: 300, portion: 300 },
+    default: 300,
+  },
   { match: ['döner', 'doner', 'kebab'], units: { piece: 350 }, default: 350 },
   { match: ['pizza'], units: { slice: 110, piece: 110 }, default: 330 },
   { match: ['bratwurst', 'wurst', 'currywurst', 'sausage'], units: { piece: 100 }, default: 100 },
   { match: ['schnitzel'], units: { piece: 150 }, default: 150 },
-  { match: ['hähnchen', 'chicken', 'hühnchen', 'pute', 'turkey'], units: { piece: 150, portion: 150 }, default: 150 },
-  { match: ['lachs', 'salmon', 'fisch', 'fish'], units: { piece: 125, portion: 125 }, default: 125 },
+  {
+    match: ['hähnchen', 'chicken', 'hühnchen', 'pute', 'turkey'],
+    units: { piece: 150, portion: 150 },
+    default: 150,
+  },
+  {
+    match: ['lachs', 'salmon', 'fisch', 'fish'],
+    units: { piece: 125, portion: 125 },
+    default: 125,
+  },
   { match: ['tofu', 'tempeh'], units: { slice: 50, portion: 100 }, default: 100 },
   { match: ['schinken', 'ham', 'salami', 'aufschnitt'], units: { slice: 15 }, default: 30 },
 
   // Snacks & drinks
-  { match: ['nüsse', 'nuts', 'mandeln', 'almonds', 'walnüsse', 'walnuts', 'erdnüsse', 'peanuts'], units: { handful: 30, piece: 1.2 }, default: 30 },
+  {
+    match: ['nüsse', 'nuts', 'mandeln', 'almonds', 'walnüsse', 'walnuts', 'erdnüsse', 'peanuts'],
+    units: { handful: 30, piece: 1.2 },
+    default: 30,
+  },
   { match: ['schokolade', 'chocolate'], units: { piece: 6, slice: 6, portion: 25 }, default: 25 },
   { match: ['chips', 'crisps'], units: { handful: 20, bowl: 50 }, default: 30 },
-  { match: ['kaffee', 'coffee', 'espresso', 'cappuccino', 'latte'], units: { cup: 150, mug: 250, glass: 250 }, default: 200 },
+  {
+    match: ['kaffee', 'coffee', 'espresso', 'cappuccino', 'latte'],
+    units: { cup: 150, mug: 250, glass: 250 },
+    default: 200,
+  },
   { match: ['tee', 'tea'], units: { cup: 200, mug: 250, glass: 250 }, default: 250 },
-  { match: ['saft', 'juice', 'schorle', 'limonade', 'cola', 'soda'], units: { glass: 200, cup: 240 }, default: 250 },
+  {
+    match: ['saft', 'juice', 'schorle', 'limonade', 'cola', 'soda'],
+    units: { glass: 200, cup: 240 },
+    default: 250,
+  },
   { match: ['bier', 'beer'], units: { glass: 330, piece: 500 }, default: 500 },
   { match: ['wein', 'wine'], units: { glass: 150 }, default: 150 },
 ]
 
-/** Finds the portion entry whose keyword appears as a whole word in the name. */
+/**
+ * Finds the portion entry for a food name. When several keywords match, the
+ * one appearing last wins: in English the head noun comes last ("milk
+ * chocolate" is chocolate, "chicken soup" is soup); ties go to the longer
+ * keyword. German compounds are single words and match whole only.
+ */
 function findFood(name: string): FoodPortion | undefined {
   const text = name.toLowerCase()
-  return FOOD_PORTIONS.find((entry) =>
-    entry.match.some((word) => new RegExp(`(^|[^\\p{L}])${word}([^\\p{L}]|$)`, 'u').test(text))
-  )
+  let best: { entry: FoodPortion; at: number; len: number } | undefined
+  for (const entry of FOOD_PORTIONS) {
+    for (const word of entry.match) {
+      const re = new RegExp(`(^|[^\\p{L}])${word}(?=[^\\p{L}]|$)`, 'gu')
+      for (const m of text.matchAll(re)) {
+        const at = m.index + m[1]!.length
+        if (!best || at > best.at || (at === best.at && word.length > best.len)) {
+          best = { entry, at, len: word.length }
+        }
+      }
+    }
+  }
+  return best?.entry
 }
 
 /**
@@ -161,8 +274,13 @@ export function estimatePortion(
   if (food && unit && food.units[unit] != null) {
     return { grams: round(quantity * food.units[unit]!), basis: 'food-unit', confidence: 'medium' }
   }
-  if (food && (!unit || unit === 'portion' || unit === 'piece')) {
-    return { grams: round(quantity * (food.units.piece ?? food.default)), basis: 'food-default', confidence: 'medium' }
+  if (food && unit === 'piece' && food.units.piece == null) {
+    return { grams: round(quantity * food.default), basis: 'food-default', confidence: 'medium' }
+  }
+  if (food && (!unit || unit === 'portion')) {
+    // One typical serving of the food, not one piece of it ("nuts" is a
+    // handful, not a single almond).
+    return { grams: round(quantity * food.default), basis: 'food-default', confidence: 'medium' }
   }
   const generic = (unit && GENERIC_UNITS[unit]) ?? GENERIC_UNITS.portion!
   return { grams: round(quantity * generic), basis: 'generic-unit', confidence: 'low' }

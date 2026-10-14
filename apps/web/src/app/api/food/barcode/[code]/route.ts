@@ -3,10 +3,14 @@ import { isValidBarcode, lookupBarcode, RateLimitedError } from '@sproutine/food
 import { consumeUserQuota } from '@sproutine/ai'
 import { createFoodCache, createServerClient } from '@sproutine/db'
 import { requireUser } from '@/lib/supabase-server'
+import {
+  FOOD_DAILY_LIMIT,
+  foodExternalLimiter,
+  foodRequestLimiter,
+  unknownBarcodes,
+} from '@/lib/foodLimits'
 
 export const runtime = 'nodejs'
-
-const FOOD_DAILY_LIMIT = 300
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   try {
@@ -14,13 +18,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (errorResponse) return errorResponse
 
     const { code } = await params
-    if (!isValidBarcode(code)) return NextResponse.json({ error: 'invalid barcode' }, { status: 400 })
+    if (!isValidBarcode(code))
+      return NextResponse.json({ error: 'invalid barcode' }, { status: 400 })
 
+    if (!foodRequestLimiter.tryAcquire(user.id)) {
+      return NextResponse.json({ error: 'too many lookups, slow down' }, { status: 429 })
+    }
     if (!(await consumeUserQuota(user.id, 'food', FOOD_DAILY_LIMIT))) {
       return NextResponse.json({ error: 'daily food lookup limit reached' }, { status: 429 })
     }
 
-    const food = await lookupBarcode(code, createFoodCache(createServerClient(), user.id))
+    const food = await lookupBarcode(
+      code,
+      createFoodCache(createServerClient(), user.id),
+      undefined,
+      {
+        canCallExternal: () => foodExternalLimiter.tryAcquire(user.id),
+        unknownBarcodes,
+      }
+    )
     if (!food) return NextResponse.json({ error: 'not found' }, { status: 404 })
     return NextResponse.json({ food })
   } catch (error) {

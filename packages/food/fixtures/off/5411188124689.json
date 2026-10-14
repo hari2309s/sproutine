@@ -7,6 +7,11 @@
     "en:gluten"
   ],
   "traces_tags": [],
+  "ingredients_n": 13,
+  "states_tags": [
+    "en:ingredients-completed",
+    "en:ingredients-photo-selected"
+  ],
   "serving_quantity": 100,
   "nutrition": {
     "aggregated_set": {

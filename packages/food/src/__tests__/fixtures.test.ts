@@ -84,7 +84,8 @@ describe('USDA fixture (generic foods)', () => {
         kcal,
         protein: byId.get(1003),
         fat: byId.get(1004),
-        carbs: byId.get(1005),
+        // EU convention: carbs exclude fibre (FDC's 1005 includes it).
+        carbs: byId.has(1005) ? Math.max(0, byId.get(1005)! - (byId.get(1079) ?? 0)) : undefined,
         fiber: byId.get(1079),
         sugar: byId.get(2000) ?? byId.get(1063),
         salt: sodium != null ? (sodium * 2.5) / 1000 : undefined,

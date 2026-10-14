@@ -9,6 +9,11 @@
   "traces_tags": [
     "en:nuts"
   ],
+  "ingredients_n": 24,
+  "states_tags": [
+    "en:ingredients-completed",
+    "en:ingredients-photo-selected"
+  ],
   "serving_quantity": 125,
   "nutrition": {
     "aggregated_set": {

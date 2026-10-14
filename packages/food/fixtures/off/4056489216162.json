@@ -11,6 +11,11 @@
     "ro:Sahne"
   ],
   "traces_tags": [],
+  "ingredients_n": 12,
+  "states_tags": [
+    "en:ingredients-completed",
+    "en:ingredients-photo-selected"
+  ],
   "serving_quantity": 200,
   "nutrition": {
     "aggregated_set": {
