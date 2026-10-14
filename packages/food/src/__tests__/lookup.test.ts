@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { allergensFromOffTags } from '../allergens'
 import { escapeLucene, isValidBarcode, normalizeOffProduct } from '../off'
 import { normalizeUsdaFood } from '../usda'
-import { estimatePortion } from '../portions'
+import { estimatePortion, FOOD_PORTIONS } from '../portions'
 import {
   createKeyedRateLimiter,
   createRateLimiter,
@@ -166,8 +166,20 @@ describe('estimatePortion', () => {
 
   it('counts items when a number comes without a unit', () => {
     expect(estimatePortion('Kartoffeln', 3).grams).toBe(300)
-    expect(estimatePortion('Mandeln', 10).grams).toBe(12)
+    expect(estimatePortion('Mandeln', 10).grams).toBe(30)
+    expect(estimatePortion('Mandeln', 50).grams).toBe(60)
     expect(estimatePortion('Kartoffeln', 1).grams).toBe(200)
+  })
+
+  it('never estimates less for a bigger count', () => {
+    for (const keyword of FOOD_PORTIONS.map((f) => f.match[0]!)) {
+      let previous = 0
+      for (const q of [0.5, 1, 1.5, 2, 3, 10]) {
+        const { grams } = estimatePortion(keyword, q)
+        expect(grams, `${q} × ${keyword}`).toBeGreaterThanOrEqual(previous)
+        previous = grams
+      }
+    }
   })
 
   it('ignores accompaniments after mit / with / und / and', () => {

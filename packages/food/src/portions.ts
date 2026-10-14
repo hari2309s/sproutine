@@ -49,7 +49,7 @@ const GENERIC_UNITS: Partial<Record<PortionUnit, number>> = {
   portion: 150,
 }
 
-interface FoodPortion {
+export interface FoodPortion {
   /** Lowercase words (English and German) that identify the food. */
   match: string[]
   /** Grams for one of each unit. */
@@ -59,7 +59,8 @@ interface FoodPortion {
 }
 
 // More specific entries first — the first match wins.
-const FOOD_PORTIONS: FoodPortion[] = [
+/** @internal Exported for tests. */
+export const FOOD_PORTIONS: FoodPortion[] = [
   // Bread & bakery
   { match: ['toast', 'toastbrot'], units: { slice: 25 }, default: 50 },
   { match: ['knäckebrot', 'crispbread'], units: { slice: 10, piece: 10 }, default: 20 },
@@ -281,8 +282,11 @@ export function estimatePortion(
     return { grams: round(quantity * food.default), basis: 'food-default', confidence: 'medium' }
   }
   if (food && !unit && quantity > 1 && food.units.piece != null) {
-    // A count without a unit counts items: "3 Kartoffeln" is three potatoes.
-    return { grams: round(quantity * food.units.piece), basis: 'food-unit', confidence: 'medium' }
+    // A count without a unit counts items ("3 Kartoffeln" is three potatoes),
+    // but never less than one serving: "2 Pizza" isn't two slices' worth less
+    // than "Pizza", and "10 Mandeln" is still at least a handful.
+    const grams = Math.max(quantity * food.units.piece, food.default)
+    return { grams: round(grams), basis: 'food-unit', confidence: 'medium' }
   }
   if (food && (!unit || unit === 'portion')) {
     // One typical serving, not one piece ("nuts" is a handful, not an almond).
