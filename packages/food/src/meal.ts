@@ -1,29 +1,11 @@
-import { computeNutrients } from './nutrients'
+import { computeNutrients, EMPTY_NUTRIENTS } from './nutrients'
 import { estimatePortion, type PortionEstimate, type PortionUnit } from './portions'
 import { searchFood, type ExternalGuards, type FoodCache, type SearchSources } from './search'
 import type { FoodRecord, FoodSource, Nutrients } from './types'
+import { MAX_ITEM_GRAMS, MAX_MEAL_ITEMS, type MealSlot, type MealSource } from './mealBasics'
 
-export const MEAL_SLOTS = ['breakfast', 'lunch', 'dinner', 'snack'] as const
-export type MealSlot = (typeof MEAL_SLOTS)[number]
-
-export const MEAL_SOURCES = ['text', 'voice', 'photo', 'barcode'] as const
-export type MealSource = (typeof MEAL_SOURCES)[number]
-
-/** Most items one log may hold; keeps external lookups and payloads bounded. */
-export const MAX_MEAL_ITEMS = 8
-/** Upper bound for one item's grams: a large plate is ~700 g, a litre drink 1000. */
-export const MAX_ITEM_GRAMS = 2000
-
-/** The meal slot a log falls into by local time when the user didn't say. */
-export function mealSlotAt(date: Date, timeZone = 'Europe/Berlin'): MealSlot {
-  const hour = Number(
-    new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone }).format(date)
-  )
-  if (hour >= 5 && hour < 11) return 'breakfast'
-  if (hour >= 11 && hour < 15) return 'lunch'
-  if (hour >= 17 && hour < 22) return 'dinner'
-  return 'snack'
-}
+export { MEAL_SLOTS, MEAL_SOURCES, MAX_MEAL_ITEMS, MAX_ITEM_GRAMS, mealSlotAt } from './mealBasics'
+export type { MealSlot, MealSource } from './mealBasics'
 
 /** One food as the user described it, extracted by the model. No numbers but theirs. */
 export interface ParsedMealItem {
@@ -116,5 +98,30 @@ export function buildMealLog(items: { food: FoodRecord; grams: number }[]): Meal
     })),
     totals,
     partial,
+  }
+}
+
+/**
+ * Gentle mode: the same food with every number removed, so data sent to the
+ * browser carries no nutrients at all rather than relying on the UI hiding them.
+ */
+export function withoutNutrients(food: FoodRecord): FoodRecord {
+  return {
+    ...food,
+    per100g: { ...EMPTY_NUTRIENTS },
+    estimatedNutrients: [],
+    servingG: null,
+    quality: 'incomplete',
+  }
+}
+
+export function proposalWithoutNutrients(proposal: MealLogProposal): MealLogProposal {
+  return {
+    ...proposal,
+    items: proposal.items.map((i) => ({
+      ...i,
+      match: i.match && withoutNutrients(i.match),
+      alternatives: i.alternatives.map(withoutNutrients),
+    })),
   }
 }

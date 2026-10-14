@@ -27,10 +27,9 @@ import {
   parseMeal,
 } from '@sproutine/ai'
 import {
-  EMPTY_NUTRIENTS,
   mealSlotAt,
+  proposalWithoutNutrients,
   proposeMealLog,
-  type FoodRecord,
   type MealLogProposal,
 } from '@sproutine/food'
 import { createFoodCache, createServerClient, getProfile } from '@sproutine/db'
@@ -138,24 +137,6 @@ const MEAL_CARD_TEXT = "Here's what I found. Check the amounts, then save it."
 // parsing, lookups) stays inside maxDuration even when OFF is slow. Items
 // after the cut-off are matched from the cache only.
 const MEAL_LOOKUP_BUDGET_MS = 10_000
-
-/** Gentle mode: the card data carries no numbers at all, not just hidden ones. */
-function withoutNumbers(proposal: MealLogProposal): MealLogProposal {
-  const strip = (f: FoodRecord): FoodRecord => ({
-    ...f,
-    per100g: { ...EMPTY_NUTRIENTS },
-    estimatedNutrients: [],
-    servingG: null,
-  })
-  return {
-    ...proposal,
-    items: proposal.items.map((i) => ({
-      ...i,
-      match: i.match && strip(i.match),
-      alternatives: i.alternatives.map(strip),
-    })),
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -328,7 +309,7 @@ export async function POST(request: NextRequest) {
                       speechTone: 'neutral' satisfies SpeechTone,
                       createdAt: new Date().toISOString(),
                     },
-                    profile.safetyMode ? withoutNumbers(proposal) : proposal
+                    profile.safetyMode ? proposalWithoutNutrients(proposal) : proposal
                   )
                 }
               }

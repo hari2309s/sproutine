@@ -42,6 +42,8 @@ export {
   mealSlotAt,
   proposeMealLog,
   buildMealLog,
+  withoutNutrients,
+  proposalWithoutNutrients,
 } from './meal'
 export type {
   MealSlot,

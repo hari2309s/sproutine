@@ -6,6 +6,9 @@ import {
   MAX_MEAL_ITEMS,
   MEAL_SLOTS,
   MEAL_SOURCES,
+  type LoggedItem,
+  type MealSlot,
+  type Nutrients,
 } from '@sproutine/food'
 import {
   createServerClient,
@@ -103,5 +106,66 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[meals]', error instanceof Error ? error.message : error)
     return NextResponse.json({ error: 'Saving the meal failed' }, { status: 500 })
+  }
+}
+
+interface MealLogRow {
+  id: string
+  eaten_at: string
+  meal_slot: MealSlot
+  items: LoggedItem[]
+  totals: Nutrients
+  partial: string[]
+}
+
+/**
+ * Meals since a point in time (the client's local midnight). In gentle mode
+ * the response carries foods and grams only, no nutrient values.
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const { user, errorResponse } = await requireUser(request)
+    if (errorResponse) return errorResponse
+
+    const since = new Date(request.nextUrl.searchParams.get('since') ?? '')
+    const now = Date.now()
+    if (
+      Number.isNaN(since.getTime()) ||
+      since.getTime() > now ||
+      since.getTime() < now - MAX_BACKDATE_MS - 24 * 60 * 60 * 1000
+    ) {
+      return NextResponse.json({ error: 'invalid since' }, { status: 400 })
+    }
+
+    const db = createServerClient()
+    const [profile, { data, error }] = await Promise.all([
+      getProfile(db, user.id),
+      db
+        .from('meal_logs')
+        .select('id, eaten_at, meal_slot, items, totals, partial')
+        .eq('user_id', user.id)
+        .gte('eaten_at', since.toISOString())
+        .order('eaten_at', { ascending: true })
+        .limit(50),
+    ])
+    if (error) throw new Error(error.message)
+    const gentle = profile?.safetyMode !== false
+
+    const logs = ((data ?? []) as MealLogRow[]).map((r) => ({
+      id: r.id,
+      eatenAt: r.eaten_at,
+      slot: r.meal_slot,
+      items: r.items.map((i) => ({
+        name: i.name,
+        brand: i.brand,
+        grams: i.grams,
+        ...(gentle ? {} : { nutrients: i.nutrients }),
+      })),
+      ...(gentle ? {} : { totals: r.totals, partial: r.partial }),
+    }))
+    return NextResponse.json({ logs, gentle })
+  } catch (error) {
+    console.error('[meals:list]', error instanceof Error ? error.message : error)
+    return NextResponse.json({ error: 'Loading meals failed' }, { status: 500 })
   }
 }

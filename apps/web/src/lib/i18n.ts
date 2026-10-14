@@ -1,7 +1,7 @@
 import type { Allergen, Diet } from '@sproutine/types'
 import type { VoiceId } from './voices'
 import type { Theme } from '@/hooks/useTheme'
-import type { MealSlot } from '@sproutine/food'
+import type { MealSlot } from '@sproutine/food/client'
 
 export type Locale = 'en'
 

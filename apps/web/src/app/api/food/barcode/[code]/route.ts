@@ -4,9 +4,10 @@ import {
   lookupBarcode,
   RateLimitedError,
   UserRateLimitedError,
+  withoutNutrients,
 } from '@sproutine/food'
 import { consumeUserQuota } from '@sproutine/ai'
-import { createFoodCache, createServerClient } from '@sproutine/db'
+import { createFoodCache, createServerClient, getProfile } from '@sproutine/db'
 import { requireUser } from '@/lib/supabase-server'
 import {
   FOOD_DAILY_LIMIT,
@@ -33,17 +34,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'daily food lookup limit reached' }, { status: 429 })
     }
 
-    const food = await lookupBarcode(
-      code,
-      createFoodCache(createServerClient(), user.id),
-      undefined,
-      {
-        canCallExternal: () => foodExternalLimiter.tryAcquire(user.id),
-        unknownBarcodes,
-      }
-    )
+    const db = createServerClient()
+    const food = await lookupBarcode(code, createFoodCache(db, user.id), undefined, {
+      canCallExternal: () => foodExternalLimiter.tryAcquire(user.id),
+      unknownBarcodes,
+    })
     if (!food) return NextResponse.json({ error: 'not found' }, { status: 404 })
-    return NextResponse.json({ food })
+    // Gentle mode: no nutrient values leave the server.
+    const profile = await getProfile(db, user.id)
+    return NextResponse.json({
+      food: profile?.safetyMode !== false ? withoutNutrients(food) : food,
+    })
   } catch (error) {
     if (error instanceof UserRateLimitedError) {
       return NextResponse.json({ error: 'too many new lookups, slow down' }, { status: 429 })

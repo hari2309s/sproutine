@@ -6,7 +6,7 @@ import { useRef, useEffect, useCallback } from 'react'
 import { usePersistedPreference } from './usePersistedPreference'
 import { useTextToSpeech, type SpeechTone } from './useTextToSpeech'
 import { supabase } from '@/lib/supabase'
-import type { MealLogProposal } from '@sproutine/food'
+import type { MealLogProposal } from '@sproutine/food/client'
 
 // Metadata the chat route attaches to each assistant message (see chat/route.ts).
 export type ChatMetadata = {

@@ -1,14 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { computeNutrients, roundForDisplay } from '@sproutine/food/nutrients'
 import {
+  computeNutrients,
   MAX_ITEM_GRAMS,
   MEAL_SLOTS,
+  roundForDisplay,
   type FoodRecord,
   type MealLogProposal,
   type MealSlot,
-} from '@sproutine/food'
+} from '@sproutine/food/client'
 import { Icon } from './Icon'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -34,6 +35,8 @@ interface MealLogCardProps {
   /** Shown in chat: the server adds a "Saved to …" line to history. */
   fromChat?: boolean
   onSaved?: (meal: SavedMeal) => void
+  /** Called on "Not now"; without it the card collapses to a "Not saved" note. */
+  onDiscard?: () => void
 }
 
 const parseGrams = (g: string) => {
@@ -52,6 +55,7 @@ export function MealLogCard({
   traceId,
   fromChat = false,
   onSaved,
+  onDiscard,
 }: MealLogCardProps) {
   const { t } = useLanguage()
   const [slot, setSlot] = useState<MealSlot>(proposal.slot)
@@ -152,7 +156,7 @@ export function MealLogCard({
             onClick={() => setSlot(s)}
             className={`h-9 rounded-full px-3 text-sm ${
               slot === s
-                ? 'bg-sproutine-accent font-semibold text-white'
+                ? 'bg-sproutine-accent font-semibold text-sproutine-bg'
                 : 'bg-sproutine-surface font-medium text-sproutine-text-secondary hover:text-sproutine-text'
             }`}
           >
@@ -275,7 +279,7 @@ export function MealLogCard({
         </button>
         <button
           type="button"
-          onClick={() => setStatus('discarded')}
+          onClick={() => (onDiscard ? onDiscard() : setStatus('discarded'))}
           disabled={status === 'saving'}
           className="btn-ghost h-11 px-4"
         >
