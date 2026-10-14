@@ -144,6 +144,7 @@ export interface Translations {
     planFailed: string
     cardTitle: string
     cardTitleNext: string
+    droppedWishes: string
     openWeek: string
     loadFailed: string
     retry: string
@@ -475,6 +476,8 @@ export const translations: Record<Locale, Translations> = {
       planFailed: "I couldn't make a plan just now. Please try again.",
       cardTitle: 'Dinners this week',
       cardTitleNext: 'Dinners next week',
+      droppedWishes:
+        "Your wishes left too little to choose from, so I planned without them. Swap anything you'd like in the Week tab.",
       openWeek: 'Open my week',
       loadFailed: "I couldn't load your plan just now.",
       retry: 'Try again',

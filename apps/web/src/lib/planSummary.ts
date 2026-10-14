@@ -13,6 +13,8 @@ export interface MealPlanSummary {
   nextWeek: boolean
   /** An existing plan shown as-is rather than a new one. */
   existing?: boolean
+  /** This week's wishes ruled out too much, so the plan ignores them. */
+  droppedWishes?: boolean
   dinners: { date: string; name: string }[]
   totalCents: number
   issues: PlanIssue[]

@@ -148,8 +148,8 @@ function templatedResponse(text: string, metadata: Record<string, unknown>, card
 }
 
 const MEAL_CARD_TEXT = "Here's what I found. Check the amounts, then save it."
-const PLAN_EXISTS_TEXT =
-  'You already have a plan for this week. To start over, open the Week tab and tap New plan.'
+const planExistsText = (nextWeek: boolean) =>
+  `You already have a plan for ${nextWeek ? 'next' : 'this'} week. To start over, open the Week tab and tap New plan.`
 // Reading wishes for a plan gets a short budget; after it, keyword fallback.
 const PLAN_PREFS_BUDGET_MS = 7_000
 const PLAN_CARD_TEXT =
@@ -345,23 +345,30 @@ export async function POST(request: NextRequest) {
                         prefs: p,
                         seed: Math.floor(Math.random() * 2 ** 31),
                       })
+                    // A broad "avoid" word can rule out nearly everything. Only
+                    // when the wishes leave more slots empty than the profile
+                    // alone does, plan without them (and say so on the card).
+                    const gaps = (r: ReturnType<typeof build>) =>
+                      r.issues.filter((i) => i.kind === 'no-recipe').length
                     let result = build(prefs)
-                    // A broad "avoid" word can rule out nearly everything; then
-                    // plan without this week's wishes rather than save gaps.
                     let usedPrefs = prefs
-                    if (result.issues.some((i) => i.kind === 'no-recipe')) {
-                      usedPrefs = prefs.maxMinutes ? { maxMinutes: prefs.maxMinutes } : {}
-                      result = build(usedPrefs)
-                      if (result.issues.some((i) => i.kind === 'no-recipe')) {
+                    let droppedWishes = false
+                    if (gaps(result) > 0 && Object.keys(prefs).length > 0) {
+                      const plain = build({})
+                      if (gaps(plain) < gaps(result)) {
+                        result = plain
                         usedPrefs = {}
-                        result = build(usedPrefs)
+                        droppedWishes = true
                       }
                     }
                     const { plan, issues } = result
                     if (!plan.days.some((d) => d.meals.dinner)) throw new Error('empty plan')
                     if (!isSafePlan(validatePlan(plan, planProfile))) throw new Error('unsafe plan')
                     await saveActivePlan(db, user.id, plan, usedPrefs)
-                    const summary = summarisePlan(plan, issues, nextWeek)
+                    const summary = {
+                      ...summarisePlan(plan, issues, nextWeek),
+                      ...(droppedWishes ? { droppedWishes: true } : {}),
+                    }
                     span.update({
                       output: {
                         weekStart,
@@ -378,7 +385,9 @@ export async function POST(request: NextRequest) {
                   }
                 })
                 if (planned) {
-                  const caption = planned.existing ? PLAN_EXISTS_TEXT : PLAN_CARD_TEXT
+                  const caption = planned.existing
+                    ? planExistsText(planned.nextWeek)
+                    : PLAN_CARD_TEXT
                   endTurn({ output: caption, metadata: { planWeek: planned.weekStart } })
                   // History keeps a plain record; the card itself isn't stored.
                   if (!planned.existing) {

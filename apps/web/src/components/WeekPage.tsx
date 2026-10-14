@@ -72,7 +72,8 @@ export function WeekPage({ userId, initialWeek }: { userId: string; initialWeek?
   const thisWeek = weekStartOf(new Date())
   // A week from a link (a Monday near now), else this week.
   const [week, setWeek] = useState(() =>
-    initialWeek && isPlannableWeek(initialWeek) ? initialWeek : thisWeek
+    // An old link (a week already over) opens this week instead.
+    initialWeek && isPlannableWeek(initialWeek) && initialWeek >= thisWeek ? initialWeek : thisWeek
   )
   const [tab, setTab] = useState<'meals' | 'shopping'>('meals')
   const [stored, setStored] = useState<StoredPlan | null | undefined>(undefined)

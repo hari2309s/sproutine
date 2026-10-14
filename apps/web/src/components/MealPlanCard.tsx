@@ -29,6 +29,9 @@ export function MealPlanCard({ summary }: { summary: MealPlanSummary }) {
           </li>
         ))}
       </ul>
+      {summary.droppedWishes && (
+        <p className="text-sm text-sproutine-text-secondary">{t.week.droppedWishes}</p>
+      )}
       {summary.issues.map((issue, i) => (
         <p key={i} className="text-sm text-sproutine-text-secondary">
           {issue.kind === 'no-recipe'
