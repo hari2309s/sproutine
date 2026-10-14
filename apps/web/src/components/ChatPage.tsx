@@ -8,7 +8,7 @@ import { mealProposalOf, useSproutineChat, type SproutineUIMessage } from '@/hoo
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
 import { ChatBubble } from './ChatBubble'
 import { SafetyCard } from './SafetyCard'
-import { MealLogCard, type SavedMeal } from './MealLogCard'
+import { MealLogCard } from './MealLogCard'
 import { VoiceDock, type VoiceButtonStatus } from './VoiceButton'
 import { AppColumn } from './AppColumn'
 import { BottomNav } from './BottomNav'
@@ -39,17 +39,6 @@ export function ChatPage({ userId, initialMessages, safetyMode }: ChatPageProps)
   const [input, setInput] = useState('')
   const sendText = chat.sendText
   const startVoice = chat.startVoice
-  const saveAssistantNote = chat.saveAssistantNote
-
-  // Keeps a record in history once a meal is saved (the card itself isn't
-  // persisted, so a reload shows this line instead).
-  const handleMealSaved = useCallback(
-    ({ slot, names }: SavedMeal) => {
-      const where = t.meal.savedTo.replace('{slot}', t.meal.slots[slot].toLowerCase())
-      void saveAssistantNote(`${where}: ${names.join(', ')}.`)
-    },
-    [saveAssistantNote, t]
-  )
 
   const status: VoiceButtonStatus = voice.isRecording
     ? 'recording'
@@ -192,7 +181,7 @@ export function ChatPage({ userId, initialMessages, safetyMode }: ChatPageProps)
                     proposal={mealProposal}
                     safetyMode={gentle}
                     traceId={message.metadata?.traceId}
-                    onSaved={handleMealSaved}
+                    fromChat
                   />
                 </div>
               )

@@ -31,6 +31,8 @@ interface MealLogCardProps {
   /** Gentle mode: no numbers, only foods and amounts. */
   safetyMode: boolean
   traceId?: string
+  /** Shown in chat: the server adds a "Saved to …" line to history. */
+  fromChat?: boolean
   onSaved?: (meal: SavedMeal) => void
 }
 
@@ -44,7 +46,13 @@ const parseGrams = (g: string) => {
  * here are only a preview; the server recomputes them from the foods table
  * when saving. Nothing is stored until Save.
  */
-export function MealLogCard({ proposal, safetyMode, traceId, onSaved }: MealLogCardProps) {
+export function MealLogCard({
+  proposal,
+  safetyMode,
+  traceId,
+  fromChat = false,
+  onSaved,
+}: MealLogCardProps) {
   const { t } = useLanguage()
   const [slot, setSlot] = useState<MealSlot>(proposal.slot)
   const [items, setItems] = useState<ItemState[]>(() =>
@@ -94,6 +102,7 @@ export function MealLogCard({ proposal, safetyMode, traceId, onSaved }: MealLogC
           })),
           eatenAt: new Date().toISOString(),
           ...(traceId ? { traceId } : {}),
+          fromChat,
         }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)

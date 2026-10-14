@@ -37,6 +37,8 @@ const Body = z.object({
     .max(MAX_MEAL_ITEMS),
   eatenAt: z.iso.datetime({ offset: true }).optional(),
   traceId: z.string().max(64).optional(),
+  /** Logged from a chat card: add a "Saved to …" line to the chat history. */
+  fromChat: z.boolean().optional(),
 })
 
 /** How far back a meal may be logged; anything older is almost surely a bad clock. */
@@ -77,15 +79,26 @@ export async function POST(request: NextRequest) {
       items.push({ food, grams: Math.round(item.grams) || 1 })
     }
 
+    const log = buildMealLog(items)
     const id = await insertMealLog(db, {
-      ...buildMealLog(items),
+      ...log,
       userId: user.id,
       slot: body.slot,
       source: body.source,
       eatenAt,
-      isEstimate: body.source === 'photo',
+      // Portions are estimated in code (or a pack serving), never weighed.
+      isEstimate: true,
       traceId: body.traceId ?? null,
     })
+
+    if (body.fromChat) {
+      // Written by the server so history only holds assistant text it produced.
+      const note = `Saved to ${body.slot}: ${log.items.map((i) => i.name).join(', ')}.`
+      const { error } = await db
+        .from('chat_messages')
+        .insert({ user_id: user.id, role: 'assistant', content: note })
+      if (error) console.warn('[meals] chat note failed:', error.message)
+    }
     return NextResponse.json({ id }, { status: 201 })
   } catch (error) {
     console.error('[meals]', error instanceof Error ? error.message : error)

@@ -141,24 +141,12 @@ export function useSproutineChat(
 
   const startVoice = useCallback((text: string) => sendText(text, { viaVoice: true }), [sendText])
 
-  /** Records a short assistant note in history, e.g. after a meal card is saved. */
-  const saveAssistantNote = useCallback(
-    async (content: string) => {
-      const { error } = await supabase
-        .from('chat_messages')
-        .insert({ user_id: userId, role: 'assistant', content })
-      if (error) console.warn('Failed to save note:', error.message)
-    },
-    [userId]
-  )
-
   const isLoading = chat.status === 'submitted' || chat.status === 'streaming'
 
   return {
     ...chat,
     messageText,
     sendText,
-    saveAssistantNote,
     isLoading,
     isSpeaking,
     cancelSpeech: cancel,
