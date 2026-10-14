@@ -1,0 +1,83 @@
+{
+  "code": "7394376616501",
+  "product_name": "Haver barista edition",
+  "product_name_de": "Hafer Barista Edition",
+  "brands": "Oatly",
+  "allergens_tags": [
+    "en:gluten"
+  ],
+  "traces_tags": [],
+  "serving_quantity": 50,
+  "nutrition": {
+    "aggregated_set": {
+      "nutrients": {
+        "energy-kcal": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kcal",
+          "value": 61,
+          "value_computed": 61.4
+        },
+        "energy-kj": {
+          "modifier": "~",
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kJ",
+          "value": 256.8
+        },
+        "proteins": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 1.1
+        },
+        "fat": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 3
+        },
+        "carbohydrates": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 7.1
+        },
+        "fiber": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.8
+        },
+        "sugars": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 3.4
+        },
+        "salt": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.1
+        },
+        "sodium": {
+          "modifier": "~",
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.04
+        }
+      }
+    }
+  }
+}

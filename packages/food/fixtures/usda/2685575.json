@@ -1,0 +1,49 @@
+{
+  "fdcId": 2685575,
+  "description": "Brussels sprouts, raw",
+  "dataType": "Foundation",
+  "foodNutrients": [
+    {
+      "nutrientId": 1093,
+      "nutrientName": "Sodium, Na",
+      "value": 25.7,
+      "unitName": "MG"
+    },
+    {
+      "nutrientId": 1004,
+      "nutrientName": "Total lipid (fat)",
+      "value": 0.565,
+      "unitName": "G"
+    },
+    {
+      "nutrientId": 1079,
+      "nutrientName": "Fiber, total dietary",
+      "value": 4.78,
+      "unitName": "G"
+    },
+    {
+      "nutrientId": 1003,
+      "nutrientName": "Protein",
+      "value": 3.98,
+      "unitName": "G"
+    },
+    {
+      "nutrientId": 1005,
+      "nutrientName": "Carbohydrate, by difference",
+      "value": 9.62,
+      "unitName": "G"
+    },
+    {
+      "nutrientId": 2047,
+      "nutrientName": "Energy (Atwater General Factors)",
+      "value": 59.5,
+      "unitName": "KCAL"
+    },
+    {
+      "nutrientId": 2048,
+      "nutrientName": "Energy (Atwater Specific Factors)",
+      "value": 48.8,
+      "unitName": "KCAL"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "code": "4008400404127",
+  "product_name": "Nutella Nuss-Nugat-Creme",
+  "product_name_de": "Nutella Nuss-Nugat-Creme",
+  "brands": "Nutella",
+  "allergens_tags": [
+    "en:milk",
+    "en:nuts",
+    "en:soybeans",
+    "de:Fruits à coque"
+  ],
+  "traces_tags": [],
+  "serving_quantity": 15,
+  "nutrition": {
+    "aggregated_set": {
+      "nutrients": {
+        "energy-kcal": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kcal",
+          "value": 538,
+          "value_computed": 533.3
+        },
+        "energy-kj": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kJ",
+          "value": 2252,
+          "value_computed": 2227.9
+        },
+        "proteins": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 6.3
+        },
+        "fat": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 30.9
+        },
+        "carbohydrates": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 57.5
+        },
+        "fiber": {
+          "modifier": "~",
+          "source": "estimate",
+          "source_index": 1,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 3.67525
+        },
+        "sugars": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 56.3
+        },
+        "salt": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.11,
+          "value_computed": 0.11
+        },
+        "sodium": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.044,
+          "value_computed": 0.044
+        }
+      }
+    }
+  }
+}

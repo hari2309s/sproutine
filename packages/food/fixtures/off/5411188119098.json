@@ -1,0 +1,87 @@
+{
+  "code": "5411188119098",
+  "product_name": "Natur mit Kokosnuss",
+  "product_name_de": "Natur mit Kokosnuss",
+  "brands": "alpro, Danone Belux nv",
+  "allergens_tags": [
+    "en:soybeans",
+    "de:Sojabasis"
+  ],
+  "traces_tags": [
+    "en:nuts"
+  ],
+  "serving_quantity": 100,
+  "nutrition": {
+    "aggregated_set": {
+      "nutrients": {
+        "energy-kcal": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kcal",
+          "value": 54,
+          "value_computed": 52.7
+        },
+        "energy-kj": {
+          "modifier": "~",
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kJ",
+          "value": 219.9
+        },
+        "proteins": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 3.9
+        },
+        "fat": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 2.9
+        },
+        "carbohydrates": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 2.3
+        },
+        "fiber": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.9
+        },
+        "sugars": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 2.2
+        },
+        "salt": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.22,
+          "value_computed": 0.2175
+        },
+        "sodium": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.087,
+          "value_computed": 0.088
+        }
+      }
+    }
+  }
+}

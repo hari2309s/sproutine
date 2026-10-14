@@ -1,0 +1,85 @@
+{
+  "code": "4056489346357",
+  "product_name": "Boisson à l'amande, sans sucres",
+  "product_name_de": "Bio-Almond-Mandelmilch",
+  "brands": "Vemondo",
+  "allergens_tags": [
+    "en:nuts"
+  ],
+  "traces_tags": [
+    "en:nuts"
+  ],
+  "serving_quantity": 250,
+  "nutrition": {
+    "aggregated_set": {
+      "nutrients": {
+        "energy-kcal": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kcal",
+          "value": 14
+        },
+        "energy-kj": {
+          "source": "packaging",
+          "source_index": 1,
+          "source_per": "100ml",
+          "unit": "kJ",
+          "value": 56,
+          "value_computed": 52.9
+        },
+        "proteins": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.5
+        },
+        "fat": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 1.2
+        },
+        "carbohydrates": {
+          "source": "packaging",
+          "source_index": 1,
+          "source_per": "100ml",
+          "unit": "g",
+          "value": 0
+        },
+        "fiber": {
+          "modifier": "~",
+          "source": "estimate",
+          "source_index": 2,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.22077
+        },
+        "sugars": {
+          "source": "packaging",
+          "source_index": 1,
+          "source_per": "100ml",
+          "unit": "g",
+          "value": 0
+        },
+        "salt": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.13
+        },
+        "sodium": {
+          "modifier": "~",
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.052
+        }
+      }
+    }
+  }
+}

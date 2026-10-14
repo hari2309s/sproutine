@@ -117,6 +117,7 @@ export interface Translations {
     keepAccount: string
     deleteError: string
     disclaimer: string
+    dataSources: string
   }
   chat: {
     rosieName: string
@@ -163,6 +164,20 @@ export interface Translations {
     details: string
     essentialOnly: string
     acceptAll: string
+  }
+  scanner: {
+    title: string
+    close: string
+    torchOn: string
+    torchOff: string
+    pointTitle: string
+    pointBody: string
+    typeTitle: string
+    typeBody: string
+    typeInstead: string
+    lookUp: string
+    tellRosie: string
+    cameraUnavailable: string
   }
   states: {
     loading: string
@@ -343,6 +358,7 @@ export const translations: Record<Locale, Translations> = {
       keepAccount: 'Keep my account',
       deleteError: "I couldn't delete your account. Please try again.",
       disclaimer: 'Sproutine offers general food ideas, not medical advice.',
+      dataSources: 'Food data from Open Food Facts (ODbL) and USDA FoodData Central.',
     },
     chat: {
       rosieName: 'Rosie',
@@ -399,6 +415,20 @@ export const translations: Record<Locale, Translations> = {
       details: 'Details',
       essentialOnly: 'Essential only',
       acceptAll: 'Accept all',
+    },
+    scanner: {
+      title: 'Scan a barcode',
+      close: 'Close scanner',
+      torchOn: 'Turn on the light',
+      torchOff: 'Turn off the light',
+      pointTitle: 'Point at the barcode',
+      pointBody: "Hold the pack steady inside the frame. I'll look it up for you.",
+      typeTitle: 'Type the barcode',
+      typeBody: 'The numbers under the bars, usually 8 or 13 digits.',
+      typeInstead: 'Type the barcode instead',
+      lookUp: 'Look up',
+      tellRosie: 'Or just tell Rosie what it is',
+      cameraUnavailable: "I can't use the camera here. You can type the barcode instead.",
     },
     states: {
       loading: 'Setting the table…',

@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "@sproutine/types": "workspace:*",
-    "@supabase/supabase-js": "^2.117.3"
+    "@supabase/supabase-js": "^2.117.3",
+    "@sproutine/food": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

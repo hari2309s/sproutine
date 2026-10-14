@@ -44,3 +44,6 @@ CLAUDE.md
 .runs/
 .weco/
 .vercel
+
+# Copied from node_modules at dev/build time (scripts/copy-wasm.mjs)
+apps/web/public/wasm/

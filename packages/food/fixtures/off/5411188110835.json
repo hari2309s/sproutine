@@ -1,0 +1,86 @@
+{
+  "code": "5411188110835",
+  "product_name": "Alpro Mandeldrink, Original 1L",
+  "product_name_de": "Alpro Mandeldrink, Original 1L",
+  "brands": "Danone Belux nv",
+  "allergens_tags": [
+    "en:nuts"
+  ],
+  "traces_tags": [
+    "en:nuts"
+  ],
+  "serving_quantity": 100,
+  "nutrition": {
+    "aggregated_set": {
+      "nutrients": {
+        "energy-kcal": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kcal",
+          "value": 23,
+          "value_computed": 23.8
+        },
+        "energy-kj": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kJ",
+          "value": 98,
+          "value_computed": 99.5
+        },
+        "proteins": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.5
+        },
+        "fat": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 1.2
+        },
+        "carbohydrates": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 2.6
+        },
+        "fiber": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.3
+        },
+        "sugars": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 2.4
+        },
+        "salt": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.1475,
+          "value_computed": 0.1475
+        },
+        "sodium": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.059,
+          "value_computed": 0.059
+        }
+      }
+    }
+  }
+}

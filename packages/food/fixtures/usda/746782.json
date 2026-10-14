@@ -1,0 +1,49 @@
+{
+  "fdcId": 746782,
+  "description": "Milk, whole, 3.25% milkfat, with added vitamin D",
+  "dataType": "Foundation",
+  "foodNutrients": [
+    {
+      "nutrientId": 1004,
+      "nutrientName": "Total lipid (fat)",
+      "value": 3.2,
+      "unitName": "G"
+    },
+    {
+      "nutrientId": 1005,
+      "nutrientName": "Carbohydrate, by difference",
+      "value": 4.63,
+      "unitName": "G"
+    },
+    {
+      "nutrientId": 1008,
+      "nutrientName": "Energy",
+      "value": 60,
+      "unitName": "KCAL"
+    },
+    {
+      "nutrientId": 1093,
+      "nutrientName": "Sodium, Na",
+      "value": 38,
+      "unitName": "MG"
+    },
+    {
+      "nutrientId": 1003,
+      "nutrientName": "Protein",
+      "value": 3.27,
+      "unitName": "G"
+    },
+    {
+      "nutrientId": 1062,
+      "nutrientName": "Energy",
+      "value": 251,
+      "unitName": "kJ"
+    },
+    {
+      "nutrientId": 1063,
+      "nutrientName": "Sugars, Total",
+      "value": 4.81,
+      "unitName": "G"
+    }
+  ]
+}

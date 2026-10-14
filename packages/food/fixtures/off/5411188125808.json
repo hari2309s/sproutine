@@ -1,0 +1,86 @@
+{
+  "code": "5411188125808",
+  "product_name": "Mango Ohne Zuckerzusatz",
+  "product_name_de": "Mango Ohne Zuckerzusatz",
+  "brands": "Danone Belux nv",
+  "allergens_tags": [
+    "en:soybeans"
+  ],
+  "traces_tags": [
+    "en:nuts"
+  ],
+  "serving_quantity": 125,
+  "nutrition": {
+    "aggregated_set": {
+      "nutrients": {
+        "energy-kcal": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kcal",
+          "value": 59,
+          "value_computed": 56.7
+        },
+        "energy-kj": {
+          "modifier": "~",
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kJ",
+          "value": 237.9
+        },
+        "proteins": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 3.7
+        },
+        "fat": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 2.1
+        },
+        "carbohydrates": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 5.3
+        },
+        "fiber": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.9
+        },
+        "sugars": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 5.2
+        },
+        "salt": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.2,
+          "value_computed": 0.1775
+        },
+        "sodium": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.071,
+          "value_computed": 0.08
+        }
+      }
+    }
+  }
+}

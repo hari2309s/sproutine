@@ -1,0 +1,86 @@
+{
+  "code": "5411188112709",
+  "product_name": "Geröstete Mandel Ohne Zucker",
+  "product_name_de": "Geröstete Mandel Ohne Zucker",
+  "brands": "alpro, Danone Belux nv",
+  "allergens_tags": [
+    "en:nuts"
+  ],
+  "traces_tags": [
+    "de:Schalenfrüchte (keine Erdnüsse)"
+  ],
+  "serving_quantity": 100,
+  "nutrition": {
+    "aggregated_set": {
+      "nutrients": {
+        "energy-kcal": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kcal",
+          "value": 14,
+          "value_computed": 12.5
+        },
+        "energy-kj": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kJ",
+          "value": 58,
+          "value_computed": 51.6
+        },
+        "proteins": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.5
+        },
+        "fat": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 1.1
+        },
+        "carbohydrates": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0
+        },
+        "fiber": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.3
+        },
+        "sugars": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0
+        },
+        "salt": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.15,
+          "value_computed": 0.375
+        },
+        "sodium": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.15,
+          "value_computed": 60
+        }
+      }
+    }
+  }
+}

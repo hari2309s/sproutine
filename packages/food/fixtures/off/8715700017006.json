@@ -1,0 +1,84 @@
+{
+  "code": "8715700017006",
+  "product_name": "Tomato Ketchup",
+  "product_name_de": "Ketchup",
+  "brands": "Heinz, Rapunzel",
+  "allergens_tags": [
+    "en:celery"
+  ],
+  "traces_tags": [],
+  "nutrition": {
+    "aggregated_set": {
+      "nutrients": {
+        "energy-kcal": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kcal",
+          "value": 102,
+          "value_computed": 98.5
+        },
+        "energy-kj": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kJ",
+          "value": 427,
+          "value_computed": 418.5
+        },
+        "proteins": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 1.2
+        },
+        "fat": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.1
+        },
+        "carbohydrates": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 23.2
+        },
+        "fiber": {
+          "modifier": "~",
+          "source": "estimate",
+          "source_index": 1,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.7296
+        },
+        "sugars": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 22.2
+        },
+        "salt": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 1.8,
+          "value_computed": 1.8
+        },
+        "sodium": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.72,
+          "value_computed": 0.72
+        }
+      }
+    }
+  }
+}

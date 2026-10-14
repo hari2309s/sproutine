@@ -1,0 +1,87 @@
+{
+  "code": "20005733",
+  "product_name": "Cerneaux de Noix",
+  "product_name_de": "Walnusskerne naturbelassen",
+  "brands": "Alesto",
+  "allergens_tags": [
+    "en:nuts"
+  ],
+  "traces_tags": [
+    "en:nuts",
+    "en:peanuts"
+  ],
+  "serving_quantity": 30,
+  "nutrition": {
+    "aggregated_set": {
+      "nutrients": {
+        "energy-kcal": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kcal",
+          "value": 712,
+          "value_computed": 712.3
+        },
+        "energy-kj": {
+          "modifier": "~",
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kJ",
+          "value": 2937.5
+        },
+        "proteins": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 15.5
+        },
+        "fat": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 69.1
+        },
+        "carbohydrates": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 3.7
+        },
+        "fiber": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 6.8
+        },
+        "sugars": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 3
+        },
+        "salt": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.02,
+          "value_computed": 0.02
+        },
+        "sodium": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.008,
+          "value_computed": 0.008
+        }
+      }
+    }
+  }
+}

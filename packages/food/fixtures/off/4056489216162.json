@@ -1,0 +1,88 @@
+{
+  "code": "4056489216162",
+  "product_name": "High Protein Chocolate Flavour Pudding",
+  "product_name_de": "high Protein Pudding",
+  "brands": "LIDL",
+  "allergens_tags": [
+    "en:milk",
+    "pt:ISENTO DE GLÚTEN",
+    "ro:Magermilch",
+    "ro:Milcheiweiß",
+    "ro:Sahne"
+  ],
+  "traces_tags": [],
+  "serving_quantity": 200,
+  "nutrition": {
+    "aggregated_set": {
+      "nutrients": {
+        "energy-kcal": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kcal",
+          "value": 76,
+          "value_computed": 76.1
+        },
+        "energy-kj": {
+          "modifier": "~",
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "kJ",
+          "value": 321.1
+        },
+        "proteins": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 10
+        },
+        "fat": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 1.5
+        },
+        "carbohydrates": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 5.2
+        },
+        "fiber": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.9
+        },
+        "sugars": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 4
+        },
+        "salt": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.12,
+          "value_computed": 0.24
+        },
+        "sodium": {
+          "source": "packaging",
+          "source_index": 0,
+          "source_per": "100g",
+          "unit": "g",
+          "value": 0.096,
+          "value_computed": 0.048
+        }
+      }
+    }
+  }
+}

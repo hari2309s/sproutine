@@ -1,0 +1,55 @@
+{
+  "fdcId": 175028,
+  "description": "Rolls, dinner, oat bran",
+  "dataType": "SR Legacy",
+  "foodNutrients": [
+    {
+      "nutrientId": 2000,
+      "nutrientName": "Total Sugars",
+      "value": 6.67,
+      "unitName": "G"
+    },
+    {
+      "nutrientId": 1062,
+      "nutrientName": "Energy",
+      "value": 987,
+      "unitName": "kJ"
+    },
+    {
+      "nutrientId": 1008,
+      "nutrientName": "Energy",
+      "value": 236,
+      "unitName": "KCAL"
+    },
+    {
+      "nutrientId": 1004,
+      "nutrientName": "Total lipid (fat)",
+      "value": 4.6,
+      "unitName": "G"
+    },
+    {
+      "nutrientId": 1005,
+      "nutrientName": "Carbohydrate, by difference",
+      "value": 40.2,
+      "unitName": "G"
+    },
+    {
+      "nutrientId": 1003,
+      "nutrientName": "Protein",
+      "value": 9.5,
+      "unitName": "G"
+    },
+    {
+      "nutrientId": 1079,
+      "nutrientName": "Fiber, total dietary",
+      "value": 4.1,
+      "unitName": "G"
+    },
+    {
+      "nutrientId": 1093,
+      "nutrientName": "Sodium, Na",
+      "value": 413,
+      "unitName": "MG"
+    }
+  ]
+}

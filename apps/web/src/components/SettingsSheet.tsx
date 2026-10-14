@@ -298,6 +298,17 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
           <p className="text-center text-[13px] leading-normal text-sproutine-muted">
             {t.settings.disclaimer}
           </p>
+          {/* Required attribution: OFF is ODbL; USDA asks to be credited. */}
+          <p className="-mt-4 text-center text-[13px] leading-normal text-sproutine-muted">
+            <a
+              href="https://world.openfoodfacts.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline-offset-2 hover:underline"
+            >
+              {t.settings.dataSources}
+            </a>
+          </p>
         </div>
       </motion.div>
     </div>
