@@ -95,7 +95,7 @@ export interface Translations {
     settings: string
     signOut: string
   }
-  theme: Record<Theme, string> & { label: string }
+  theme: Record<Theme, string> & { label: string; switchTo: string }
   settings: {
     title: string
     close: string
@@ -331,6 +331,7 @@ export const translations: Record<Locale, Translations> = {
     },
     theme: {
       label: 'Theme',
+      switchTo: 'tap for',
       light: 'Light',
       dark: 'Dark',
       system: 'System',

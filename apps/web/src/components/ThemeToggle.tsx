@@ -15,13 +15,14 @@ export function ThemeCycle() {
   const { t } = useLanguage()
   const { theme, setTheme } = useTheme()
   const next = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]!
+  const label = `${t.theme.label}: ${t.theme[theme]} (${t.theme.switchTo} ${t.theme[next]})`
 
   return (
     <button
       type="button"
       onClick={() => setTheme(next)}
-      aria-label={`${t.theme.label}: ${t.theme[theme]}`}
-      title={`${t.theme.label}: ${t.theme[theme]}`}
+      aria-label={label}
+      title={label}
       className="icon-btn"
     >
       <Icon name={THEME_ICONS[theme]} />
