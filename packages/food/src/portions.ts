@@ -283,7 +283,11 @@ export const FOOD_PORTIONS: FoodPortion[] = [
     default: 250,
   },
   { match: ['bier', 'beer'], units: { glass: 330, piece: 500 }, default: 500 },
-  { match: ['wein', 'wine'], units: { glass: 150 }, default: 150 },
+  {
+    match: ['wein', 'rotwein', 'weißwein', 'weisswein', 'roséwein', 'wine'],
+    units: { glass: 150 },
+    default: 150,
+  },
 ]
 
 /**
@@ -297,7 +301,7 @@ export const FOOD_PORTIONS: FoodPortion[] = [
 const ACCOMPANIMENT = /\s+(?:mit|with|und|and)\s+|,/
 
 // German words that may end a compound ("Linsensuppe", "Orangensaft",
-// "Weintrauben"). Only these match inside a word: English has no such
+// "Weintrauben"). "wein" isn't one (Schwein); wines are listed whole. Only these match inside a word: English has no such
 // compounds, and suffixes like "nuts" (doughnuts), "latte" (Käseplatte) or
 // "apple" (pineapple) would match the wrong food.
 const COMPOUND_HEADS = new Set([
@@ -344,11 +348,9 @@ const COMPOUND_HEADS = new Set([
   'schorle',
   'limonade',
   'bier',
-  'wein',
   'eier',
   'soße',
   'sosse',
-  'mus',
 ])
 
 function findFood(name: string): FoodPortion | undefined {

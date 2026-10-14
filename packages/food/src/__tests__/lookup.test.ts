@@ -367,6 +367,8 @@ describe('estimatePortion with German compounds', () => {
     expect(estimatePortion('licorice').basis).toBe('generic-unit')
     expect(estimatePortion('pancakes', 2).basis).toBe('generic-unit')
     expect(estimatePortion('Weintrauben').grams).toBe(100)
+    expect(estimatePortion('Wildschwein').basis).toBe('generic-unit')
+    expect(estimatePortion('Rotwein', 1, 'glass').grams).toBe(150)
     expect(estimatePortion('Tomatensoße').grams).toBe(100)
   })
 })
