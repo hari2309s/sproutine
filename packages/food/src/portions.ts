@@ -193,7 +193,8 @@ export const FOOD_PORTIONS: FoodPortion[] = [
     default: 300,
   },
   { match: ['döner', 'doner', 'kebab'], units: { piece: 350 }, default: 350 },
-  { match: ['pizza'], units: { slice: 110, piece: 110 }, default: 330 },
+  // A bare count means whole pizzas; slices have their own unit.
+  { match: ['pizza'], units: { slice: 110, piece: 330 }, default: 330 },
   { match: ['bratwurst', 'wurst', 'currywurst', 'sausage'], units: { piece: 100 }, default: 100 },
   { match: ['schnitzel'], units: { piece: 150 }, default: 150 },
   {
@@ -282,11 +283,9 @@ export function estimatePortion(
     return { grams: round(quantity * food.default), basis: 'food-default', confidence: 'medium' }
   }
   if (food && !unit && quantity > 1 && food.units.piece != null) {
-    // A count without a unit counts items ("3 Kartoffeln" is three potatoes),
-    // but never less than one serving: "2 Pizza" isn't two slices' worth less
-    // than "Pizza", and "10 Mandeln" is still at least a handful.
-    const grams = Math.max(quantity * food.units.piece, food.default)
-    return { grams: round(grams), basis: 'food-unit', confidence: 'medium' }
+    // A count without a unit counts items: "3 Kartoffeln" is three potatoes,
+    // "10 Mandeln" ten almonds. `piece` must therefore be one whole item.
+    return { grams: round(quantity * food.units.piece), basis: 'food-unit', confidence: 'medium' }
   }
   if (food && (!unit || unit === 'portion')) {
     // One typical serving, not one piece ("nuts" is a handful, not an almond).

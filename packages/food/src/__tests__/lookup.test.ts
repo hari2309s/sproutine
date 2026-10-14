@@ -166,17 +166,19 @@ describe('estimatePortion', () => {
 
   it('counts items when a number comes without a unit', () => {
     expect(estimatePortion('Kartoffeln', 3).grams).toBe(300)
-    expect(estimatePortion('Mandeln', 10).grams).toBe(30)
-    expect(estimatePortion('Mandeln', 50).grams).toBe(60)
+    expect(estimatePortion('Mandeln', 10).grams).toBe(12)
+    expect(estimatePortion('Pizza', 2).grams).toBe(660)
+    expect(estimatePortion('Pizza', 2, 'slice').grams).toBe(220)
     expect(estimatePortion('Kartoffeln', 1).grams).toBe(200)
   })
 
-  it('never estimates less for a bigger count', () => {
+  it('estimates strictly more for each bigger count', () => {
+    // From 2 up a bare count multiplies one item; 1 is a typical serving.
     for (const keyword of FOOD_PORTIONS.map((f) => f.match[0]!)) {
       let previous = 0
-      for (const q of [0.5, 1, 1.5, 2, 3, 10]) {
+      for (const q of [2, 3, 10]) {
         const { grams } = estimatePortion(keyword, q)
-        expect(grams, `${q} × ${keyword}`).toBeGreaterThanOrEqual(previous)
+        expect(grams, `${q} × ${keyword}`).toBeGreaterThan(previous)
         previous = grams
       }
     }
