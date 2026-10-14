@@ -296,3 +296,7 @@ Product data from [Open Food Facts](https://world.openfoodfacts.org), available 
 ## License
 
 [MIT](LICENSE)
+
+---
+
+<p align="center">Built with health and ❤️ from Berlin</p>
