@@ -46,9 +46,10 @@ export function normalizePlanRequest(out: z.infer<typeof PlanRequestSchema>): Pl
 
 export async function parsePlanRequest(
   message: string,
-  meta?: { traceId?: string }
+  meta?: { traceId?: string },
+  { timeoutMs }: { timeoutMs?: number } = {}
 ): Promise<PlanPreferences> {
-  const result = await routedGenerateObject(
+  const call = routedGenerateObject(
     'structured',
     PlanRequestSchema,
     {
@@ -60,5 +61,10 @@ export async function parsePlanRequest(
     },
     meta
   ).catch(() => null)
+  // Past the deadline the turn moves on with the keyword reading; the model
+  // call finishes in the background and is ignored.
+  const result = timeoutMs
+    ? await Promise.race([call, new Promise<null>((r) => setTimeout(() => r(null), timeoutMs))])
+    : await call
   return result ? normalizePlanRequest(result.object) : keywordPlanPreferences(message)
 }

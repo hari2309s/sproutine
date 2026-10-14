@@ -18,6 +18,7 @@ import { TopBar } from './TopBar'
 import { PageEnter } from './PageMotion'
 import { Icon } from './Icon'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { isPlannableWeek } from '@/lib/planProfile'
 
 interface StoredPlan {
   id: string
@@ -66,16 +67,13 @@ function useTicked(planId: string | undefined) {
   return { ticked, toggle }
 }
 
-export function WeekPage({
-  userId,
-  startNextWeek = false,
-}: {
-  userId: string
-  startNextWeek?: boolean
-}) {
+export function WeekPage({ userId, initialWeek }: { userId: string; initialWeek?: string }) {
   const { t, locale } = useLanguage()
   const thisWeek = weekStartOf(new Date())
-  const [week, setWeek] = useState(() => (startNextWeek ? addWeeks(thisWeek, 1) : thisWeek))
+  // A week from a link (a Monday near now), else this week.
+  const [week, setWeek] = useState(() =>
+    initialWeek && isPlannableWeek(initialWeek) ? initialWeek : thisWeek
+  )
   const [tab, setTab] = useState<'meals' | 'shopping'>('meals')
   const [stored, setStored] = useState<StoredPlan | null | undefined>(undefined)
   const [issues, setIssues] = useState<PlanIssue[]>([])

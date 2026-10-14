@@ -44,4 +44,13 @@ describe('summarisePlan', () => {
     ).toBe(true)
     expect(summary.totalCents).toBe(shopping.totalCents)
   })
+
+  it('marks an existing plan shown as-is', () => {
+    const { plan } = generatePlan(
+      { diet: 'omnivore', allergies: [], dislikes: [], budgetWeeklyCents: null },
+      { weekStart: '2026-10-19' }
+    )
+    expect(summarisePlan(plan, [], false, true).existing).toBe(true)
+    expect(summarisePlan(plan, [], false).existing).toBeUndefined()
+  })
 })

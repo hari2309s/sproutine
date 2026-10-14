@@ -39,7 +39,9 @@ export function MealPlanCard({ summary }: { summary: MealPlanSummary }) {
       <p className="text-sm text-sproutine-text-secondary">
         {t.week.shopping}: {t.week.estimateTotal(euro(summary.totalCents)).toLowerCase()}
       </p>
-      <Link href={summary.nextWeek ? '/week?week=next' : '/week'} className="btn-primary h-11">
+      {/* The exact week, not "next": the server and this browser may disagree
+          on which week is current around midnight. */}
+      <Link href={`/week?week=${summary.weekStart}`} className="btn-primary h-11">
         <Icon name="calendar_view_week" size={20} />
         {t.week.openWeek}
       </Link>

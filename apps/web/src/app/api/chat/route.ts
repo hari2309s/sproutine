@@ -41,6 +41,7 @@ import {
   createServerClient,
   getProfile,
   loadRecentMessages,
+  getActivePlan,
   saveActivePlan,
   saveMessage,
   type StoredMessage,
@@ -147,6 +148,10 @@ function templatedResponse(text: string, metadata: Record<string, unknown>, card
 }
 
 const MEAL_CARD_TEXT = "Here's what I found. Check the amounts, then save it."
+const PLAN_EXISTS_TEXT =
+  'You already have a plan for this week. To start over, open the Week tab and tap New plan.'
+// Reading wishes for a plan gets a short budget; after it, keyword fallback.
+const PLAN_PREFS_BUDGET_MS = 7_000
 const PLAN_CARD_TEXT =
   "Here's your week. These are the dinners; the Week tab has every meal, swaps and your shopping list."
 // External food lookups stop after this long so the turn (safety, intent,
@@ -318,20 +323,53 @@ export async function POST(request: NextRequest) {
                 const planned = await startActiveObservation('plan-week', async (span) => {
                   span.update({ input: message })
                   try {
-                    const prefs = await parsePlanRequest(message, meta)
                     const { weekStart, fromDate, nextWeek } = weekToPlan()
-                    const planProfile = toPlanProfile(profile)
-                    const { plan, issues } = generatePlan(planProfile, {
-                      weekStart,
-                      fromDate,
-                      prefs,
-                      seed: Math.floor(Math.random() * 2 ** 31),
+                    // An existing plan may hold the person's swaps and shopping
+                    // ticks: chat shows it rather than replacing it. Starting over
+                    // is an explicit button in the Week tab.
+                    const existing = await getActivePlan(db, user.id, weekStart)
+                    if (existing) {
+                      const summary = summarisePlan(existing.plan, [], nextWeek, true)
+                      span.update({ output: { weekStart, existing: true } })
+                      return summary
+                    }
+
+                    const prefs = await parsePlanRequest(message, meta, {
+                      timeoutMs: PLAN_PREFS_BUDGET_MS,
                     })
+                    const planProfile = toPlanProfile(profile)
+                    const build = (p: typeof prefs) =>
+                      generatePlan(planProfile, {
+                        weekStart,
+                        fromDate,
+                        prefs: p,
+                        seed: Math.floor(Math.random() * 2 ** 31),
+                      })
+                    let result = build(prefs)
+                    // A broad "avoid" word can rule out nearly everything; then
+                    // plan without this week's wishes rather than save gaps.
+                    let usedPrefs = prefs
+                    if (result.issues.some((i) => i.kind === 'no-recipe')) {
+                      usedPrefs = prefs.maxMinutes ? { maxMinutes: prefs.maxMinutes } : {}
+                      result = build(usedPrefs)
+                      if (result.issues.some((i) => i.kind === 'no-recipe')) {
+                        usedPrefs = {}
+                        result = build(usedPrefs)
+                      }
+                    }
+                    const { plan, issues } = result
+                    if (!plan.days.some((d) => d.meals.dinner)) throw new Error('empty plan')
                     if (!isSafePlan(validatePlan(plan, planProfile))) throw new Error('unsafe plan')
-                    await saveActivePlan(db, user.id, plan, prefs)
+                    await saveActivePlan(db, user.id, plan, usedPrefs)
                     const summary = summarisePlan(plan, issues, nextWeek)
                     span.update({
-                      output: { weekStart, prefs, dinners: summary.dinners.length, issues },
+                      output: {
+                        weekStart,
+                        prefs,
+                        usedPrefs,
+                        dinners: summary.dinners.length,
+                        issues,
+                      },
                     })
                     return summary
                   } catch (e) {
@@ -340,18 +378,21 @@ export async function POST(request: NextRequest) {
                   }
                 })
                 if (planned) {
-                  endTurn({ output: PLAN_CARD_TEXT, metadata: { planWeek: planned.weekStart } })
+                  const caption = planned.existing ? PLAN_EXISTS_TEXT : PLAN_CARD_TEXT
+                  endTurn({ output: caption, metadata: { planWeek: planned.weekStart } })
                   // History keeps a plain record; the card itself isn't stored.
-                  pendingWrites.push(
-                    saveMessage(db, user.id, {
-                      role: 'assistant',
-                      content: `I planned your week of ${planned.weekStart}. Dinners: ${planned.dinners
-                        .map((d) => d.name)
-                        .join(', ')}.`,
-                    })
-                  )
+                  if (!planned.existing) {
+                    pendingWrites.push(
+                      saveMessage(db, user.id, {
+                        role: 'assistant',
+                        content: `I planned your week of ${planned.weekStart}. Dinners: ${planned.dinners
+                          .map((d) => d.name)
+                          .join(', ')}.`,
+                      })
+                    )
+                  }
                   return templatedResponse(
-                    PLAN_CARD_TEXT,
+                    caption,
                     {
                       traceId: turn.traceId,
                       feedbackToken: signTrace(turn.traceId, profile.llmPseudonym),

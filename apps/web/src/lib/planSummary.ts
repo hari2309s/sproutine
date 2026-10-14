@@ -9,8 +9,10 @@ import {
 /** What the chat card shows for a new plan: dinners by day and the estimate. */
 export interface MealPlanSummary {
   weekStart: string
-  /** The plan is for next week (the card links there). */
+  /** The plan is for next week (affects the card's title). */
   nextWeek: boolean
+  /** An existing plan shown as-is rather than a new one. */
+  existing?: boolean
   dinners: { date: string; name: string }[]
   totalCents: number
   issues: PlanIssue[]
@@ -19,7 +21,8 @@ export interface MealPlanSummary {
 export function summarisePlan(
   plan: MealPlan,
   issues: PlanIssue[],
-  nextWeek: boolean
+  nextWeek: boolean,
+  existing = false
 ): MealPlanSummary {
   const ids = plan.days.flatMap((d) =>
     PLAN_SLOTS.map((s) => d.meals[s]).filter((id): id is string => !!id)
@@ -35,6 +38,7 @@ export function summarisePlan(
       })),
     totalCents: buildShoppingList(ids).totalCents,
     issues,
+    ...(existing ? { existing: true } : {}),
   }
 }
 

@@ -8,7 +8,7 @@ import { LoadingScreen } from '@/components/LoadingScreen'
 
 function Week() {
   const router = useRouter()
-  const startNextWeek = useSearchParams().get('week') === 'next'
+  const initialWeek = useSearchParams().get('week') ?? undefined
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -19,7 +19,7 @@ function Week() {
   }, [router])
 
   if (!userId) return <LoadingScreen />
-  return <WeekPage userId={userId} startNextWeek={startNextWeek} />
+  return <WeekPage userId={userId} initialWeek={initialWeek} />
 }
 
 export default function WeekRoute() {
