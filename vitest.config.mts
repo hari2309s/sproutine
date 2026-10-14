@@ -6,6 +6,7 @@ export default defineConfig({
       'apps/web/vitest.config.mts',
       'packages/ai/vitest.config.mts',
       'packages/food/vitest.config.mts',
+      'packages/nudges/vitest.config.mts',
     ],
   },
 })

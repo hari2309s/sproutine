@@ -14,3 +14,12 @@ export {
   PlanConflictError,
 } from './mealPlans'
 export type { StoredPlan } from './mealPlans'
+export {
+  listHabits,
+  createHabit,
+  archiveHabit,
+  toggleCheckin,
+  writeNudge,
+  MAX_HABITS,
+} from './habits'
+export type { HabitRow } from './habits'

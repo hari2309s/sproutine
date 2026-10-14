@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { fetchOwnProfile } from '@/lib/profile'
+import { browserTimeZone, fetchOwnProfile } from '@/lib/profile'
 import { LoadingScreen } from './LoadingScreen'
 import { TodayPage } from './TodayPage'
 import { AuthPage } from './AuthPage'
@@ -44,6 +44,18 @@ export function HomeClient() {
           return
         }
         setName(profile.displayName)
+        // Keep the stored zone in step with this device (travel, a new phone),
+        // so nudges arrive at local times.
+        const zone = browserTimeZone()
+        if (profile.timezone !== zone) {
+          void supabase
+            .from('profiles')
+            .update({ timezone: zone })
+            .eq('user_id', session.user.id)
+            .then(({ error }) => {
+              if (error) console.warn('[HomeClient] timezone update failed:', error.message)
+            })
+        }
         if (profile.locale in translations) setLocale(profile.locale as Locale)
         setState('today')
       } catch (e) {

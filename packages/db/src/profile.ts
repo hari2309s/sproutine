@@ -22,6 +22,7 @@ export function rowToProfile(row: ProfileRow): Profile {
     safetyMode: row.safety_mode,
     consentHealthAt: row.consent_health_at,
     llmPseudonym: row.llm_pseudonym,
+    timezone: row.timezone || 'Europe/Berlin',
   }
 }
 

@@ -16,6 +16,7 @@ const profile: Profile = {
   safetyMode: false,
   consentHealthAt: '2026-10-13T10:00:00Z',
   llmPseudonym: '1e2d3c4b-0000-4000-8000-000000000002',
+  timezone: 'Europe/Berlin',
 }
 
 const base = { profile, intent: 'ask_nutrition' as const, medical: false, today: 'Tuesday' }

@@ -1,5 +1,5 @@
 {
-  "version": "82ca94e507",
+  "version": "7bc0cba15a",
   "icons": [
     "add",
     "arrow_forward",
@@ -29,8 +29,11 @@
     "logout",
     "mail",
     "mic",
+    "notifications",
+    "notifications_off",
     "nutrition",
     "play_arrow",
+    "radio_button_unchecked",
     "refresh",
     "restaurant",
     "search_off",

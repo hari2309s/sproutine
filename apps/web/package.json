@@ -19,6 +19,7 @@
     "@sproutine/ai": "workspace:*",
     "@sproutine/db": "workspace:*",
     "@sproutine/food": "workspace:*",
+    "@sproutine/nudges": "workspace:*",
     "@sproutine/types": "workspace:*",
     "@sproutine/ui": "workspace:*",
     "@supabase/ssr": "^0.12.7",

@@ -4,6 +4,7 @@ const nextConfig = {
     '@sproutine/ai',
     '@sproutine/db',
     '@sproutine/food',
+    '@sproutine/nudges',
     '@sproutine/types',
     '@sproutine/ui',
   ],

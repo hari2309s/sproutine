@@ -114,6 +114,21 @@ export interface Translations {
     emptyBody: string
     talkToRosie: string
     onTheMenu: string
+    habitsTitle: string
+    habitsEmpty: string
+    addHabit: string
+    habitPlaceholder: string
+    daily: string
+    weekly: string
+    add: string
+    cancel: string
+    removeHabit: (title: string) => string
+    checkHabit: (title: string) => string
+    streakDays: (n: number) => string
+    streakWeeks: (n: number) => string
+    keptUp: string
+    doneThisWeek: string
+    habitFailed: string
     comingSoon: string
     upcoming: string[]
   }
@@ -444,8 +459,23 @@ export const translations: Record<Locale, Translations> = {
       emptyBody: 'Tell Rosie what you had. A quick note or a voice message is plenty.',
       talkToRosie: 'Talk to Rosie',
       onTheMenu: 'On the menu today',
+      habitsTitle: 'Habits',
+      habitsEmpty: 'One small habit is a good start, like "drink a glass of water with lunch".',
+      addHabit: 'Add a habit',
+      habitPlaceholder: 'e.g. Fruit with breakfast',
+      daily: 'Every day',
+      weekly: 'Every week',
+      add: 'Add',
+      cancel: 'Cancel',
+      removeHabit: (title) => `Remove "${title}"`,
+      checkHabit: (title) => `Done: ${title}`,
+      streakDays: (n) => (n === 1 ? '1 day' : `${n} days in a row`),
+      streakWeeks: (n) => (n === 1 ? '1 week' : `${n} weeks in a row`),
+      keptUp: 'Keeping it up',
+      doneThisWeek: 'Done this week',
+      habitFailed: "Couldn't save that. Please try again.",
       comingSoon: 'Coming soon',
-      upcoming: ['Gentle nudges', 'Habits and streaks'],
+      upcoming: ['Answers with sources'],
     },
     nav: {
       today: 'Today',

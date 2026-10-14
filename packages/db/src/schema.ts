@@ -18,6 +18,7 @@ export interface Database {
           safety_mode: boolean
           consent_health_at: string
           llm_pseudonym: string
+          timezone: string
           created_at: string
           updated_at: string
         }
@@ -33,6 +34,7 @@ export interface Database {
           locale?: string
           voice_id?: string
           consent_health_at: string
+          timezone?: string
         }
         Update: {
           display_name?: string
@@ -45,6 +47,7 @@ export interface Database {
           locale?: string
           voice_id?: string
           safety_mode?: boolean
+          timezone?: string
         }
       }
       chat_messages: {

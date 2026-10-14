@@ -24,10 +24,11 @@ import { PageEnter } from './PageMotion'
 import { Icon, type IconName } from './Icon'
 import { BarcodeScanner } from './BarcodeScanner'
 import { MealLogCard } from './MealLogCard'
+import { HabitsCard } from './HabitsCard'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { supabase } from '@/lib/supabase'
 
-const UPCOMING_ICONS: IconName[] = ['eco', 'spa']
+const UPCOMING_ICONS: IconName[] = ['nutrition']
 
 interface TodayLog {
   id: string
@@ -286,6 +287,8 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
               </section>
             )
           )}
+
+          <HabitsCard gentle={gentle} />
 
           <div className="flex gap-2.5">
             <Link href="/chat" className="btn-primary h-12 flex-1 px-5 text-[15px]">

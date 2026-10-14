@@ -7,6 +7,7 @@ import { PageEnter } from './PageMotion'
 import { RosieAvatar, Wordmark } from './Brand'
 import { Icon, type IconName } from './Icon'
 import { supabase } from '@/lib/supabase'
+import { browserTimeZone } from '@/lib/profile'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useVoicePreference } from '@/contexts/VoiceContext'
 import { LanguagePicker } from './LanguagePicker'
@@ -101,6 +102,8 @@ export function OnboardingPage({ userId, initialName = '', onComplete }: Onboard
     try {
       const { error } = await supabase.from('profiles').insert({
         user_id: userId,
+        // Nudges (e.g. the Sunday review) go by the person's own clock.
+        timezone: browserTimeZone(),
         display_name: name.trim().slice(0, 60),
         diet,
         allergies,

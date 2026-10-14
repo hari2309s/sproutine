@@ -41,6 +41,8 @@ export interface Profile {
   consentHealthAt: string
   /** Stable random id sent to LLM providers instead of the user id, name or email. */
   llmPseudonym: string
+  /** IANA zone (e.g. Europe/Berlin) for local nudge times. */
+  timezone: string
 }
 
 // ─── Agents ───────────────────────────────────────────────────────────────────
