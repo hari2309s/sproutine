@@ -116,7 +116,7 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
     } else {
       posthog.capture('auth_reset_requested')
       const { error } = await supabase.auth.resetPasswordForEmail(address, {
-        redirectTo: confirmUrl,
+        redirectTo: `${confirmUrl}/recovery`,
         captchaToken,
       })
       if (error) failure = error

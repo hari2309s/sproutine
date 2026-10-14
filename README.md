@@ -45,7 +45,7 @@ A voice-first healthy eating companion that logs your meals, plans your week and
 
 ---
 
-Sproutine is an AI-native nutrition companion. Tell **Rosie** (from *Rosenkohl*, German for Brussels sprouts) what you ate by voice or text, or scan a pack, and she turns it into a meal log. The numbers come from real food databases, never from the model. It is built for people making a fresh start, such as after quitting smoking, and tuned for shopping at German supermarkets.
+Sproutine is an AI-native nutrition companion. Tell **Rosie** (from _Rosenkohl_, German for Brussels sprouts) what you ate by voice or text, or scan a pack, and she turns it into a meal log. The numbers come from real food databases, never from the model. It is built for people making a fresh start, such as after quitting smoking, and tuned for shopping at German supermarkets.
 
 > Sproutine offers wellness guidance, not medical advice.
 
@@ -53,16 +53,16 @@ Sproutine is an AI-native nutrition companion. Tell **Rosie** (from *Rosenkohl*,
 
 Sproutine is being built in phases (see [docs/dev-plan.md](docs/dev-plan.md)).
 
-| Phase | | |
-|---|---|---|
-| 0 · Foundation | ✅ | Auth, onboarding with health-data consent, chat with Rosie, voice, safety gate, LLM router, Langfuse tracing |
-| 1 · Food data | ✅ | Open Food Facts + USDA lookups, nutrient maths, food cache, barcode scanner |
-| 2 · Logging | ✅ | Log meals from chat or barcode, confirm card, Today view, 50-case logging eval (photo logging still to come) |
-| 3 · Planning + shopping | ⏳ | Weekly meal plans, shopping lists for Rewe, Edeka, Aldi, Lidl |
-| 4 · Knowledge + coach | ⏳ | Nutrition answers with citations |
-| 5 · Nudges + habits | ⏳ | Gentle proactive nudges, habit streaks |
-| 6 · Safety + eval hardening | ⏳ | Full safety-golden set, CI gates |
-| 7 · Beta | ⏳ | Demo account, polish |
+| Phase                       |     |                                                                                                              |
+| --------------------------- | --- | ------------------------------------------------------------------------------------------------------------ |
+| 0 · Foundation              | ✅  | Auth, onboarding with health-data consent, chat with Rosie, voice, safety gate, LLM router, Langfuse tracing |
+| 1 · Food data               | ✅  | Open Food Facts + USDA lookups, nutrient maths, food cache, barcode scanner                                  |
+| 2 · Logging                 | ✅  | Log meals from chat or barcode, confirm card, Today view, 50-case logging eval (photo logging still to come) |
+| 3 · Planning + shopping     | ⏳  | Weekly meal plans, shopping lists for Rewe, Edeka, Aldi, Lidl                                                |
+| 4 · Knowledge + coach       | ⏳  | Nutrition answers with citations                                                                             |
+| 5 · Nudges + habits         | ⏳  | Gentle proactive nudges, habit streaks                                                                       |
+| 6 · Safety + eval hardening | ⏳  | Full safety-golden set, CI gates                                                                             |
+| 7 · Beta                    | ⏳  | Demo account, polish                                                                                         |
 
 ---
 
@@ -99,24 +99,24 @@ Other messages get a streamed reply from Rosie through the LLM router, read alou
 
 ## Tech stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16 (App Router) + React 19 + TypeScript 6 |
-| Styling | Tailwind CSS 4, self-hosted Material Symbols subset |
-| Animations | Framer Motion |
-| PWA | Web manifest (installable on iOS and Android) |
-| Voice input | MediaRecorder → Groq `whisper-large-v3-turbo` |
-| Voice output | Web Speech API with selectable voice personas |
-| AI | Vercel AI SDK 7, Zod 4 structured output |
-| LLM router | Custom multi-provider router with daily budgets ([`packages/ai/src/router.ts`](packages/ai/src/router.ts)) |
-| Food data | Open Food Facts API v3 + Search-a-licious, USDA FoodData Central |
-| Barcode | `BarcodeDetector` → `zxing-wasm` fallback |
-| Database | Supabase (PostgreSQL, Auth, RLS, `pg_trgm` food search, pgvector) |
-| Observability | Langfuse v5 (OpenTelemetry traces, masked content, datasets, experiments) |
-| Analytics | PostHog |
-| State | TanStack Query |
-| Monorepo | pnpm 12 workspaces + Turborepo |
-| Deployment | Vercel |
+| Layer         | Technology                                                                                                 |
+| ------------- | ---------------------------------------------------------------------------------------------------------- |
+| Framework     | Next.js 16 (App Router) + React 19 + TypeScript 6                                                          |
+| Styling       | Tailwind CSS 4, self-hosted Material Symbols subset                                                        |
+| Animations    | Framer Motion                                                                                              |
+| PWA           | Web manifest (installable on iOS and Android)                                                              |
+| Voice input   | MediaRecorder → Groq `whisper-large-v3-turbo`                                                              |
+| Voice output  | Web Speech API with selectable voice personas                                                              |
+| AI            | Vercel AI SDK 7, Zod 4 structured output                                                                   |
+| LLM router    | Custom multi-provider router with daily budgets ([`packages/ai/src/router.ts`](packages/ai/src/router.ts)) |
+| Food data     | Open Food Facts API v3 + Search-a-licious, USDA FoodData Central                                           |
+| Barcode       | `BarcodeDetector` → `zxing-wasm` fallback                                                                  |
+| Database      | Supabase (PostgreSQL, Auth, RLS, `pg_trgm` food search, pgvector)                                          |
+| Observability | Langfuse v5 (OpenTelemetry traces, masked content, datasets, experiments)                                  |
+| Analytics     | PostHog                                                                                                    |
+| State         | TanStack Query                                                                                             |
+| Monorepo      | pnpm 12 workspaces + Turborepo                                                                             |
+| Deployment    | Vercel                                                                                                     |
 
 ---
 
@@ -124,15 +124,15 @@ Other messages get a streamed reply from Rosie through the LLM router, read alou
 
 All providers run on free tiers. The router picks the first provider still under its daily budget and falls through on errors.
 
-| Task | Priority order |
-|---|---|
-| Chat | Groq `gpt-oss-20b` → Cerebras `gpt-oss-120b` → OpenRouter `gemma-4-31b-it:free` → Mistral `mistral-small-2603` |
-| Classify (intent) | Groq `gpt-oss-20b` → Cerebras → Mistral |
-| Safety | Groq `gpt-oss-safeguard-20b` → Cerebras → Mistral |
-| Structured (meal parsing) | Gemini `gemini-3.8-flash` → Groq `gpt-oss-120b` → Cerebras |
-| Reasoning | Gemini `gemini-3.8-flash` → Groq → Cerebras → OpenRouter |
-| Vision | Gemini → Groq `qwen3.8-27b` |
-| Embeddings | Gemini `gemini-embedding-2` |
+| Task                      | Priority order                                                                                                 |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Chat                      | Groq `gpt-oss-20b` → Cerebras `gpt-oss-120b` → OpenRouter `gemma-4-31b-it:free` → Mistral `mistral-small-2603` |
+| Classify (intent)         | Groq `gpt-oss-20b` → Cerebras → Mistral                                                                        |
+| Safety                    | Groq `gpt-oss-safeguard-20b` → Cerebras → Mistral                                                              |
+| Structured (meal parsing) | Gemini `gemini-3.8-flash` → Groq `gpt-oss-120b` → Cerebras                                                     |
+| Reasoning                 | Gemini `gemini-3.8-flash` → Groq → Cerebras → OpenRouter                                                       |
+| Vision                    | Gemini → Groq `qwen3.8-27b`                                                                                    |
+| Embeddings                | Gemini `gemini-embedding-2`                                                                                    |
 
 Run `pnpm --filter @sproutine/ai models:check` to confirm the model IDs are still served.
 
@@ -169,6 +169,7 @@ sproutine/
 - A [Groq](https://console.groq.com/keys) key (chat, safety, voice; free tier)
 
 Optional (the router falls back without these):
+
 - [Google AI Studio](https://aistudio.google.com) (Gemini), [Cerebras](https://cloud.cerebras.ai), [OpenRouter](https://openrouter.ai), [Mistral](https://console.mistral.ai)
 - A [USDA FoodData Central](https://api.data.gov/signup) key for generic foods
 - [Langfuse](https://cloud.langfuse.com) and [PostHog](https://posthog.com) projects
@@ -226,8 +227,8 @@ supabase db push
 Then in the Supabase dashboard:
 
 - **Authentication → URL Configuration:** set the Site URL to your main address (your Vercel domain, or `http://localhost:3000` if you only run locally) and add every address you run on to the redirect URLs, e.g. `http://localhost:3000/**` and `https://<your-domain>/**`. Email links come back to the site that asked for them only if it's on this list.
-- **Authentication → Sign In / Providers → Email:** sign-in is email and password. Turn **Confirm email** off if you don't want a confirmation email on sign-up (the built-in mailer allows only a few emails an hour); then the only email Sproutine sends is a password reset. Set the minimum password length to 8 to match the app, and turn on **Secure password change**.
-- **Authentication → Emails:** paste [`supabase/templates/confirmation.html`](supabase/templates/confirmation.html) into *Confirm signup* and [`supabase/templates/recovery.html`](supabase/templates/recovery.html) into *Reset password*. Their links are verified on the server, so they work even when the email is opened on another device.
+- **Authentication → Sign In / Providers → Email:** sign-in is email and password. Turn **Confirm email** off if you don't want a confirmation email on sign-up (the built-in mailer allows only a few emails an hour); then the only email Sproutine sends is a password reset. With it off, sign-up does tell someone when an address already has an account (Supabase can't hide it, since a new account signs in straight away); with it on, both get the same "check your email" reply. Set the minimum password length to 8 to match the app, and turn on **Secure password change**.
+- **Authentication → Emails:** paste [`supabase/templates/confirmation.html`](supabase/templates/confirmation.html) into _Confirm signup_ and [`supabase/templates/recovery.html`](supabase/templates/recovery.html) into _Reset password_. Their links are verified on the server, so they work even when the email is opened on another device.
 
 ### Run
 
@@ -259,11 +260,11 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Golden datasets live in [`packages/ai/evals`](packages/ai/evals) and run as Langfuse experiments against the real production functions.
 
-| Set | Measures | Gate |
-|---|---|---|
-| Intent routing | Correct intent for messages that miss the keyword fast path | ≥ 75 % |
-| Safety | Must-trigger recall, exact category, false positives on benign messages | 100 % recall, ≥ 70 % exact category, ≤ 20 % false positives |
-| Logging (50 EN/DE cases) | Foods found, grams within ±25 %, meal slot | ≥ 80 % |
+| Set                      | Measures                                                                | Gate                                                        |
+| ------------------------ | ----------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Intent routing           | Correct intent for messages that miss the keyword fast path             | ≥ 75 %                                                      |
+| Safety                   | Must-trigger recall, exact category, false positives on benign messages | 100 % recall, ≥ 70 % exact category, ≤ 20 % false positives |
+| Logging (50 EN/DE cases) | Foods found, grams within ±25 %, meal slot                              | ≥ 80 %                                                      |
 
 ```bash
 pnpm --filter @sproutine/ai eval:sync-dataset   # push the cases to Langfuse
@@ -282,11 +283,11 @@ The portion half of the logging set also runs offline as a unit test.
 pnpm test
 ```
 
-| Package | Covered |
-|---|---|
+| Package         | Covered                                                                                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages/food` | Open Food Facts and USDA normalisation against recorded fixtures (±2 %), nutrient maths, portion estimates, search ranking, rate limits, meal proposals |
-| `packages/ai` | Safety screen, intent rules, system prompt, router, trace masking, meal-parse normalisation, logging-golden portions |
-| `apps/web` | Icon font subset, feedback tokens, translations |
+| `packages/ai`   | Safety screen, intent rules, system prompt, router, trace masking, meal-parse normalisation, logging-golden portions                                    |
+| `apps/web`      | Icon font subset, feedback tokens, translations                                                                                                         |
 
 ### E2E tests (Playwright)
 

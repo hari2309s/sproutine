@@ -7,11 +7,20 @@
  *   pnpm --filter @sproutine/web icons:sync
  */
 
-import { writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { ICONS, ICON_FONT_URL } from '../src/lib/icons'
 
 const OUT_DIR = resolve(import.meta.dirname, '../public/fonts')
+// Files that reference the font. Each gets ?v=<content hash>, so a browser
+// that cached an older subset fetches the new one instead of showing icon
+// names as text.
+const FONT_REFS = [
+  resolve(import.meta.dirname, '../src/app/globals.css'),
+  resolve(import.meta.dirname, '../src/app/layout.tsx'),
+]
+const FONT_URL = /\/fonts\/material-symbols-rounded\.woff2(\?v=[0-9a-f]+)?/g
 
 async function run() {
   // A modern UA makes Google serve woff2.
@@ -29,11 +38,20 @@ async function run() {
 
   const font = Buffer.from(await (await fetch(url)).arrayBuffer())
   await writeFile(resolve(OUT_DIR, 'material-symbols-rounded.woff2'), font)
-  // Records which icons the font contains; a unit test compares it to ICONS.
+  const version = createHash('sha256').update(font).digest('hex').slice(0, 10)
+  // Records which icons the font contains and its version; unit tests
+  // compare them to ICONS and to the references below.
   await writeFile(
     resolve(OUT_DIR, 'material-symbols-rounded.json'),
-    JSON.stringify({ icons: [...ICONS].sort() }, null, 2) + '\n'
+    JSON.stringify({ version, icons: [...ICONS].sort() }, null, 2) + '\n'
   )
+  for (const file of FONT_REFS) {
+    const source = await readFile(file, 'utf8')
+    await writeFile(
+      file,
+      source.replace(FONT_URL, `/fonts/material-symbols-rounded.woff2?v=${version}`)
+    )
+  }
   console.log(`Saved ${ICONS.length} icons (${(font.length / 1024).toFixed(1)} KB)`)
 }
 

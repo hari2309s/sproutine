@@ -74,7 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <link
           rel="preload"
-          href="/fonts/material-symbols-rounded.woff2"
+          href="/fonts/material-symbols-rounded.woff2?v=82ca94e507"
           as="font"
           type="font/woff2"
           crossOrigin="anonymous"

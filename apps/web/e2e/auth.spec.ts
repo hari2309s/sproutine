@@ -125,7 +125,7 @@ test.describe('Auth page', () => {
     await page.getByPlaceholder('you@example.com').fill('test@example.com')
     await page.getByRole('button', { name: 'Send reset link' }).click()
     await expect(page.getByText(/a link to set a new password is on its way/)).toBeVisible()
-    expect(redirect).toMatch(/\/auth\/confirm$/)
+    expect(redirect).toMatch(/\/auth\/confirm\/recovery$/)
   })
 
   test('shows the expired-link error when ?error=auth_failed is in the URL', async ({ page }) => {
