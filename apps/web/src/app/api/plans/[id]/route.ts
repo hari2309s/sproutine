@@ -31,7 +31,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
     const { id } = await params
     const body = Body.safeParse(await request.json().catch(() => null))
-    if (!body.success || !/^[0-9a-f-]{36}$/i.test(id)) {
+    if (
+      !body.success ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    ) {
       return NextResponse.json({ error: 'invalid request' }, { status: 400 })
     }
 

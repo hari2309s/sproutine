@@ -47,14 +47,13 @@ export function HomeClient() {
         // Keep the stored zone in step with this device (travel, a new phone),
         // so nudges arrive at local times.
         const zone = browserTimeZone()
+        // Awaited, so Today's habits and check-ins already use the new zone.
         if (profile.timezone !== zone) {
-          void supabase
+          const { error } = await supabase
             .from('profiles')
             .update({ timezone: zone })
             .eq('user_id', session.user.id)
-            .then(({ error }) => {
-              if (error) console.warn('[HomeClient] timezone update failed:', error.message)
-            })
+          if (error) console.warn('[HomeClient] timezone update failed:', error.message)
         }
         if (profile.locale in translations) setLocale(profile.locale as Locale)
         setState('today')

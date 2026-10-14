@@ -22,7 +22,7 @@ export async function listHabits(db: Db, userId: string): Promise<HabitRow[]> {
     .order('created_at', { ascending: true })
   if (error) throw new Error(`goals_habits.list: ${error.message}`)
   if (!habits?.length) return []
-  // ~a year of daily check-ins is plenty for streaks and milestones.
+  // About a year of check-ins is plenty for streaks and milestones.
   const { data: checkins, error: cErr } = await db
     .from('habit_checkins')
     .select('habit_id, date')
@@ -31,8 +31,10 @@ export async function listHabits(db: Db, userId: string): Promise<HabitRow[]> {
       'habit_id',
       habits.map((h) => h.id)
     )
+    // Bounded by date, not row count, so the API's row cap can't cut a streak.
+    .gte('date', new Date(Date.now() - 400 * 86_400_000).toISOString().slice(0, 10))
     .order('date', { ascending: false })
-    .limit(400 * habits.length)
+    .range(0, 400 * habits.length - 1)
   if (cErr) throw new Error(`habit_checkins.list: ${cErr.message}`)
   return habits.map((h) => ({
     id: h.id as string,

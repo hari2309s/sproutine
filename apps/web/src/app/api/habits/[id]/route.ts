@@ -13,7 +13,7 @@ export async function DELETE(
     const { user, errorResponse } = await requireUser(request)
     if (errorResponse) return errorResponse
     const { id } = await params
-    if (!/^[0-9a-f-]{36}$/i.test(id))
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
       return NextResponse.json({ error: 'invalid id' }, { status: 400 })
     const ok = await archiveHabit(createServerClient(), user.id, id)
     return ok

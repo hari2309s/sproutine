@@ -7,6 +7,24 @@ alter table public.profiles
 grant insert (timezone) on public.profiles to authenticated;
 grant update (timezone) on public.profiles to authenticated;
 
+-- Clients set the zone directly, so only real IANA zone names are accepted.
+create or replace function public.check_profile_timezone() returns trigger
+language plpgsql
+set search_path = pg_catalog
+as $$
+begin
+  if not exists (select 1 from pg_catalog.pg_timezone_names where name = new.timezone) then
+    raise exception 'unknown time zone: %', new.timezone using errcode = '22023';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_timezone_valid on public.profiles;
+create trigger profiles_timezone_valid
+  before insert or update of timezone on public.profiles
+  for each row execute function public.check_profile_timezone();
+
 create table if not exists public.goals_habits (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users(id) on delete cascade,
