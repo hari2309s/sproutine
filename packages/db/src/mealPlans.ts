@@ -7,7 +7,25 @@ export interface StoredPlan {
   id: string
   plan: MealPlan
   prefs: PlanPreferences
+  /** Version for optimistic updates: a swap only applies to this version. */
+  updatedAt: string
 }
+
+/** Someone else changed the plan first (another tab, a double tap). */
+export class PlanConflictError extends Error {
+  constructor() {
+    super('meal plan changed since it was read')
+    this.name = 'PlanConflictError'
+  }
+}
+
+const PLAN_COLUMNS = 'id, plan, prefs, updated_at'
+const toStored = (d: Record<string, unknown>): StoredPlan => ({
+  id: d.id as string,
+  plan: d.plan as MealPlan,
+  prefs: d.prefs as PlanPreferences,
+  updatedAt: d.updated_at as string,
+})
 
 /** The active plan for a person's week, if there is one. */
 export async function getActivePlan(
@@ -17,38 +35,33 @@ export async function getActivePlan(
 ): Promise<StoredPlan | null> {
   const { data, error } = await db
     .from('meal_plans')
-    .select('id, plan, prefs')
+    .select(PLAN_COLUMNS)
     .eq('user_id', userId)
     .eq('week_start', weekStart)
     .eq('status', 'active')
     .maybeSingle()
   if (error) throw new Error(`meal_plans.get: ${error.message}`)
-  return data
-    ? { id: data.id as string, plan: data.plan as MealPlan, prefs: data.prefs as PlanPreferences }
-    : null
+  return data ? toStored(data) : null
 }
 
-/** Stores a new active plan for the week, archiving the previous one. */
+/**
+ * Stores a new active plan for the week, archiving the previous one in the
+ * same transaction (save_active_plan), so a failed save keeps the old plan.
+ */
 export async function saveActivePlan(
   db: Db,
   userId: string,
   plan: MealPlan,
   prefs: PlanPreferences
 ): Promise<string> {
-  const { error: archiveError } = await db
-    .from('meal_plans')
-    .update({ status: 'archived', updated_at: new Date().toISOString() })
-    .eq('user_id', userId)
-    .eq('week_start', plan.weekStart)
-    .eq('status', 'active')
-  if (archiveError) throw new Error(`meal_plans.archive: ${archiveError.message}`)
-  const { data, error } = await db
-    .from('meal_plans')
-    .insert({ user_id: userId, week_start: plan.weekStart, plan, prefs })
-    .select('id')
-    .single()
-  if (error) throw new Error(`meal_plans.insert: ${error.message}`)
-  return data.id as string
+  const { data, error } = await db.rpc('save_active_plan', {
+    p_user: userId,
+    p_week: plan.weekStart,
+    p_plan: plan,
+    p_prefs: prefs,
+  })
+  if (error) throw new Error(`meal_plans.save: ${error.message}`)
+  return data as string
 }
 
 /** Replaces a plan's meals after a swap and records what changed. */
@@ -57,17 +70,21 @@ export async function updatePlanMeals(
   userId: string,
   planId: string,
   plan: MealPlan,
-  diff: { date: string; slot: PlanSlot; from: string | null; to: string }
+  diff: { date: string; slot: PlanSlot; from: string | null; to: string },
+  expectedUpdatedAt: string
 ): Promise<void> {
+  // Applies only if nobody changed the plan since it was read; otherwise the
+  // earlier swap would be silently overwritten.
   const { data, error } = await db
     .from('meal_plans')
     .update({ plan, updated_at: new Date().toISOString() })
     .eq('id', planId)
     .eq('user_id', userId)
     .eq('status', 'active')
+    .eq('updated_at', expectedUpdatedAt)
     .select('id')
   if (error) throw new Error(`meal_plans.update: ${error.message}`)
-  if (!data?.length) throw new Error('meal_plans.update: no active plan')
+  if (!data?.length) throw new PlanConflictError()
   const { error: logError } = await db
     .from('plan_adjustments')
     .insert({ plan_id: planId, user_id: userId, reason: 'swap', diff })
@@ -82,13 +99,11 @@ export async function getPlanById(
 ): Promise<StoredPlan | null> {
   const { data, error } = await db
     .from('meal_plans')
-    .select('id, plan, prefs')
+    .select(PLAN_COLUMNS)
     .eq('id', planId)
     .eq('user_id', userId)
     .eq('status', 'active')
     .maybeSingle()
   if (error) throw new Error(`meal_plans.getById: ${error.message}`)
-  return data
-    ? { id: data.id as string, plan: data.plan as MealPlan, prefs: data.prefs as PlanPreferences }
-    : null
+  return data ? toStored(data) : null
 }
