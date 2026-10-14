@@ -1,7 +1,6 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS eval_logs (
-  id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   provider        TEXT        NOT NULL,
   task            TEXT        NOT NULL,
