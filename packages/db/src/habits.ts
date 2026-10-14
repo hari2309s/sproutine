@@ -22,25 +22,29 @@ export async function listHabits(db: Db, userId: string): Promise<HabitRow[]> {
     .order('created_at', { ascending: true })
   if (error) throw new Error(`goals_habits.list: ${error.message}`)
   if (!habits?.length) return []
-  // About a year of check-ins is plenty for streaks and milestones.
-  const { data: checkins, error: cErr } = await db
-    .from('habit_checkins')
-    .select('habit_id, date')
-    .eq('user_id', userId)
-    .in(
-      'habit_id',
-      habits.map((h) => h.id)
-    )
-    // Bounded by date, not row count, so the API's row cap can't cut a streak.
-    .gte('date', new Date(Date.now() - 400 * 86_400_000).toISOString().slice(0, 10))
-    .order('date', { ascending: false })
-    .range(0, 400 * habits.length - 1)
-  if (cErr) throw new Error(`habit_checkins.list: ${cErr.message}`)
-  return habits.map((h) => ({
+  // About a year of check-ins per habit is plenty for streaks and milestones.
+  // One query per habit (at most MAX_HABITS), each under the API's row cap,
+  // so a long streak is never silently cut short.
+  const since = new Date(Date.now() - 400 * 86_400_000).toISOString().slice(0, 10)
+  const perHabit = await Promise.all(
+    habits.map(async (h) => {
+      const { data, error } = await db
+        .from('habit_checkins')
+        .select('date')
+        .eq('user_id', userId)
+        .eq('habit_id', h.id)
+        .gte('date', since)
+        .order('date', { ascending: false })
+        .limit(400)
+      if (error) throw new Error(`habit_checkins.list: ${error.message}`)
+      return (data ?? []).map((c) => c.date as string)
+    })
+  )
+  return habits.map((h, i) => ({
     id: h.id as string,
     title: h.title as string,
     period: h.period as HabitRow['period'],
-    checkins: (checkins ?? []).filter((c) => c.habit_id === h.id).map((c) => c.date as string),
+    checkins: perHabit[i]!,
   }))
 }
 

@@ -7,14 +7,16 @@ alter table public.profiles
 grant insert (timezone) on public.profiles to authenticated;
 grant update (timezone) on public.profiles to authenticated;
 
--- Clients set the zone directly, so only real IANA zone names are accepted.
+-- Clients set the zone directly. A name the server doesn't know (garbage,
+-- or one newer than the server's zone data) becomes Berlin rather than
+-- failing, so onboarding never breaks on it.
 create or replace function public.check_profile_timezone() returns trigger
 language plpgsql
 set search_path = pg_catalog
 as $$
 begin
   if not exists (select 1 from pg_catalog.pg_timezone_names where name = new.timezone) then
-    raise exception 'unknown time zone: %', new.timezone using errcode = '22023';
+    new.timezone := 'Europe/Berlin';
   end if;
   return new;
 end;
