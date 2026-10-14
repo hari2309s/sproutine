@@ -1,70 +1,142 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
 /**
- * Auth page tests — all run unauthenticated.
- * Supabase OTP requests are intercepted so no real email is sent.
+ * Auth page tests: all run signed out. Supabase auth endpoints are
+ * intercepted, so no account is created and no email is sent.
  */
-test.describe('Auth page', () => {
-  test.beforeEach(async ({ page }) => {
-    // Intercept the Supabase OTP endpoint so no real request is made
-    await page.route('**/auth/v1/otp**', (route) =>
-      route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
-    )
-  })
+const json = (body: unknown, status = 200) => ({
+  status,
+  contentType: 'application/json',
+  body: JSON.stringify(body),
+})
 
-  test('shows Sproutine branding and email form', async ({ page }) => {
+const user = (identities: unknown[]) => ({
+  id: '00000000-0000-4000-8000-000000000001',
+  aud: 'authenticated',
+  role: 'authenticated',
+  email: 'test@example.com',
+  identities,
+  app_metadata: {},
+  user_metadata: {},
+  created_at: '2026-10-14T00:00:00Z',
+})
+
+async function fillSignUp(page: Page, password = 'correct horse') {
+  await page.getByPlaceholder('What should I call you?').fill('Sam')
+  await page.getByPlaceholder('you@example.com').fill('test@example.com')
+  await page.getByPlaceholder('At least 8 characters').fill(password)
+}
+
+test.describe('Auth page', () => {
+  test('shows branding and the create-account form', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByText('Sproutine', { exact: true })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Eat well, one sprout at a time.' })).toBeVisible()
-    await expect(page.getByPlaceholder('you@example.com')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Continue with email' })).toBeVisible()
-  })
-
-  test('submit button is enabled with a valid email', async ({ page }) => {
-    await page.goto('/')
-    const input = page.getByPlaceholder('you@example.com')
-    const button = page.getByRole('button', { name: 'Continue with email' })
-
-    await input.fill('test@example.com')
-    await expect(button).toBeEnabled()
-  })
-
-  test('shows magic link confirmation after submission', async ({ page }) => {
-    await page.goto('/')
-    await page.getByPlaceholder('you@example.com').fill('test@example.com')
-    await page.getByRole('button', { name: 'Continue with email' }).click()
-
-    await expect(page.getByText('Check your email')).toBeVisible()
-    // The address shows as the user's reply bubble (and again inside Rosie's text).
-    await expect(page.getByText('test@example.com', { exact: true })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Use a different email' })).toBeVisible()
-  })
-
-  test('shows expired link error when ?error=auth_failed is in URL', async ({ page }) => {
-    await page.goto('/?error=auth_failed')
     await expect(
-      page.getByText('That sign-in link has expired or was already used. Ask me for a new one.')
+      page.getByRole('heading', { name: 'Eat well, one sprout at a time.' })
+    ).toBeVisible()
+    await expect(page.getByRole('radio', { name: 'New here' })).toHaveAttribute(
+      'aria-checked',
+      'true'
+    )
+    await expect(page.getByPlaceholder('What should I call you?')).toBeVisible()
+    await expect(page.getByPlaceholder('you@example.com')).toBeVisible()
+    await expect(page.getByPlaceholder('At least 8 characters')).toHaveAttribute('type', 'password')
+    await expect(page.getByRole('button', { name: 'Create account' })).toBeEnabled()
+  })
+
+  test('asks for a name and an 8-character password before calling Supabase', async ({ page }) => {
+    let called = false
+    await page.route('**/auth/v1/signup**', (route) => {
+      called = true
+      return route.fulfill(json({}))
+    })
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Create account' }).click()
+    await expect(page.getByText('Tell me what to call you.')).toBeVisible()
+    await fillSignUp(page, 'short')
+    await page.getByRole('button', { name: 'Create account' }).click()
+    await expect(page.getByText('Use at least 8 characters.')).toBeVisible()
+    expect(called).toBe(false)
+  })
+
+  test('sends the name with the sign-up and shows the confirm-email step', async ({ page }) => {
+    let body: Record<string, unknown> = {}
+    await page.route('**/auth/v1/signup**', (route) => {
+      body = route.request().postDataJSON()
+      return route.fulfill(json(user([{ id: 'x' }])))
+    })
+    await page.goto('/')
+    await fillSignUp(page)
+    await page.getByRole('button', { name: 'Create account' }).click()
+    await expect(page.getByText(/I sent a confirmation link to test@example.com/)).toBeVisible()
+    expect(body.data).toEqual({ display_name: 'Sam' })
+    expect(body.password).toBe('correct horse')
+  })
+
+  test('tells an existing user to sign in instead', async ({ page }) => {
+    await page.route('**/auth/v1/signup**', (route) => route.fulfill(json(user([]))))
+    await page.goto('/')
+    await fillSignUp(page)
+    await page.getByRole('button', { name: 'Create account' }).click()
+    await expect(
+      page.getByText("There's already an account with that email. Sign in instead.")
     ).toBeVisible()
   })
 
-  test('shows magic link hint text', async ({ page }) => {
+  test('shows a friendly message for a wrong password', async ({ page }) => {
+    await page.route('**/auth/v1/token**', (route) =>
+      route.fulfill(
+        json(
+          {
+            code: 'invalid_credentials',
+            msg: 'Invalid login credentials',
+            message: 'Invalid login credentials',
+          },
+          400
+        )
+      )
+    )
     await page.goto('/')
-    await expect(page.getByText('No password needed')).toBeVisible()
+    await page.getByRole('radio', { name: 'I have an account' }).click()
+    await page.getByPlaceholder('you@example.com').fill('test@example.com')
+    await page.getByPlaceholder('Your password').fill('not the password')
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(page.getByText(/That email and password don't match/)).toBeVisible()
   })
 
-  // The submit button is intentionally not gated on email validity — see
-  // AuthPage.tsx: a previously-silent disabled state (no explanation shown)
-  // was replaced with native required/type=email validation on submit, plus
-  // an inline error message, per an accessibility fix. These tests lock in
-  // that the button itself stays enabled either way.
-  test('submit button is enabled even when email field is empty', async ({ page }) => {
+  test('shows and hides the password', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByRole('button', { name: 'Continue with email' })).toBeEnabled()
+    const field = page.getByPlaceholder('At least 8 characters')
+    await page.getByRole('button', { name: 'Show password' }).click()
+    await expect(field).toHaveAttribute('type', 'text')
+    await page.getByRole('button', { name: 'Hide password' }).click()
+    await expect(field).toHaveAttribute('type', 'password')
   })
 
-  test('submit button is enabled with an invalid email format', async ({ page }) => {
+  test('sends a reset link from "Forgot password?"', async ({ page }) => {
+    let redirect = ''
+    await page.route('**/auth/v1/recover**', (route) => {
+      redirect = new URL(route.request().url()).searchParams.get('redirect_to') ?? ''
+      return route.fulfill(json({}))
+    })
     await page.goto('/')
-    await page.getByPlaceholder('you@example.com').fill('notanemail')
-    await expect(page.getByRole('button', { name: 'Continue with email' })).toBeEnabled()
+    await page.getByRole('radio', { name: 'I have an account' }).click()
+    await page.getByRole('button', { name: 'Forgot password?' }).click()
+    await page.getByPlaceholder('you@example.com').fill('test@example.com')
+    await page.getByRole('button', { name: 'Send reset link' }).click()
+    await expect(page.getByText(/a link to set a new password is on its way/)).toBeVisible()
+    expect(redirect).toMatch(/\/auth\/callback\?next=\/auth\/reset$/)
+  })
+
+  test('shows the expired-link error when ?error=auth_failed is in the URL', async ({ page }) => {
+    await page.goto('/?error=auth_failed')
+    await expect(
+      page.getByText('That link has expired or was already used. Sign in, or ask for a new one.')
+    ).toBeVisible()
+  })
+
+  test('the reset page explains an expired link', async ({ page }) => {
+    await page.goto('/auth/reset?error=expired')
+    await expect(page.getByText(/That reset link has expired/)).toBeVisible()
   })
 })

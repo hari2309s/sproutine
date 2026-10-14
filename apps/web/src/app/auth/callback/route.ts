@@ -5,6 +5,10 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  // Where to land after the exchange (e.g. the password reset form). Only
+  // same-site paths, so the link can't bounce someone to another site.
+  const nextParam = searchParams.get('next') ?? '/'
+  const next = /^\/(?![/\\])/.test(nextParam) ? nextParam : '/'
 
   if (code) {
     const cookieStore = await cookies()
@@ -27,10 +31,12 @@ export async function GET(request: Request) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      return NextResponse.redirect(`${origin}/`)
+      return NextResponse.redirect(`${origin}${next}`)
     }
   }
 
-  // Something went wrong — send back to login
-  return NextResponse.redirect(`${origin}/?error=auth_failed`)
+  // Something went wrong: send back to sign-in (or the reset page, which explains).
+  return NextResponse.redirect(
+    next === '/auth/reset' ? `${origin}/auth/reset?error=expired` : `${origin}/?error=auth_failed`
+  )
 }

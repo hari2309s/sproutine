@@ -14,50 +14,107 @@ import { sproutineEase } from '@/lib/motion'
 
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ''
 
-// Sign-in is a short conversation with Rosie: one magic-link flow covers both
-// sign-up and sign-in, so there is no mode switch to explain.
+const MIN_PASSWORD = 8
+
+type Mode = 'signUp' | 'signIn' | 'reset'
+
+// Sign-in is a short conversation with Rosie: create an account with a name,
+// email and password, or sign in. Only "forgot password" sends an email, so
+// everyday sign-in never waits on (or runs into limits of) email delivery.
 export function AuthPage({ error: initialError = null }: { error?: string | null }) {
   const { t } = useLanguage()
   const posthog = usePostHog()
   const reducedMotion = usePrefersReducedMotion()
+  const [mode, setMode] = useState<Mode>('signUp')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [sentTo, setSentTo] = useState<string | null>(null)
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  // An email-based next step (confirm sign-up, reset password) replaces the form.
+  const [notice, setNotice] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(initialError)
   // When no site key is configured (CI / local dev), bypass captcha requirement
   const [captchaToken, setCaptchaToken] = useState<string | null>(SITE_KEY ? null : 'bypass')
   const turnstileRef = useRef<TurnstileInstance>(null)
 
+  const switchMode = (next: Mode) => {
+    setMode(next)
+    setError(null)
+    setNotice(null)
+  }
+
+  /** Supabase error → something Rosie would say. */
+  const friendly = (message: string, status?: number): string => {
+    const m = message.toLowerCase()
+    if (status === 429 || m.includes('rate limit') || m.includes('too many'))
+      return t.auth.rateLimited
+    if (m.includes('invalid login credentials')) return t.auth.invalidCredentials
+    if (m.includes('email not confirmed')) return t.auth.emailNotConfirmed
+    if (m.includes('already registered') || m.includes('already been registered'))
+      return t.auth.alreadyRegistered
+    if (m.includes('password') && (m.includes('least') || m.includes('short')))
+      return t.auth.passwordTooShort
+    return t.auth.genericError
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const address = email.trim()
-    if (!/\S+@\S+\.\S+/.test(address)) {
-      setError(t.auth.invalidEmail)
-      return
+    if (mode === 'signUp' && !name.trim()) return setError(t.auth.nameRequired)
+    if (!/\S+@\S+\.\S+/.test(address)) return setError(t.auth.invalidEmail)
+    if (mode !== 'reset' && password.length < MIN_PASSWORD) {
+      return setError(mode === 'signUp' ? t.auth.passwordTooShort : t.auth.invalidCredentials)
     }
     if (!captchaToken) return
     setIsLoading(true)
     setError(null)
 
-    posthog.capture('auth_magic_link_requested')
+    const callback = `${window.location.origin}/auth/callback`
+    let failure: { message: string; status?: number } | null = null
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: address,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+    if (mode === 'signUp') {
+      posthog.capture('auth_sign_up_requested')
+      const { data, error } = await supabase.auth.signUp({
+        email: address,
+        password,
+        options: {
+          data: { display_name: name.trim().slice(0, 60) },
+          emailRedirectTo: callback,
+          captchaToken,
+        },
+      })
+      if (error) failure = error
+      // With email confirmation on, Supabase hides whether the address is
+      // taken: a known address comes back with no identities.
+      else if (data.user && data.user.identities?.length === 0)
+        failure = { message: 'already registered' }
+      // No session means the project asks for email confirmation first.
+      else if (!data.session) setNotice(t.auth.confirmEmailSent(address))
+      // Otherwise onAuthStateChange in HomeClient takes over (→ onboarding).
+    } else if (mode === 'signIn') {
+      posthog.capture('auth_sign_in_requested')
+      const { error } = await supabase.auth.signInWithPassword({
+        email: address,
+        password,
+        options: { captchaToken },
+      })
+      if (error) failure = error
+    } else {
+      posthog.capture('auth_reset_requested')
+      const { error } = await supabase.auth.resetPasswordForEmail(address, {
+        redirectTo: `${callback}?next=/auth/reset`,
         captchaToken,
-      },
-    })
+      })
+      if (error) failure = error
+      else setNotice(t.auth.resetSent(address))
+    }
 
     turnstileRef.current?.reset()
     setCaptchaToken(SITE_KEY ? null : 'bypass')
-
-    if (error) {
-      posthog.capture('auth_magic_link_failed', { error: error.message })
-      setError(error.message)
-    } else {
-      posthog.capture('auth_magic_link_sent')
-      setSentTo(address)
+    if (failure) {
+      posthog.capture('auth_failed', { mode, error: failure.message })
+      setError(friendly(failure.message, failure.status))
     }
     setIsLoading(false)
   }
@@ -106,7 +163,7 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
 
         {/* ── Conversation with Rosie ── */}
         <section
-          aria-label={t.auth.continueWithEmail}
+          aria-label={t.auth.rosieName}
           className="card mt-1.5 flex w-full flex-col gap-2.5 p-4 lg:mt-0 lg:gap-3 lg:self-center lg:p-6"
         >
           <header className="flex items-center gap-2.5 pb-1">
@@ -121,38 +178,77 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
             </span>
           </header>
 
+          {mode !== 'reset' && (
+            <div
+              role="radiogroup"
+              aria-label={t.auth.modeLabel}
+              className="flex gap-1 rounded-full bg-sproutine-surface p-1"
+            >
+              {(['signUp', 'signIn'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === m}
+                  onClick={() => switchMode(m)}
+                  className={`h-10 flex-1 rounded-full text-sm ${
+                    mode === m
+                      ? 'bg-sproutine-card font-semibold text-sproutine-text shadow-soft'
+                      : 'font-medium text-sproutine-text-secondary hover:text-sproutine-text'
+                  }`}
+                >
+                  {m === 'signUp' ? t.auth.modeSignUp : t.auth.modeSignIn}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex flex-col gap-2.5" aria-live="polite">
             <RosieBubble {...bubble(0.1)}>{t.auth.greeting}</RosieBubble>
-            <RosieBubble {...bubble(0.35)}>{t.auth.ask}</RosieBubble>
-
-            <AnimatePresence initial={false}>
-              {sentTo && (
-                <motion.div key="sent" className="flex flex-col gap-2.5" {...bubble(0)}>
-                  <p className="max-w-[85%] self-end rounded-[20px] rounded-br-md bg-sproutine-accent px-3.5 py-2.5 text-[15px] font-medium break-all text-sproutine-bg">
-                    {sentTo}
-                  </p>
-                  <RosieBubble>
-                    <span className="block font-semibold">{t.auth.checkEmail}</span>
-                    <span className="mt-1 block">{t.auth.magicLinkSent(sentTo)}</span>
-                  </RosieBubble>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSentTo(null)
-                      setError(null)
-                    }}
-                    className="btn-ghost h-11 self-start px-3 text-sm"
-                  >
-                    <Icon name="mail" size={18} />
-                    {t.auth.differentEmail}
-                  </button>
-                </motion.div>
-              )}
+            <AnimatePresence mode="wait" initial={false}>
+              <RosieBubble key={notice ?? mode} {...bubble(0)}>
+                {notice ??
+                  (mode === 'signUp'
+                    ? t.auth.askSignUp
+                    : mode === 'signIn'
+                      ? t.auth.askSignIn
+                      : t.auth.resetAsk)}
+              </RosieBubble>
             </AnimatePresence>
           </div>
 
-          {!sentTo && (
+          {notice ? (
+            <button
+              type="button"
+              onClick={() => switchMode('signIn')}
+              className="btn-ghost h-11 self-start px-3 text-sm"
+            >
+              {t.auth.backToSignIn}
+            </button>
+          ) : (
             <form onSubmit={handleSubmit} noValidate className="mt-1 flex flex-col gap-2.5">
+              {mode === 'signUp' && (
+                <>
+                  <label htmlFor="auth-name" className="sr-only">
+                    {t.auth.nameLabel}
+                  </label>
+                  <input
+                    id="auth-name"
+                    type="text"
+                    placeholder={t.auth.namePlaceholder}
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value)
+                      if (error) setError(null)
+                    }}
+                    autoComplete="given-name"
+                    maxLength={60}
+                    className="field bg-sproutine-bg"
+                    required
+                  />
+                </>
+              )}
+
               <label htmlFor="auth-email" className="sr-only">
                 {t.auth.emailLabel}
               </label>
@@ -166,13 +262,47 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
                   setEmail(e.target.value)
                   if (error) setError(null)
                 }}
-                autoComplete="email"
+                autoComplete={mode === 'signUp' ? 'email' : 'username'}
                 spellCheck={false}
                 aria-invalid={!!error}
                 aria-describedby={error ? 'auth-error' : undefined}
-                className={`field bg-sproutine-bg ${error ? 'border-2 border-sproutine-red px-[15px]' : ''}`}
+                className="field bg-sproutine-bg"
                 required
               />
+
+              {mode !== 'reset' && (
+                <div className="relative">
+                  <label htmlFor="auth-password" className="sr-only">
+                    {t.auth.passwordLabel}
+                  </label>
+                  <input
+                    id="auth-password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={
+                      mode === 'signUp' ? t.auth.passwordPlaceholderNew : t.auth.passwordPlaceholder
+                    }
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      if (error) setError(null)
+                    }}
+                    autoComplete={mode === 'signUp' ? 'new-password' : 'current-password'}
+                    minLength={mode === 'signUp' ? MIN_PASSWORD : undefined}
+                    aria-describedby={error ? 'auth-error' : undefined}
+                    className="field w-full bg-sproutine-bg pr-12"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? t.auth.hidePassword : t.auth.showPassword}
+                    aria-pressed={showPassword}
+                    className="icon-btn absolute top-1/2 right-1 h-10 w-10 -translate-y-1/2"
+                  >
+                    <Icon name={showPassword ? 'visibility_off' : 'visibility'} size={20} />
+                  </button>
+                </div>
+              )}
 
               {SITE_KEY && (
                 <Turnstile
@@ -203,16 +333,37 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
                 {isLoading && (
                   <span className="h-[18px] w-[18px] animate-spin rounded-full border-[2.5px] border-sproutine-bg border-r-transparent" />
                 )}
-                {isLoading ? t.auth.sending : t.auth.continueWithEmail}
+                {isLoading
+                  ? t.auth.working
+                  : mode === 'signUp'
+                    ? t.auth.createAccount
+                    : mode === 'signIn'
+                      ? t.auth.signIn
+                      : t.auth.sendResetLink}
               </button>
 
-              <p className="text-center text-[13px] text-sproutine-muted lg:text-sm">
-                {t.auth.footer}
-              </p>
+              {mode === 'signIn' && (
+                <button
+                  type="button"
+                  onClick={() => switchMode('reset')}
+                  className="self-center text-sm font-semibold text-sproutine-accent"
+                >
+                  {t.auth.forgotPassword}
+                </button>
+              )}
+              {mode === 'reset' && (
+                <button
+                  type="button"
+                  onClick={() => switchMode('signIn')}
+                  className="self-center text-sm font-semibold text-sproutine-accent"
+                >
+                  {t.auth.backToSignIn}
+                </button>
+              )}
             </form>
           )}
 
-          {!sentTo && process.env.NEXT_PUBLIC_DEMO_ENABLED === '1' && (
+          {!notice && mode !== 'reset' && process.env.NEXT_PUBLIC_DEMO_ENABLED === '1' && (
             <form action="/api/auth/demo" method="post" className="flex flex-col gap-2.5">
               <div className="flex items-center gap-3">
                 <span className="h-px flex-1 bg-sproutine-border" />

@@ -25,11 +25,12 @@ describe('translations completeness', () => {
   })
 })
 
-// ─── auth.magicLinkSent ──────────────────────────────────────────────────────
+// ─── auth emails ────────────────────────────────────────────────────────────
 
-describe('auth.magicLinkSent', () => {
-  it('en: interpolates email', () => {
-    expect(en.auth.magicLinkSent('hello@example.com')).toContain('hello@example.com')
+describe('auth email notices', () => {
+  it('en: interpolates the address', () => {
+    expect(en.auth.confirmEmailSent('hello@example.com')).toContain('hello@example.com')
+    expect(en.auth.resetSent('hello@example.com')).toContain('hello@example.com')
   })
 })
 

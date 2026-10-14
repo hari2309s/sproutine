@@ -24,7 +24,7 @@ export async function proxy(request: NextRequest) {
   )
 
   // Refreshes the session cookie if it has expired — keeps the user logged in
-  // across visits without requiring a new magic link.
+  // across visits without signing in again.
   await supabase.auth.getUser()
 
   return response

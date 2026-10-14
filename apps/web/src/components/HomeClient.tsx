@@ -18,6 +18,8 @@ export function HomeClient() {
   const [state, setState] = useState<AppState>('loading')
   const [userId, setUserId] = useState<string | null>(null)
   const [name, setName] = useState<string>('')
+  // The name given at sign-up, to prefill onboarding.
+  const [signUpName, setSignUpName] = useState('')
   const { t, setLocale } = useLanguage()
   const searchParams = useSearchParams()
   const authError = searchParams.get('error')
@@ -33,6 +35,8 @@ export function HomeClient() {
         return
       }
       setUserId(session.user.id)
+      const metaName = session.user.user_metadata?.display_name
+      setSignUpName(typeof metaName === 'string' ? metaName : '')
       try {
         const profile = await fetchOwnProfile(session.user.id)
         if (!profile) {
@@ -78,6 +82,7 @@ export function HomeClient() {
     return (
       <OnboardingPage
         userId={userId}
+        initialName={signUpName}
         onComplete={async () => {
           const {
             data: { session },

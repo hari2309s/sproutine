@@ -42,6 +42,8 @@ export const ICONS = [
   'thumb_down',
   'thumb_up',
   'tune',
+  'visibility',
+  'visibility_off',
   'volume_off',
   'volume_up',
   'water_drop',

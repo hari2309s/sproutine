@@ -12,16 +12,43 @@ export interface Translations {
     rosieName: string
     rosieRole: string
     greeting: string
-    ask: string
+    askSignUp: string
+    askSignIn: string
+    modeLabel: string
+    modeSignUp: string
+    modeSignIn: string
+    nameLabel: string
+    namePlaceholder: string
     emailLabel: string
     emailPlaceholder: string
+    passwordLabel: string
+    passwordPlaceholderNew: string
+    passwordPlaceholder: string
+    showPassword: string
+    hidePassword: string
+    createAccount: string
+    signIn: string
+    working: string
+    forgotPassword: string
+    sendResetLink: string
+    backToSignIn: string
+    resetAsk: string
+    resetSent: (email: string) => string
+    confirmEmailSent: (email: string) => string
     invalidEmail: string
-    continueWithEmail: string
-    sending: string
-    footer: string
-    checkEmail: string
-    magicLinkSent: (email: string) => string
-    differentEmail: string
+    nameRequired: string
+    passwordTooShort: string
+    invalidCredentials: string
+    emailNotConfirmed: string
+    alreadyRegistered: string
+    rateLimited: string
+    genericError: string
+    resetTitle: string
+    resetIntro: string
+    newPasswordLabel: string
+    savePassword: string
+    passwordSaved: string
+    resetExpired: string
     demoButton: string
     demoHint: string
     disclaimer: string
@@ -225,17 +252,45 @@ export const translations: Record<Locale, Translations> = {
       rosieName: 'Rosie',
       rosieRole: 'Your food friend',
       greeting: "Hi, I'm Rosie. I'll help you eat well, one small routine at a time.",
-      ask: "What's your email? I'll send you a link to sign in. New here? The same link creates your account.",
+      askSignUp: "Let's set you up. What should I call you, and how will you sign in?",
+      askSignIn: 'Welcome back! Sign in with your email and password.',
+      modeLabel: 'Account',
+      modeSignUp: 'New here',
+      modeSignIn: 'I have an account',
+      nameLabel: 'Your name',
+      namePlaceholder: 'What should I call you?',
       emailLabel: 'Email address',
       emailPlaceholder: 'you@example.com',
+      passwordLabel: 'Password',
+      passwordPlaceholderNew: 'At least 8 characters',
+      passwordPlaceholder: 'Your password',
+      showPassword: 'Show password',
+      hidePassword: 'Hide password',
+      createAccount: 'Create account',
+      signIn: 'Sign in',
+      working: 'One moment…',
+      forgotPassword: 'Forgot password?',
+      sendResetLink: 'Send reset link',
+      backToSignIn: 'Back to sign in',
+      resetAsk: "No problem. What's your email? I'll send you a link to set a new password.",
+      resetSent: (email) =>
+        `If there's an account for ${email}, a link to set a new password is on its way. It works for one hour.`,
+      confirmEmailSent: (email) =>
+        `Almost there! I sent a confirmation link to ${email}. Tap it, and you're in.`,
       invalidEmail: 'That email looks incomplete. Check the part after @.',
-      continueWithEmail: 'Continue with email',
-      sending: 'Sending…',
-      footer: 'No password needed',
-      checkEmail: 'Check your email',
-      magicLinkSent: (email) =>
-        `I sent a magic link to ${email}. Tap it on this device to sign in. It works for one hour.`,
-      differentEmail: 'Use a different email',
+      nameRequired: 'Tell me what to call you.',
+      passwordTooShort: 'Use at least 8 characters.',
+      invalidCredentials: "That email and password don't match. Try again, or reset your password.",
+      emailNotConfirmed: 'Confirm your email first: tap the link I sent you.',
+      alreadyRegistered: "There's already an account with that email. Sign in instead.",
+      rateLimited: 'Too many tries in a short time. Wait a minute, then try again.',
+      genericError: "Something went wrong on my side. Please try again.",
+      resetTitle: 'Set a new password',
+      resetIntro: 'Choose a new password for your account.',
+      newPasswordLabel: 'New password',
+      savePassword: 'Save password',
+      passwordSaved: 'Password saved. Taking you in…',
+      resetExpired: 'That reset link has expired or was already used. Ask for a new one from the sign-in page.',
       demoButton: 'Explore the demo',
       demoHint: 'or look around first',
       disclaimer: 'Sproutine offers general food ideas, not medical advice.',
@@ -435,7 +490,7 @@ export const translations: Record<Locale, Translations> = {
       },
     },
     home: {
-      authExpiredError: 'That sign-in link has expired or was already used. Ask me for a new one.',
+      authExpiredError: 'That link has expired or was already used. Sign in, or ask for a new one.',
       demoUnavailableError: 'The demo is taking a break. Please try again in a moment.',
     },
     cookieBanner: {

@@ -153,7 +153,7 @@ sproutine/
 │   └── ui/                   Shared UI pieces
 ├── supabase/
 │   ├── migrations/           Schema, RLS, RPCs
-│   └── templates/            Magic-link email
+│   └── templates/            Email templates
 └── docs/dev-plan.md          Roadmap and design decisions
 ```
 
@@ -223,7 +223,10 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-Then in the Supabase dashboard, under **Authentication → URL Configuration**, set the Site URL to `http://localhost:3000` and add `http://localhost:3000/**` to the redirect URLs. Optionally paste [`supabase/templates/magic-link.html`](supabase/templates/magic-link.html) into the Magic Link email template.
+Then in the Supabase dashboard:
+
+- **Authentication → URL Configuration:** set the Site URL to `http://localhost:3000` and add `http://localhost:3000/**` to the redirect URLs (used by password-reset links).
+- **Authentication → Sign In / Providers → Email:** sign-in is email and password. Turn **Confirm email** off if you don't want a confirmation email on sign-up (the built-in mailer allows only a few emails an hour); then the only email Sproutine sends is a password reset. Set the minimum password length to 8 to match the app.
 
 ### Run
 

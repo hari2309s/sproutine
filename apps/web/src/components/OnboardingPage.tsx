@@ -15,6 +15,8 @@ import { LOCALE_LABELS } from '@/lib/i18n'
 
 interface OnboardingPageProps {
   userId: string
+  /** The name given at sign-up, if any; still editable here. */
+  initialName?: string
   onComplete: () => void
 }
 
@@ -69,10 +71,10 @@ function FieldLabel({
   )
 }
 
-export function OnboardingPage({ userId, onComplete }: OnboardingPageProps) {
+export function OnboardingPage({ userId, initialName = '', onComplete }: OnboardingPageProps) {
   const { t, locale, setLocale } = useLanguage()
   const { voiceId, setVoiceId } = useVoicePreference()
-  const [name, setName] = useState('')
+  const [name, setName] = useState(initialName)
   const [diet, setDiet] = useState<Diet>('omnivore')
   const [allergies, setAllergies] = useState<Allergen[]>([])
   const [dislikes, setDislikes] = useState('')
