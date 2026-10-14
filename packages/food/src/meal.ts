@@ -102,15 +102,15 @@ export function buildMealLog(items: { food: FoodRecord; grams: number }[]): Meal
 }
 
 /**
- * Gentle mode: the same food with every number removed, so data sent to the
- * browser carries no nutrients at all rather than relying on the UI hiding them.
+ * Gentle mode: the same food with every nutrient value removed, so data sent
+ * to the browser carries none rather than relying on the UI hiding them. The
+ * pack serving stays: it's a weight, and grams are shown in gentle mode too.
  */
 export function withoutNutrients(food: FoodRecord): FoodRecord {
   return {
     ...food,
     per100g: { ...EMPTY_NUTRIENTS },
     estimatedNutrients: [],
-    servingG: null,
     quality: 'incomplete',
   }
 }

@@ -45,7 +45,8 @@ function startOfToday(): Date {
 function proposalForScan(food: FoodRecord): MealLogProposal {
   const grams = food.servingG ? Math.round(food.servingG) : 100
   return {
-    slot: mealSlotAt(new Date()),
+    // The device's own clock decides breakfast vs lunch here.
+    slot: mealSlotAt(new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone),
     source: 'barcode',
     items: [
       {
@@ -96,7 +97,7 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
     setScanning(false)
     setNotice(null)
     try {
-      const res = await fetch(`/api/food/barcode/${code}`)
+      const res = await fetch(`/api/food/barcode/${encodeURIComponent(code)}`)
       if (res.status === 404) return setNotice(t.meal.notFoundBarcode)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const { food } = (await res.json()) as { food: FoodRecord }
@@ -108,9 +109,11 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
   }
 
   const removeLog = async (id: string) => {
-    const { error } = await supabase.from('meal_logs').delete().eq('id', id)
-    if (error) {
-      console.warn('[today] remove failed:', error.message)
+    // A delete that matches nothing (e.g. an expired session) isn't an error
+    // to PostgREST, so check that the row really went.
+    const { data, error } = await supabase.from('meal_logs').delete().eq('id', id).select('id')
+    if (error || !data?.length) {
+      console.warn('[today] remove failed:', error?.message ?? 'no row deleted')
       setNotice(t.meal.removeFailed)
       return
     }
