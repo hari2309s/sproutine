@@ -28,4 +28,9 @@ export { estimatePortion } from './portions'
 export type { PortionUnit, PortionEstimate } from './portions'
 export { searchFood, lookupBarcode, rankFood } from './search'
 export type { FoodCache, SearchResult, SearchSources, ExternalGuards } from './search'
-export { RateLimitedError, createKeyedRateLimiter, createTtlSet } from './rateLimit'
+export {
+  RateLimitedError,
+  UserRateLimitedError,
+  createKeyedRateLimiter,
+  createTtlSet,
+} from './rateLimit'

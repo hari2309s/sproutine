@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isValidBarcode, lookupBarcode, RateLimitedError } from '@sproutine/food'
+import {
+  isValidBarcode,
+  lookupBarcode,
+  RateLimitedError,
+  UserRateLimitedError,
+} from '@sproutine/food'
 import { consumeUserQuota } from '@sproutine/ai'
 import { createFoodCache, createServerClient } from '@sproutine/db'
 import { requireUser } from '@/lib/supabase-server'
@@ -40,6 +45,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!food) return NextResponse.json({ error: 'not found' }, { status: 404 })
     return NextResponse.json({ food })
   } catch (error) {
+    if (error instanceof UserRateLimitedError) {
+      return NextResponse.json({ error: 'too many new lookups, slow down' }, { status: 429 })
+    }
     if (error instanceof RateLimitedError) {
       // OFF is busy; the client can retry shortly or search by name instead.
       return NextResponse.json({ error: 'lookup busy, try again shortly' }, { status: 503 })

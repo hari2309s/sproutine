@@ -232,13 +232,16 @@ const FOOD_PORTIONS: FoodPortion[] = [
 ]
 
 /**
- * Finds the portion entry for a food name. When several keywords match, the
- * one appearing last wins: in English the head noun comes last ("milk
- * chocolate" is chocolate, "chicken soup" is soup); ties go to the longer
+ * Finds the portion entry for a food name. Accompaniments are dropped first
+ * ("Müsli mit Milch" is muesli, "bread with butter" is bread). Within what's
+ * left, the keyword appearing last wins, since the head noun comes last in
+ * English compounds ("milk chocolate" is chocolate); ties go to the longer
  * keyword. German compounds are single words and match whole only.
  */
+const ACCOMPANIMENT = /\s+(?:mit|with|und|and)\s+|,/
+
 function findFood(name: string): FoodPortion | undefined {
-  const text = name.toLowerCase()
+  const text = name.toLowerCase().split(ACCOMPANIMENT)[0]!.trim()
   let best: { entry: FoodPortion; at: number; len: number } | undefined
   for (const entry of FOOD_PORTIONS) {
     for (const word of entry.match) {
@@ -277,9 +280,12 @@ export function estimatePortion(
   if (food && unit === 'piece' && food.units.piece == null) {
     return { grams: round(quantity * food.default), basis: 'food-default', confidence: 'medium' }
   }
+  if (food && !unit && quantity > 1 && food.units.piece != null) {
+    // A count without a unit counts items: "3 Kartoffeln" is three potatoes.
+    return { grams: round(quantity * food.units.piece), basis: 'food-unit', confidence: 'medium' }
+  }
   if (food && (!unit || unit === 'portion')) {
-    // One typical serving of the food, not one piece of it ("nuts" is a
-    // handful, not a single almond).
+    // One typical serving, not one piece ("nuts" is a handful, not an almond).
     return { grams: round(quantity * food.default), basis: 'food-default', confidence: 'medium' }
   }
   const generic = (unit && GENERIC_UNITS[unit]) ?? GENERIC_UNITS.portion!

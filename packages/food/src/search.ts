@@ -1,5 +1,5 @@
 import { fetchOffProduct, isValidBarcode, searchOff } from './off'
-import { RateLimitedError } from './rateLimit'
+import { RateLimitedError, UserRateLimitedError } from './rateLimit'
 import { searchUsda } from './usda'
 import type { FoodRecord } from './types'
 
@@ -45,7 +45,7 @@ export async function lookupBarcode(
   const cached = await cache.findByBarcode(code)
   if (cached) return cached
   if (unknownBarcodes?.has(code)) return null
-  if (!canCallExternal()) throw new RateLimitedError('openfoodfacts (per-user)')
+  if (!canCallExternal()) throw new UserRateLimitedError('openfoodfacts')
   const food = await sources.fetchOffProduct(code)
   if (!food) unknownBarcodes?.add(code)
   // A cache write failure must not turn a successful lookup into an error.

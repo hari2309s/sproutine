@@ -8,6 +8,7 @@ import {
   createRateLimiter,
   createTtlSet,
   RateLimitedError,
+  UserRateLimitedError,
 } from '../rateLimit'
 import { lookupBarcode, rankFood, searchFood, type FoodCache } from '../search'
 import type { FoodRecord } from '../types'
@@ -163,6 +164,19 @@ describe('estimatePortion', () => {
     expect(estimatePortion('pizza', 1, 'slice').grams).toBe(110)
   })
 
+  it('counts items when a number comes without a unit', () => {
+    expect(estimatePortion('Kartoffeln', 3).grams).toBe(300)
+    expect(estimatePortion('Mandeln', 10).grams).toBe(12)
+    expect(estimatePortion('Kartoffeln', 1).grams).toBe(200)
+  })
+
+  it('ignores accompaniments after mit / with / und / and', () => {
+    expect(estimatePortion('Müsli mit Milch').grams).toBe(50)
+    expect(estimatePortion('Brot mit Butter').grams).toBe(90)
+    expect(estimatePortion('bread with butter', 2, 'slice').grams).toBe(90)
+    expect(estimatePortion('Kartoffeln mit Quark').grams).toBe(200)
+  })
+
   it('picks the head noun when several foods are named', () => {
     expect(estimatePortion('milk chocolate').grams).toBe(25)
     expect(estimatePortion('chicken soup').grams).toBe(300)
@@ -305,6 +319,6 @@ describe('fair use of the shared OFF budget', () => {
     expect(res.sources.off).toBe('skipped')
     await expect(
       lookupBarcode('4008400404127', memoryCache(), sources, { canCallExternal: () => false })
-    ).rejects.toBeInstanceOf(RateLimitedError)
+    ).rejects.toBeInstanceOf(UserRateLimitedError)
   })
 })

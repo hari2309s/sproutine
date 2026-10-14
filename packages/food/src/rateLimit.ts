@@ -6,6 +6,14 @@ export class RateLimitedError extends Error {
   }
 }
 
+/** The caller used up their own share; distinct from the source being busy. */
+export class UserRateLimitedError extends RateLimitedError {
+  constructor(source: string) {
+    super(source)
+    this.name = 'UserRateLimitedError'
+  }
+}
+
 /**
  * Sliding one-minute window. Non-blocking by design: in a request path it's
  * better to fall back to the cache or another source than to stall the user.
