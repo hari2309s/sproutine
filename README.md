@@ -8,7 +8,7 @@
 
 A voice-first healthy eating companion that logs your meals, plans your week and nudges you gently, without the guilt.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/hari2309s/sproutine)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/hari2309s/sproutine&root-directory=apps/web&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,SUPABASE_SECRET_KEY,GROQ_API_KEY&envDescription=Supabase%20project%20keys%20and%20a%20Groq%20API%20key&envLink=https://github.com/hari2309s/sproutine%23environment-setup)
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)
@@ -232,6 +232,12 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+### Deploy to Vercel
+
+1. Import the repo in Vercel and set **Root Directory** to `apps/web`. [`apps/web/vercel.json`](apps/web/vercel.json) installs and builds with pinned pnpm 12 through `npx`, since Vercel's built-in pnpm stops at version 10.
+2. Add the environment variables from [Environment setup](#environment-setup) for Production (and Preview if you use it). `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are needed at build time; set `LANGFUSE_TRACING_ENVIRONMENT=production` and `NEXT_PUBLIC_APP_URL` to your domain.
+3. In Supabase, under **Authentication → URL Configuration**, set the Site URL to your Vercel domain and add `https://<your-domain>/**` to the redirect URLs, or sign-in links will bounce.
 
 ---
 

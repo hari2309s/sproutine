@@ -9,12 +9,17 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
-        "NEXT_PUBLIC_SUPABASE_URL",
-        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+        "NEXT_PUBLIC_*",
         "SUPABASE_SECRET_KEY",
         "GEMINI_API_KEY",
         "GROQ_API_KEY",
-        "NEXT_PUBLIC_APP_URL"
+        "CEREBRAS_API_KEY",
+        "OPENROUTER_API_KEY",
+        "MISTRAL_API_KEY",
+        "LANGFUSE_*",
+        "OFF_CONTACT",
+        "USDA_API_KEY",
+        "DEMO_USER_EMAIL"
       ]
     },
     "lint": {
