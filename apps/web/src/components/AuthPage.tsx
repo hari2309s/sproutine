@@ -34,6 +34,16 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
   const [notice, setNotice] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(initialError)
+  // Which field the error is about, so only that one is marked invalid.
+  const [errorField, setErrorField] = useState<'name' | 'email' | 'password' | null>(null)
+  const fail = (message: string, field: typeof errorField = null) => {
+    setError(message)
+    setErrorField(field)
+  }
+  const fieldProps = (field: NonNullable<typeof errorField>) => ({
+    'aria-invalid': errorField === field,
+    'aria-describedby': errorField === field ? 'auth-error' : undefined,
+  })
   // When no site key is configured (CI / local dev), bypass captcha requirement
   const [captchaToken, setCaptchaToken] = useState<string | null>(SITE_KEY ? null : 'bypass')
   const turnstileRef = useRef<TurnstileInstance>(null)
@@ -41,6 +51,7 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
   const switchMode = (next: Mode) => {
     setMode(next)
     setError(null)
+    setErrorField(null)
     setNotice(null)
   }
 
@@ -61,16 +72,20 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const address = email.trim()
-    if (mode === 'signUp' && !name.trim()) return setError(t.auth.nameRequired)
-    if (!/\S+@\S+\.\S+/.test(address)) return setError(t.auth.invalidEmail)
+    if (mode === 'signUp' && !name.trim()) return fail(t.auth.nameRequired, 'name')
+    if (!/\S+@\S+\.\S+/.test(address)) return fail(t.auth.invalidEmail, 'email')
     if (mode !== 'reset' && password.length < MIN_PASSWORD) {
-      return setError(mode === 'signUp' ? t.auth.passwordTooShort : t.auth.invalidCredentials)
+      return mode === 'signUp'
+        ? fail(t.auth.passwordTooShort, 'password')
+        : fail(t.auth.invalidCredentials)
     }
     if (!captchaToken) return
     setIsLoading(true)
-    setError(null)
+    fail('', null)
 
-    const callback = `${window.location.origin}/auth/callback`
+    // Email links come back to the site the request came from (localhost or
+    // the deployed app), as long as it's in Supabase's redirect allow-list.
+    const confirmUrl = `${window.location.origin}/auth/confirm`
     let failure: { message: string; status?: number } | null = null
 
     if (mode === 'signUp') {
@@ -80,16 +95,14 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
         password,
         options: {
           data: { display_name: name.trim().slice(0, 60) },
-          emailRedirectTo: callback,
+          emailRedirectTo: confirmUrl,
           captchaToken,
         },
       })
       if (error) failure = error
-      // With email confirmation on, Supabase hides whether the address is
-      // taken: a known address comes back with no identities.
-      else if (data.user && data.user.identities?.length === 0)
-        failure = { message: 'already registered' }
-      // No session means the project asks for email confirmation first.
+      // No session means the project asks for email confirmation first. A
+      // known address gets the same answer (Supabase returns it with no
+      // identities), so sign-up never reveals who has an account.
       else if (!data.session) setNotice(t.auth.confirmEmailSent(address))
       // Otherwise onAuthStateChange in HomeClient takes over (→ onboarding).
     } else if (mode === 'signIn') {
@@ -103,7 +116,7 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
     } else {
       posthog.capture('auth_reset_requested')
       const { error } = await supabase.auth.resetPasswordForEmail(address, {
-        redirectTo: `${callback}?next=/auth/reset`,
+        redirectTo: confirmUrl,
         captchaToken,
       })
       if (error) failure = error
@@ -114,7 +127,7 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
     setCaptchaToken(SITE_KEY ? null : 'bypass')
     if (failure) {
       posthog.capture('auth_failed', { mode, error: failure.message })
-      setError(friendly(failure.message, failure.status))
+      fail(friendly(failure.message, failure.status))
     }
     setIsLoading(false)
   }
@@ -180,7 +193,7 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
 
           {mode !== 'reset' && (
             <div
-              role="radiogroup"
+              role="group"
               aria-label={t.auth.modeLabel}
               className="flex gap-1 rounded-full bg-sproutine-surface p-1"
             >
@@ -188,8 +201,7 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
                 <button
                   key={m}
                   type="button"
-                  role="radio"
-                  aria-checked={mode === m}
+                  aria-pressed={mode === m}
                   onClick={() => switchMode(m)}
                   className={`h-10 flex-1 rounded-full text-sm ${
                     mode === m
@@ -239,10 +251,11 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
                     value={name}
                     onChange={(e) => {
                       setName(e.target.value)
-                      if (error) setError(null)
+                      if (error) fail('', null)
                     }}
                     autoComplete="given-name"
                     maxLength={60}
+                    {...fieldProps('name')}
                     className="field bg-sproutine-bg"
                     required
                   />
@@ -260,12 +273,11 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value)
-                  if (error) setError(null)
+                  if (error) fail('', null)
                 }}
                 autoComplete={mode === 'signUp' ? 'email' : 'username'}
                 spellCheck={false}
-                aria-invalid={!!error}
-                aria-describedby={error ? 'auth-error' : undefined}
+                {...fieldProps('email')}
                 className="field bg-sproutine-bg"
                 required
               />
@@ -284,11 +296,11 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value)
-                      if (error) setError(null)
+                      if (error) fail('', null)
                     }}
                     autoComplete={mode === 'signUp' ? 'new-password' : 'current-password'}
                     minLength={mode === 'signUp' ? MIN_PASSWORD : undefined}
-                    aria-describedby={error ? 'auth-error' : undefined}
+                    {...fieldProps('password')}
                     className="field w-full bg-sproutine-bg pr-12"
                     required
                   />

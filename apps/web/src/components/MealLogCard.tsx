@@ -146,13 +146,12 @@ export function MealLogCard({
 
   return (
     <section className="card flex w-full max-w-[420px] flex-col gap-3 self-start p-4">
-      <div role="radiogroup" aria-label={t.meal.mealLabel} className="flex flex-wrap gap-1.5">
+      <div role="group" aria-label={t.meal.mealLabel} className="flex flex-wrap gap-1.5">
         {MEAL_SLOTS.map((s) => (
           <button
             key={s}
             type="button"
-            role="radio"
-            aria-checked={slot === s}
+            aria-pressed={slot === s}
             onClick={() => setSlot(s)}
             className={`h-9 rounded-full px-3 text-sm ${
               slot === s

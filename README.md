@@ -225,8 +225,9 @@ supabase db push
 
 Then in the Supabase dashboard:
 
-- **Authentication → URL Configuration:** set the Site URL to `http://localhost:3000` and add `http://localhost:3000/**` to the redirect URLs (used by password-reset links).
-- **Authentication → Sign In / Providers → Email:** sign-in is email and password. Turn **Confirm email** off if you don't want a confirmation email on sign-up (the built-in mailer allows only a few emails an hour); then the only email Sproutine sends is a password reset. Set the minimum password length to 8 to match the app.
+- **Authentication → URL Configuration:** set the Site URL to your main address (your Vercel domain, or `http://localhost:3000` if you only run locally) and add every address you run on to the redirect URLs, e.g. `http://localhost:3000/**` and `https://<your-domain>/**`. Email links come back to the site that asked for them only if it's on this list.
+- **Authentication → Sign In / Providers → Email:** sign-in is email and password. Turn **Confirm email** off if you don't want a confirmation email on sign-up (the built-in mailer allows only a few emails an hour); then the only email Sproutine sends is a password reset. Set the minimum password length to 8 to match the app, and turn on **Secure password change**.
+- **Authentication → Emails:** paste [`supabase/templates/confirmation.html`](supabase/templates/confirmation.html) into *Confirm signup* and [`supabase/templates/recovery.html`](supabase/templates/recovery.html) into *Reset password*. Their links are verified on the server, so they work even when the email is opened on another device.
 
 ### Run
 
@@ -240,7 +241,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 1. Import the repo in Vercel and set **Root Directory** to `apps/web`. [`apps/web/vercel.json`](apps/web/vercel.json) installs and builds with pinned pnpm 12 through `npx`, since Vercel's built-in pnpm stops at version 10.
 2. Add the environment variables from [Environment setup](#environment-setup) for Production (and Preview if you use it). `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are needed at build time; set `LANGFUSE_TRACING_ENVIRONMENT=production` and `NEXT_PUBLIC_APP_URL` to your domain.
-3. In Supabase, under **Authentication → URL Configuration**, set the Site URL to your Vercel domain and add `https://<your-domain>/**` to the redirect URLs, or sign-in links will bounce. For sign-in on Preview deployments, also add `https://*-<your-vercel-team>.vercel.app/**`.
+3. In Supabase, under **Authentication → URL Configuration**, set the Site URL to your Vercel domain and add `https://<your-domain>/**` (plus `http://localhost:3000/**` for local work) to the redirect URLs, or confirmation and reset links fall back to the Site URL. For Preview deployments, also add `https://*-<your-vercel-team>.vercel.app/**`.
 4. Vercel reads the Node version from `apps/web/package.json` (`>=22`); pnpm 12 needs Node 22 or newer.
 
 ---

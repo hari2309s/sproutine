@@ -38,10 +38,17 @@ function ResetPassword() {
     setSaving(false)
     if (error) {
       setError(
-        error.message.toLowerCase().includes('different') ? error.message : t.auth.genericError
+        error.code === 'same_password'
+          ? t.auth.passwordSameAsOld
+          : // Secure password change: an old session can't set a password.
+            error.code === 'reauthentication_needed'
+            ? t.auth.resetExpired
+            : t.auth.genericError
       )
       return
     }
+    // Anyone else signed in to this account is signed out.
+    await supabase.auth.signOut({ scope: 'others' })
     setSaved(true)
     setTimeout(() => router.replace('/'), 1200)
   }
@@ -86,6 +93,8 @@ function ResetPassword() {
                   placeholder={t.auth.passwordPlaceholderNew}
                   autoComplete="new-password"
                   minLength={MIN_PASSWORD}
+                  aria-invalid={!!error}
+                  aria-describedby={error ? 'reset-error' : undefined}
                   className="field w-full bg-sproutine-bg pr-12"
                   required
                 />
@@ -101,6 +110,7 @@ function ResetPassword() {
               </div>
               {error && (
                 <p
+                  id="reset-error"
                   role="alert"
                   className="flex items-start gap-1.5 text-sm font-medium text-sproutine-red"
                 >

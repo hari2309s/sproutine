@@ -34,8 +34,8 @@ test.describe('Auth page', () => {
     await expect(
       page.getByRole('heading', { name: 'Eat well, one sprout at a time.' })
     ).toBeVisible()
-    await expect(page.getByRole('radio', { name: 'New here' })).toHaveAttribute(
-      'aria-checked',
+    await expect(page.getByRole('button', { name: 'New here' })).toHaveAttribute(
+      'aria-pressed',
       'true'
     )
     await expect(page.getByPlaceholder('What should I call you?')).toBeVisible()
@@ -73,14 +73,14 @@ test.describe('Auth page', () => {
     expect(body.password).toBe('correct horse')
   })
 
-  test('tells an existing user to sign in instead', async ({ page }) => {
+  test('does not reveal whether an email already has an account', async ({ page }) => {
+    // Supabase returns a known address with no identities; the page answers
+    // exactly as for a new one.
     await page.route('**/auth/v1/signup**', (route) => route.fulfill(json(user([]))))
     await page.goto('/')
     await fillSignUp(page)
     await page.getByRole('button', { name: 'Create account' }).click()
-    await expect(
-      page.getByText("There's already an account with that email. Sign in instead.")
-    ).toBeVisible()
+    await expect(page.getByText(/I sent a confirmation link to test@example.com/)).toBeVisible()
   })
 
   test('shows a friendly message for a wrong password', async ({ page }) => {
@@ -97,7 +97,7 @@ test.describe('Auth page', () => {
       )
     )
     await page.goto('/')
-    await page.getByRole('radio', { name: 'I have an account' }).click()
+    await page.getByRole('button', { name: 'I have an account' }).click()
     await page.getByPlaceholder('you@example.com').fill('test@example.com')
     await page.getByPlaceholder('Your password').fill('not the password')
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
@@ -120,18 +120,20 @@ test.describe('Auth page', () => {
       return route.fulfill(json({}))
     })
     await page.goto('/')
-    await page.getByRole('radio', { name: 'I have an account' }).click()
+    await page.getByRole('button', { name: 'I have an account' }).click()
     await page.getByRole('button', { name: 'Forgot password?' }).click()
     await page.getByPlaceholder('you@example.com').fill('test@example.com')
     await page.getByRole('button', { name: 'Send reset link' }).click()
     await expect(page.getByText(/a link to set a new password is on its way/)).toBeVisible()
-    expect(redirect).toMatch(/\/auth\/callback\?next=\/auth\/reset$/)
+    expect(redirect).toMatch(/\/auth\/confirm$/)
   })
 
   test('shows the expired-link error when ?error=auth_failed is in the URL', async ({ page }) => {
     await page.goto('/?error=auth_failed')
     await expect(
-      page.getByText('That link has expired or was already used. Sign in, or ask for a new one.')
+      page.getByText(
+        'That link has expired or was already used. If you were confirming your email, try signing in.'
+      )
     ).toBeVisible()
   })
 

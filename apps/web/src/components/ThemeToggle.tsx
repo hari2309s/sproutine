@@ -36,7 +36,7 @@ export function ThemeSegmented() {
   const { theme, setTheme } = useTheme()
   return (
     <div
-      role="radiogroup"
+      role="group"
       aria-label={t.theme.label}
       className="flex gap-1 rounded-full bg-sproutine-surface p-1"
     >
@@ -46,8 +46,7 @@ export function ThemeSegmented() {
           <button
             key={option}
             type="button"
-            role="radio"
-            aria-checked={selected}
+            aria-pressed={selected}
             onClick={() => setTheme(option)}
             className={`flex h-11 flex-1 items-center justify-center gap-1.5 rounded-full text-sm ${
               selected

@@ -2,6 +2,15 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
+  // An email link whose redirect wasn't on Supabase's allow-list falls back
+  // to the bare Site URL; send its token on to the route that verifies it.
+  const { pathname, searchParams } = request.nextUrl
+  if (pathname === '/' && searchParams.has('token_hash')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/confirm'
+    return NextResponse.redirect(url)
+  }
+
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(

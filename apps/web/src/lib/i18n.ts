@@ -48,6 +48,7 @@ export interface Translations {
     newPasswordLabel: string
     savePassword: string
     passwordSaved: string
+    passwordSameAsOld: string
     resetExpired: string
     demoButton: string
     demoHint: string
@@ -290,6 +291,7 @@ export const translations: Record<Locale, Translations> = {
       newPasswordLabel: 'New password',
       savePassword: 'Save password',
       passwordSaved: 'Password saved. Taking you in…',
+      passwordSameAsOld: 'Pick a password different from your old one.',
       resetExpired: 'That reset link has expired or was already used. Ask for a new one from the sign-in page.',
       demoButton: 'Explore the demo',
       demoHint: 'or look around first',
@@ -490,7 +492,8 @@ export const translations: Record<Locale, Translations> = {
       },
     },
     home: {
-      authExpiredError: 'That link has expired or was already used. Sign in, or ask for a new one.',
+      authExpiredError:
+        'That link has expired or was already used. If you were confirming your email, try signing in.',
       demoUnavailableError: 'The demo is taking a break. Please try again in a moment.',
     },
     cookieBanner: {
