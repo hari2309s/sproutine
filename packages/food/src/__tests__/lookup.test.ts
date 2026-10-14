@@ -173,6 +173,7 @@ describe('estimatePortion', () => {
     expect(estimatePortion('Kartoffeln').grams).toBe(200)
     expect(estimatePortion('Nüsse').grams).toBe(30)
     expect(estimatePortion('Schokolade', 2).grams).toBe(50)
+    expect(estimatePortion('Schokolade', 3, 'piece').grams).toBe(18)
   })
 
   it('never estimates less for a bigger count', () => {

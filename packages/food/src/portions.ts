@@ -56,6 +56,8 @@ export interface FoodPortion {
   units: Partial<Record<PortionUnit, number>>
   /** Grams for one unspecified portion. */
   default: number
+  /** A bare count means servings, not pieces ("2 Schokolade" is two bars' worth, not two squares). */
+  countsServings?: true
 }
 
 // More specific entries first — the first match wins.
@@ -216,7 +218,12 @@ export const FOOD_PORTIONS: FoodPortion[] = [
     units: { handful: 30, piece: 1.2 },
     default: 30,
   },
-  { match: ['schokolade', 'chocolate'], units: { slice: 6, portion: 25 }, default: 25 },
+  {
+    match: ['schokolade', 'chocolate'],
+    units: { piece: 6, slice: 6, portion: 25 },
+    default: 25,
+    countsServings: true,
+  },
   { match: ['chips', 'crisps'], units: { handful: 20, bowl: 50 }, default: 30 },
   {
     match: ['kaffee', 'coffee', 'espresso', 'cappuccino', 'latte'],
@@ -285,7 +292,9 @@ export function estimatePortion(
   }
   const food = findFood(foodName)
   // A bare count is a count of pieces.
-  const effectiveUnit = unit ?? (quantity !== undefined && food?.units.piece ? 'piece' : undefined)
+  const effectiveUnit =
+    unit ??
+    (quantity !== undefined && food?.units.piece && !food.countsServings ? 'piece' : undefined)
   if (food && effectiveUnit && food.units[effectiveUnit] != null) {
     const grams = round(count * food.units[effectiveUnit]!)
     return { grams, basis: 'food-unit', confidence: 'medium' }
