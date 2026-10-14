@@ -2,14 +2,14 @@
 
 import { useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import { ThemeMenu } from './ThemeToggle'
+import { ThemeCycle } from './ThemeToggle'
 import { SettingsSheet } from './SettingsSheet'
 import { Wordmark } from './Brand'
 import { Icon } from './Icon'
 import { signOut } from '@/lib/auth'
 import { useLanguage } from '@/contexts/LanguageContext'
 
-/** 60px app bar: wordmark, theme menu, settings, sign out. */
+/** 60px app bar: wordmark, theme switch, settings, sign out. */
 export function TopBar({ userId }: { userId?: string }) {
   const { t } = useLanguage()
   const [showSettings, setShowSettings] = useState(false)
@@ -19,7 +19,7 @@ export function TopBar({ userId }: { userId?: string }) {
       <span className="flex-1">
         <Wordmark />
       </span>
-      <ThemeMenu />
+      <ThemeCycle />
       {userId && (
         <button
           type="button"

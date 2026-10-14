@@ -134,199 +134,215 @@ export function OnboardingPage({ userId, onComplete }: OnboardingPageProps) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-sproutine-bg">
-      <PageEnter className="mx-auto flex w-full max-w-lg flex-col gap-7 px-5 pt-6 pb-10">
-        <Wordmark />
-
-        <div className="flex items-end gap-2.5">
-          <RosieAvatar />
-          <p className="rounded-[20px] rounded-bl-md border border-sproutine-border bg-sproutine-card px-3.5 py-3 text-[15px] leading-normal text-sproutine-text">
-            {t.onboarding.intro}
-          </p>
+    <div className="flex min-h-0 flex-1 flex-col bg-sproutine-bg">
+      {/* Stays put while the form scrolls underneath. */}
+      <header className="flex h-[60px] shrink-0 items-center border-b border-sproutine-border">
+        <div className="mx-auto w-full max-w-lg px-5">
+          <Wordmark />
         </div>
+      </header>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <PageEnter className="mx-auto flex w-full max-w-lg flex-col gap-7 px-5 pt-6 pb-10">
+          <div className="flex items-end gap-2.5">
+            <RosieAvatar />
+            <p className="rounded-[20px] rounded-bl-md border border-sproutine-border bg-sproutine-card px-3.5 py-3 text-[15px] leading-normal text-sproutine-text">
+              {t.onboarding.intro}
+            </p>
+          </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-7">
-          {Object.keys(LOCALE_LABELS).length > 1 && (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-7">
+            {Object.keys(LOCALE_LABELS).length > 1 && (
+              <div className="flex flex-col gap-2">
+                <FieldLabel label={t.onboarding.languageLabel} />
+                <LanguagePicker onChange={setLocale} />
+              </div>
+            )}
+
             <div className="flex flex-col gap-2">
-              <FieldLabel label={t.onboarding.languageLabel} />
-              <LanguagePicker onChange={setLocale} />
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2">
-            <FieldLabel htmlFor="onb-name" label={t.onboarding.nameLabel} />
-            <input
-              id="onb-name"
-              type="text"
-              placeholder={t.onboarding.namePlaceholder}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={60}
-              autoComplete="given-name"
-              required
-              className="field"
-            />
-          </div>
-
-          <fieldset className="flex flex-col gap-2.5">
-            <legend className="mb-2.5 text-[15px] font-semibold text-sproutine-text">
-              {t.onboarding.dietLabel}
-            </legend>
-            <div className="flex flex-wrap gap-2">
-              {DIETS.map((d) => (
-                <Chip key={d} label={t.diets[d]} selected={diet === d} onClick={() => setDiet(d)} />
-              ))}
-            </div>
-          </fieldset>
-
-          <fieldset className="flex flex-col gap-2.5">
-            <legend className="mb-2.5 flex flex-col gap-0.5">
-              <span className="text-[15px] font-semibold text-sproutine-text">
-                {t.onboarding.allergiesLabel}
-              </span>
-              <span className="text-sm leading-snug text-sproutine-text-secondary">
-                {t.onboarding.allergiesHint}
-              </span>
-            </legend>
-            <div className="flex flex-wrap gap-2">
-              {EU_ALLERGENS.map((a) => (
-                <Chip
-                  key={a}
-                  multi
-                  label={t.allergens[a]}
-                  selected={allergies.includes(a)}
-                  onClick={() => toggleAllergy(a)}
-                />
-              ))}
-            </div>
-          </fieldset>
-
-          <div className="flex flex-col gap-2">
-            <FieldLabel htmlFor="onb-dislikes" label={t.onboarding.dislikesLabel} />
-            <input
-              id="onb-dislikes"
-              type="text"
-              placeholder={t.onboarding.dislikesPlaceholder}
-              value={dislikes}
-              onChange={(e) => setDislikes(e.target.value)}
-              className="field"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <FieldLabel
-              htmlFor="onb-budget"
-              label={t.onboarding.budgetLabel}
-              optional={t.onboarding.optional}
-            />
-            <div className="relative">
-              <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 font-semibold text-sproutine-text-secondary">
-                €
-              </span>
+              <FieldLabel htmlFor="onb-name" label={t.onboarding.nameLabel} />
               <input
-                id="onb-budget"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step={1}
-                placeholder={t.onboarding.budgetPlaceholder}
-                value={budget}
-                onChange={(e) => setBudget(e.target.value)}
-                className="field pr-24 pl-9 focus:pr-24 focus:pl-9"
+                id="onb-name"
+                type="text"
+                placeholder={t.onboarding.namePlaceholder}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={60}
+                autoComplete="given-name"
+                required
+                className="field"
               />
-              <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-[15px] text-sproutine-muted">
-                {t.onboarding.perWeek}
-              </span>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-2">
-            <FieldLabel
-              htmlFor="onb-quit"
-              label={t.onboarding.quitDateLabel}
-              optional={t.onboarding.optional}
-            />
-            <input
-              id="onb-quit"
-              type="date"
-              max={today}
-              value={quitDate}
-              onChange={(e) => setQuitDate(e.target.value)}
-              aria-describedby="onb-quit-hint"
-              className="field"
-            />
-            <p id="onb-quit-hint" className="text-sm leading-normal text-sproutine-text-secondary">
-              {t.onboarding.quitDateHint}
-            </p>
-          </div>
+            <fieldset className="flex flex-col gap-2.5">
+              <legend className="mb-2.5 text-[15px] font-semibold text-sproutine-text">
+                {t.onboarding.dietLabel}
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                {DIETS.map((d) => (
+                  <Chip
+                    key={d}
+                    label={t.diets[d]}
+                    selected={diet === d}
+                    onClick={() => setDiet(d)}
+                  />
+                ))}
+              </div>
+            </fieldset>
 
-          <div className="flex flex-col gap-2.5">
-            <FieldLabel label={t.onboarding.voiceLabel} />
-            <VoicePicker value={voiceId} onChange={setVoiceId} />
-          </div>
-
-          <div className="flex flex-col gap-3.5 border-t border-sproutine-border pt-4">
-            <label className="flex cursor-pointer items-start gap-3">
-              <span className="relative mt-px flex h-6 w-6 shrink-0">
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => {
-                    setConsent(e.target.checked)
-                    if (error) setError(null)
-                  }}
-                  className="peer absolute inset-0 h-full w-full cursor-pointer appearance-none rounded-[7px]"
-                />
-                <span
-                  aria-hidden
-                  className={`pointer-events-none flex h-6 w-6 items-center justify-center rounded-[7px] peer-focus-visible:shadow-[0_0_0_2px_var(--t-bg),0_0_0_4px_var(--t-text)] ${
-                    consent
-                      ? 'bg-sproutine-accent text-sproutine-bg'
-                      : 'border-2 border-sproutine-border-strong bg-sproutine-card'
-                  }`}
-                >
-                  {consent && <Icon name="check" size={20} />}
+            <fieldset className="flex flex-col gap-2.5">
+              <legend className="mb-2.5 flex flex-col gap-0.5">
+                <span className="text-[15px] font-semibold text-sproutine-text">
+                  {t.onboarding.allergiesLabel}
                 </span>
-              </span>
-              <span className="text-[15px] leading-normal text-sproutine-text">
-                {t.onboarding.consentLabel}{' '}
-                <a
-                  href={PRIVACY_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-sproutine-accent underline-offset-2 hover:underline"
-                >
-                  {t.onboarding.privacyPolicy}
-                </a>{' '}
-                <span className="text-[13px] text-sproutine-muted">· {t.onboarding.required}</span>
-              </span>
-            </label>
+                <span className="text-sm leading-snug text-sproutine-text-secondary">
+                  {t.onboarding.allergiesHint}
+                </span>
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                {EU_ALLERGENS.map((a) => (
+                  <Chip
+                    key={a}
+                    multi
+                    label={t.allergens[a]}
+                    selected={allergies.includes(a)}
+                    onClick={() => toggleAllergy(a)}
+                  />
+                ))}
+              </div>
+            </fieldset>
 
-            <p className="text-[13px] leading-normal text-sproutine-muted">
-              {t.onboarding.disclaimer}
-            </p>
+            <div className="flex flex-col gap-2">
+              <FieldLabel htmlFor="onb-dislikes" label={t.onboarding.dislikesLabel} />
+              <input
+                id="onb-dislikes"
+                type="text"
+                placeholder={t.onboarding.dislikesPlaceholder}
+                value={dislikes}
+                onChange={(e) => setDislikes(e.target.value)}
+                className="field"
+              />
+            </div>
 
-            {error && (
+            <div className="flex flex-col gap-2">
+              <FieldLabel
+                htmlFor="onb-budget"
+                label={t.onboarding.budgetLabel}
+                optional={t.onboarding.optional}
+              />
+              <div className="relative">
+                <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 font-semibold text-sproutine-text-secondary">
+                  €
+                </span>
+                <input
+                  id="onb-budget"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step={1}
+                  placeholder={t.onboarding.budgetPlaceholder}
+                  value={budget}
+                  onChange={(e) => setBudget(e.target.value)}
+                  className="field pr-24 pl-9 focus:pr-24 focus:pl-9"
+                />
+                <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-[15px] text-sproutine-muted">
+                  {t.onboarding.perWeek}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <FieldLabel
+                htmlFor="onb-quit"
+                label={t.onboarding.quitDateLabel}
+                optional={t.onboarding.optional}
+              />
+              <input
+                id="onb-quit"
+                type="date"
+                max={today}
+                value={quitDate}
+                onChange={(e) => setQuitDate(e.target.value)}
+                aria-describedby="onb-quit-hint"
+                className="field"
+              />
               <p
-                role="alert"
-                className="flex items-center gap-1.5 text-sm font-medium text-sproutine-red"
+                id="onb-quit-hint"
+                className="text-sm leading-normal text-sproutine-text-secondary"
               >
-                <Icon name="error" size={18} />
-                {error}
+                {t.onboarding.quitDateHint}
               </p>
-            )}
+            </div>
 
-            <button type="submit" disabled={!canSubmit} className="btn-primary w-full">
-              {isLoading ? t.onboarding.saving : t.onboarding.continue}
-            </button>
-            {!consent && (
-              <p className="-mt-1 text-center text-[13px] text-sproutine-text-secondary">
-                {t.onboarding.consentHint}
+            <div className="flex flex-col gap-2.5">
+              <FieldLabel label={t.onboarding.voiceLabel} />
+              <VoicePicker value={voiceId} onChange={setVoiceId} />
+            </div>
+
+            <div className="flex flex-col gap-3.5 border-t border-sproutine-border pt-4">
+              <label className="flex cursor-pointer items-start gap-3">
+                <span className="relative mt-px flex h-6 w-6 shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => {
+                      setConsent(e.target.checked)
+                      if (error) setError(null)
+                    }}
+                    className="peer absolute inset-0 h-full w-full cursor-pointer appearance-none rounded-[7px]"
+                  />
+                  <span
+                    aria-hidden
+                    className={`pointer-events-none flex h-6 w-6 items-center justify-center rounded-[7px] peer-focus-visible:shadow-[0_0_0_2px_var(--t-bg),0_0_0_4px_var(--t-text)] ${
+                      consent
+                        ? 'bg-sproutine-accent text-sproutine-bg'
+                        : 'border-2 border-sproutine-border-strong bg-sproutine-card'
+                    }`}
+                  >
+                    {consent && <Icon name="check" size={20} />}
+                  </span>
+                </span>
+                <span className="text-[15px] leading-normal text-sproutine-text">
+                  {t.onboarding.consentLabel}{' '}
+                  <a
+                    href={PRIVACY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-sproutine-accent underline-offset-2 hover:underline"
+                  >
+                    {t.onboarding.privacyPolicy}
+                  </a>{' '}
+                  <span className="text-[13px] text-sproutine-muted">
+                    · {t.onboarding.required}
+                  </span>
+                </span>
+              </label>
+
+              <p className="text-[13px] leading-normal text-sproutine-muted">
+                {t.onboarding.disclaimer}
               </p>
-            )}
-          </div>
-        </form>
-      </PageEnter>
+
+              {error && (
+                <p
+                  role="alert"
+                  className="flex items-center gap-1.5 text-sm font-medium text-sproutine-red"
+                >
+                  <Icon name="error" size={18} />
+                  {error}
+                </p>
+              )}
+
+              <button type="submit" disabled={!canSubmit} className="btn-primary w-full">
+                {isLoading ? t.onboarding.saving : t.onboarding.continue}
+              </button>
+              {!consent && (
+                <p className="-mt-1 text-center text-[13px] text-sproutine-text-secondary">
+                  {t.onboarding.consentHint}
+                </p>
+              )}
+            </div>
+          </form>
+        </PageEnter>
+      </div>
     </div>
   )
 }
