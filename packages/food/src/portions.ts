@@ -73,7 +73,7 @@ export const FOOD_PORTIONS: FoodPortion[] = [
   { match: ['brezel', 'breze', 'pretzel'], units: { piece: 85 }, default: 85 },
   { match: ['croissant'], units: { piece: 60 }, default: 60 },
   { match: ['bagel'], units: { piece: 90 }, default: 90 },
-  { match: ['baguette'], units: { slice: 30, piece: 60 }, default: 60 },
+  { match: ['baguette'], units: { slice: 30, piece: 250 }, default: 60 },
   {
     match: [
       'vollkornbrot',
@@ -216,7 +216,7 @@ export const FOOD_PORTIONS: FoodPortion[] = [
     units: { handful: 30, piece: 1.2 },
     default: 30,
   },
-  { match: ['schokolade', 'chocolate'], units: { piece: 6, slice: 6, portion: 25 }, default: 25 },
+  { match: ['schokolade', 'chocolate'], units: { slice: 6, portion: 25 }, default: 25 },
   { match: ['chips', 'crisps'], units: { handful: 20, bowl: 50 }, default: 30 },
   {
     match: ['kaffee', 'coffee', 'espresso', 'cappuccino', 'latte'],
@@ -263,34 +263,37 @@ function findFood(name: string): FoodPortion | undefined {
  * Estimates the grams for `quantity` × `unit` of a named food. Mass/volume
  * units are exact; food-specific units are medium confidence; anything else
  * falls back to household measures at low confidence.
+ *
+ * Leave `quantity` out when the user gave no amount ("I had nuts"): that is
+ * one typical serving. A bare number without a unit is a count of whole items
+ * ("3 Kartoffeln", "10 Mandeln"), so it scales `piece`, which must be one
+ * whole item, linearly.
  */
 export function estimatePortion(
   foodName: string,
-  quantity = 1,
+  quantity?: number,
   unit?: PortionUnit
 ): PortionEstimate {
-  if (!Number.isFinite(quantity) || quantity <= 0) throw new Error(`Invalid quantity: ${quantity}`)
+  if (quantity !== undefined && (!Number.isFinite(quantity) || quantity <= 0)) {
+    throw new Error(`Invalid quantity: ${quantity}`)
+  }
+  const count = quantity ?? 1
   const round = (g: number) => Math.round(g)
 
   if (unit && EXACT_UNITS[unit] != null) {
-    return { grams: round(quantity * EXACT_UNITS[unit]!), basis: 'exact', confidence: 'high' }
+    return { grams: round(count * EXACT_UNITS[unit]!), basis: 'exact', confidence: 'high' }
   }
   const food = findFood(foodName)
-  if (food && unit && food.units[unit] != null) {
-    return { grams: round(quantity * food.units[unit]!), basis: 'food-unit', confidence: 'medium' }
+  // A bare count is a count of pieces.
+  const effectiveUnit = unit ?? (quantity !== undefined && food?.units.piece ? 'piece' : undefined)
+  if (food && effectiveUnit && food.units[effectiveUnit] != null) {
+    const grams = round(count * food.units[effectiveUnit]!)
+    return { grams, basis: 'food-unit', confidence: 'medium' }
   }
-  if (food && unit === 'piece' && food.units.piece == null) {
-    return { grams: round(quantity * food.default), basis: 'food-default', confidence: 'medium' }
-  }
-  if (food && !unit && quantity > 1 && food.units.piece != null) {
-    // A count without a unit counts items: "3 Kartoffeln" is three potatoes,
-    // "10 Mandeln" ten almonds. `piece` must therefore be one whole item.
-    return { grams: round(quantity * food.units.piece), basis: 'food-unit', confidence: 'medium' }
-  }
-  if (food && (!unit || unit === 'portion')) {
+  if (food && (!effectiveUnit || effectiveUnit === 'portion' || effectiveUnit === 'piece')) {
     // One typical serving, not one piece ("nuts" is a handful, not an almond).
-    return { grams: round(quantity * food.default), basis: 'food-default', confidence: 'medium' }
+    return { grams: round(count * food.default), basis: 'food-default', confidence: 'medium' }
   }
   const generic = (unit && GENERIC_UNITS[unit]) ?? GENERIC_UNITS.portion!
-  return { grams: round(quantity * generic), basis: 'generic-unit', confidence: 'low' }
+  return { grams: round(count * generic), basis: 'generic-unit', confidence: 'low' }
 }
