@@ -5,3 +5,5 @@ export { MEAL_SLOTS, MEAL_SOURCES, MAX_MEAL_ITEMS, MAX_ITEM_GRAMS, mealSlotAt } 
 export type { MealSlot, MealSource } from './mealBasics'
 export type { FoodRecord, Nutrients, NutrientKey } from './types'
 export type { MealLogProposal, ProposedItem, LoggedItem } from './meal'
+// Planning is pure data and code, safe to render from in the browser.
+export * from './planning'
