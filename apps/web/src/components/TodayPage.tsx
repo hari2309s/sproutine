@@ -21,14 +21,13 @@ import { AppColumn } from './AppColumn'
 import { BottomNav } from './BottomNav'
 import { TopBar } from './TopBar'
 import { PageEnter } from './PageMotion'
-import { Icon, type IconName } from './Icon'
+import { Icon } from './Icon'
 import { BarcodeScanner } from './BarcodeScanner'
 import { MealLogCard } from './MealLogCard'
 import { HabitsCard } from './HabitsCard'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { supabase } from '@/lib/supabase'
 
-const UPCOMING_ICONS: IconName[] = ['nutrition']
 
 interface TodayLog {
   id: string
@@ -308,24 +307,6 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
             </button>
           </div>
 
-          <section className="space-y-2.5">
-            <h2 className="eyebrow">{t.today.comingSoon}</h2>
-            <ul className="overflow-hidden rounded-[22px] bg-sproutine-surface">
-              {t.today.upcoming.map((label, i) => (
-                <li
-                  key={label}
-                  className="flex min-h-14 items-center gap-3 border-b border-sproutine-border px-4 text-[15px] text-sproutine-text last:border-b-0"
-                >
-                  <Icon
-                    name={UPCOMING_ICONS[i] ?? 'eco'}
-                    size={22}
-                    className="text-sproutine-text-secondary"
-                  />
-                  {label}
-                </li>
-              ))}
-            </ul>
-          </section>
         </main>
       </PageEnter>
 

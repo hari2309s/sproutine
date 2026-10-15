@@ -129,8 +129,6 @@ export interface Translations {
     keptUp: string
     doneThisWeek: string
     habitFailed: string
-    comingSoon: string
-    upcoming: string[]
   }
   nav: {
     today: string
@@ -479,8 +477,6 @@ export const translations: Record<Locale, Translations> = {
       keptUp: 'Keeping it up',
       doneThisWeek: 'Done this week',
       habitFailed: "Couldn't save that. Please try again.",
-      comingSoon: 'Coming soon',
-      upcoming: ['Answers with sources'],
     },
     nav: {
       today: 'Today',
