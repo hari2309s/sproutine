@@ -25,7 +25,7 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
   const { voiceId, setVoiceId } = useVoicePreference()
   const [isExporting, setIsExporting] = useState(false)
   const [gentleMode, setGentleMode] = useState<boolean | null>(null)
-  const [pushState, setPushState] = useState<PushSupport>('unsupported')
+  const [pushState] = useState<PushSupport>(() => pushSupport())
   const [pushOn, setPushOn] = useState<boolean | null>(null)
   const [deleteInput, setDeleteInput] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
@@ -40,12 +40,10 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
   }, [userId])
 
   useEffect(() => {
-    const support = pushSupport()
-    setPushState(support)
-    if (support === 'supported') {
+    if (pushState === 'supported') {
       isSubscribed().then(setPushOn).catch(() => setPushOn(false))
     }
-  }, [])
+  }, [pushState])
 
   // Move focus into the sheet on open, and let Escape close it.
   useEffect(() => {

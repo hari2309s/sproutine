@@ -70,6 +70,7 @@ export function MealLogCard({
   )
   const [status, setStatus] = useState<'editing' | 'saving' | 'saved' | 'discarded'>('editing')
   const [error, setError] = useState<string | null>(null)
+  const [createdAt] = useState(() => new Date())
 
   const update = (index: number, patch: Partial<ItemState>) =>
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...patch } : it)))
@@ -133,7 +134,6 @@ export function MealLogCard({
     )
   }
 
-  const [createdAt] = useState(() => new Date())
   const timeStr = createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
   return (
