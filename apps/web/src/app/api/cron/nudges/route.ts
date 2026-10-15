@@ -35,76 +35,80 @@ export async function GET(request: NextRequest) {
   let totalSent = 0
 
   for (const profile of profiles) {
-    const userId = profile.user_id as string
-    const tz = (profile.timezone as string) || 'Europe/Berlin'
-    const name = (profile.display_name as string) || ''
-    const safetyMode = profile.safety_mode as boolean
+    try {
+      const userId = profile.user_id as string
+      const tz = (profile.timezone as string) || 'Europe/Berlin'
+      const name = (profile.display_name as string) || ''
+      const safetyMode = profile.safety_mode as boolean
 
-    const t = localTime(now, tz)
+      const t = localTime(now, tz)
 
-    // Gather context for this person.
-    const [logsResult, plansResult, habits, sentResult] = await Promise.all([
-      db
-        .from('meal_logs')
-        .select('created_at')
-        .eq('user_id', userId)
-        .gte('created_at', `${addDays(t.date, -7)}T00:00:00`)
-        .limit(100),
-      db
-        .from('meal_plans')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('week_start', mondayOf(addDays(t.date, 7)))
-        .eq('status', 'active')
-        .limit(1),
-      listHabits(db, userId),
-      db
-        .from('chat_messages')
-        .select('nudge_key')
-        .eq('user_id', userId)
-        .not('nudge_key', 'is', null)
-        .limit(200),
-    ])
+      // Gather context for this person.
+      const [logsResult, plansResult, habits, sentResult] = await Promise.all([
+        db
+          .from('meal_logs')
+          .select('created_at')
+          .eq('user_id', userId)
+          .gte('created_at', `${addDays(t.date, -7)}T00:00:00`)
+          .limit(100),
+        db
+          .from('meal_plans')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('week_start', mondayOf(addDays(t.date, 7)))
+          .eq('status', 'active')
+          .limit(1),
+        listHabits(db, userId),
+        db
+          .from('chat_messages')
+          .select('nudge_key')
+          .eq('user_id', userId)
+          .not('nudge_key', 'is', null)
+          .limit(200),
+      ])
 
-    const logs = logsResult.data ?? []
-    const logDates = new Set(logs.map((l) => (l.created_at as string).slice(0, 10)))
-    const loggedToday = logDates.has(t.date)
-    const daysLoggedThisWeek = logDates.size
-    const mealsLoggedThisWeek = logs.length
-    const hasPlanNextWeek = !!(plansResult.data?.length)
-    const sentKeys = new Set((sentResult.data ?? []).map((r) => r.nudge_key as string))
+      const logs = logsResult.data ?? []
+      const logDates = new Set(logs.map((l) => (l.created_at as string).slice(0, 10)))
+      const loggedToday = logDates.has(t.date)
+      const daysLoggedThisWeek = logDates.size
+      const mealsLoggedThisWeek = logs.length
+      const hasPlanNextWeek = !!(plansResult.data?.length)
+      const sentKeys = new Set((sentResult.data ?? []).map((r) => r.nudge_key as string))
 
-    const checkedThisWeek = habits
-      .filter((h) => {
-        const streak = computeStreak(h.period, h.checkins, t.date)
-        return streak > 0
-      })
-      .map((h) => h.title)
-
-    const ctx: NudgeContext = {
-      now,
-      timeZone: tz,
-      safetyMode,
-      name,
-      loggedToday,
-      daysLoggedThisWeek,
-      mealsLoggedThisWeek,
-      hasPlanNextWeek,
-      habitsKeptThisWeek: checkedThisWeek,
-      sentKeys,
-    }
-
-    const nudges = dueNudges(ctx)
-    for (const nudge of nudges) {
-      const isNew = await writeNudge(db, userId, nudge)
-      if (isNew) {
-        totalSent++
-        await pushToUser(db, userId, t.date, {
-          title: 'Rosie',
-          body: nudge.text,
-          url: '/chat',
+      const checkedThisWeek = habits
+        .filter((h) => {
+          const streak = computeStreak(h.period, h.checkins, t.date)
+          return streak > 0
         })
+        .map((h) => h.title)
+
+      const ctx: NudgeContext = {
+        now,
+        timeZone: tz,
+        safetyMode,
+        name,
+        loggedToday,
+        daysLoggedThisWeek,
+        mealsLoggedThisWeek,
+        hasPlanNextWeek,
+        habitsKeptThisWeek: checkedThisWeek,
+        sentKeys,
       }
+
+      const nudges = dueNudges(ctx)
+      for (const nudge of nudges) {
+        const isNew = await writeNudge(db, userId, nudge)
+        if (isNew) {
+          totalSent++
+          await pushToUser(db, userId, t.date, {
+            title: 'Rosie',
+            body: nudge.text,
+            url: '/chat',
+          })
+        }
+      }
+    } catch (e) {
+      console.warn('[cron/nudges] user error:', (e as Error).message)
     }
   }
 
