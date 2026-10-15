@@ -1,6 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
 import { Icon } from './Icon'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { HabitView } from '@/lib/habitsView'
@@ -14,6 +16,15 @@ export function HabitsCard({ gentle }: { gentle: boolean }) {
   const [period, setPeriod] = useState<'daily' | 'weekly'>('daily')
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  /** Habit IDs that just hit a milestone — cleared after a few seconds. */
+  const [milestones, setMilestones] = useState<Record<string, number>>({})
+  const milestoneTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+
+  // Cleanup milestone timers on unmount
+  useEffect(() => {
+    const timers = milestoneTimers.current
+    return () => timers.forEach((t) => clearTimeout(t))
+  }, [])
 
   const load = useCallback(async () => {
     try {
@@ -53,8 +64,24 @@ export function HabitsCard({ gentle }: { gentle: boolean }) {
       fetch(`/api/habits/${habit.id}/checkin`, { method: 'POST' })
     )
     if (!res) return
-    const { habit: updated } = (await res.json()) as { habit: HabitView }
+    const { habit: updated, milestone } = (await res.json()) as {
+      habit: HabitView
+      milestone: number | null
+    }
     setHabits((prev) => prev?.map((h) => (h.id === updated.id ? updated : h)) ?? null)
+    if (milestone) {
+      setMilestones((prev) => ({ ...prev, [habit.id]: milestone }))
+      // Auto-clear the milestone banner after 8 seconds
+      const timer = setTimeout(() => {
+        setMilestones((prev) => {
+          const next = { ...prev }
+          delete next[habit.id]
+          return next
+        })
+        milestoneTimers.current.delete(habit.id)
+      }, 8000)
+      milestoneTimers.current.set(habit.id, timer)
+    }
   }
 
   const add = async (e: React.FormEvent) => {
@@ -114,42 +141,86 @@ export function HabitsCard({ gentle }: { gentle: boolean }) {
           // A weekly habit done earlier this week shows as done, but only
           // today's check-in can be undone with a tap.
           const lockedDone = h.done && !h.checkedToday
+          const milestone = milestones[h.id]
           return (
-            <li key={h.id} className="flex items-center gap-2 py-1.5">
-              <button
-                type="button"
-                onClick={() => toggle(h)}
-                disabled={!!busy || lockedDone}
-                aria-pressed={h.done}
-                aria-label={t.today.checkHabit(h.title)}
-                className="icon-btn h-11 w-11 shrink-0"
-              >
-                <Icon
-                  name={h.done ? 'check_circle' : 'radio_button_unchecked'}
-                  filled={h.done}
-                  size={26}
-                  className={h.done ? 'text-sproutine-accent' : 'text-sproutine-muted'}
-                />
-              </button>
-              <span className="min-w-0 flex-1">
-                <span
-                  className={`block truncate text-[15px] ${h.done ? 'text-sproutine-text-secondary' : 'text-sproutine-text'}`}
+            <li key={h.id} className="py-1.5">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => toggle(h)}
+                  disabled={!!busy || lockedDone}
+                  aria-pressed={h.done}
+                  aria-label={t.today.checkHabit(h.title)}
+                  className="icon-btn h-11 w-11 shrink-0"
                 >
-                  {h.title}
+                  {milestone ? (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: [0, 1.15, 1] }}
+                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                      className="relative flex h-[26px] w-[26px] items-center justify-center rounded-full bg-sproutine-accent"
+                    >
+                      <Icon name="auto_awesome" size={16} className="text-white" filled />
+                      {/* Glow ring */}
+                      <motion.span
+                        className="absolute inset-0 rounded-full border-2 border-sproutine-accent"
+                        initial={{ scale: 1, opacity: 0.6 }}
+                        animate={{ scale: 1.6, opacity: 0 }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                      />
+                    </motion.span>
+                  ) : (
+                    <Icon
+                      name={h.done ? 'check_circle' : 'radio_button_unchecked'}
+                      filled={h.done}
+                      size={26}
+                      className={h.done ? 'text-sproutine-accent' : 'text-sproutine-muted'}
+                    />
+                  )}
+                </button>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={`block truncate text-[15px] ${h.done ? 'text-sproutine-text-secondary' : 'text-sproutine-text'}`}
+                  >
+                    {h.title}
+                  </span>
+                  <span className="block text-xs text-sproutine-muted">
+                    {milestone
+                      ? (gentle ? t.today.keptUp : t.today.streakDays(milestone))
+                      : lockedDone
+                        ? t.today.doneThisWeek
+                        : status(h)}
+                  </span>
                 </span>
-                <span className="block text-xs text-sproutine-muted">
-                  {lockedDone ? t.today.doneThisWeek : status(h)}
-                </span>
-              </span>
-              <button
-                type="button"
-                onClick={() => remove(h)}
-                disabled={!!busy}
-                aria-label={t.today.removeHabit(h.title)}
-                className="icon-btn h-10 w-10 shrink-0"
-              >
-                <Icon name="close" size={18} />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => remove(h)}
+                  disabled={!!busy}
+                  aria-label={t.today.removeHabit(h.title)}
+                  className="icon-btn h-10 w-10 shrink-0"
+                >
+                  <Icon name="close" size={18} />
+                </button>
+              </div>
+              {/* "Rosie left you a note in Chat →" link on milestone */}
+              <AnimatePresence>
+                {milestone && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <Link
+                      href="/chat"
+                      className="ml-[52px] mt-0.5 flex items-center gap-1 text-xs font-medium text-sproutine-accent"
+                    >
+                      {t.today.rosieLeftNote} {t.nav.chat}
+                      <Icon name="arrow_forward" size={14} />
+                    </Link>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </li>
           )
         })}

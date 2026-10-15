@@ -25,10 +25,8 @@ const NOT_YET: Partial<Record<Intent, string>> = {
   // Reached only when the meal couldn't be turned into a confirm card.
   log_meal:
     'You couldn\'t match this to foods to log. Ask them to say what they ate and roughly how much, e.g. "two slices of rye bread with cheese", or to scan the barcode from the Today screen. Never claim you saved it, and never estimate calories or nutrients.',
-  edit_log:
-    "Logged meals can't be changed in chat yet. They can remove one on the Today screen and log it again. Never claim you changed it.",
-  daily_review:
-    "You can't see their logged meals in chat yet. Their meals for today are on the Today screen. Ask how their day went instead.",
+  // edit_log is now implemented — move/delete cards are shown inline.
+  // daily_review is now implemented — meals are injected as context when intent fires.
   // Reached only when the plan couldn't be built (the card handles the rest).
   plan_week:
     "You couldn't build their plan just now. Say so kindly and suggest they try again, or open the Week tab and tap Plan my week. Don't invent a plan in chat.",

@@ -129,6 +129,8 @@ export interface Translations {
     keptUp: string
     doneThisWeek: string
     habitFailed: string
+    rosieLeftNote: string
+    noMealLogged: string
   }
   nav: {
     today: string
@@ -217,6 +219,7 @@ export interface Translations {
     holdToTalk: string
     cancel: string
     rosieThinking: string
+    rosieAnalysingPhoto: string
     releaseToSend: string
     recording: string
     listening: string
@@ -233,6 +236,12 @@ export interface Translations {
     notHelpful: string
     thanks: string
     anErrorOccurred: string
+    takePhoto: string
+    chooseFromLibrary: string
+    photoReady: string
+    photoReadyHint: string
+    addNote: string
+    estimatedPortions: string
   }
   safety: {
     crisis: {
@@ -295,6 +304,15 @@ export interface Translations {
     mealsToday: string
     removeMeal: string
     removeFailed: string
+    movedTo: string
+    moveFrom: string
+    orPickAnother: string
+    update: string
+    updated: string
+    undo: string
+    keep: string
+    deleteMeal: string
+    deleted: string
   }
   states: {
     loading: string
@@ -481,6 +499,8 @@ export const translations: Record<Locale, Translations> = {
       keptUp: 'Keeping it up',
       doneThisWeek: 'Done this week',
       habitFailed: "Couldn't save that. Please try again.",
+      rosieLeftNote: 'Rosie left you a note in',
+      noMealLogged: 'No meal logged',
     },
     nav: {
       today: 'Today',
@@ -597,6 +617,7 @@ export const translations: Record<Locale, Translations> = {
       holdToTalk: 'Hold to talk',
       cancel: 'Cancel',
       rosieThinking: 'Rosie is thinking',
+      rosieAnalysingPhoto: 'Rosie is looking at your photo\u2026',
       releaseToSend: 'Release to send',
       recording: 'Recording',
       listening: 'Listening…',
@@ -613,6 +634,12 @@ export const translations: Record<Locale, Translations> = {
       notHelpful: 'Not helpful',
       thanks: 'Thanks!',
       anErrorOccurred: 'Rosie had trouble answering. Please try again.',
+      takePhoto: 'Take a photo',
+      chooseFromLibrary: 'Choose from library',
+      photoReady: 'Photo ready',
+      photoReadyHint: "I'll guess the portions. You can adjust them afterwards.",
+      addNote: 'Add a note (optional)',
+      estimatedPortions: 'Estimated portions, from your photo',
     },
     safety: {
       crisis: {
@@ -682,6 +709,15 @@ export const translations: Record<Locale, Translations> = {
       mealsToday: 'Today',
       removeMeal: 'Remove this meal',
       removeFailed: "Couldn't remove that. Please try again.",
+      movedTo: 'Moved to {slot}',
+      moveFrom: '{from}',
+      orPickAnother: 'Or pick another',
+      update: 'Update',
+      updated: 'Updated',
+      undo: 'Undo',
+      keep: 'Keep',
+      deleteMeal: 'Delete',
+      deleted: 'Deleted',
     },
     states: {
       loading: 'Setting the table…',

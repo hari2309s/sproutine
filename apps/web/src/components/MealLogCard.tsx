@@ -34,6 +34,8 @@ interface MealLogCardProps {
   traceId?: string
   /** Shown in chat: the server adds a "Saved to …" line to history. */
   fromChat?: boolean
+  /** Photo-based: show dashed gram borders and ≈ prefix on numbers. */
+  isEstimate?: boolean
   onSaved?: (meal: SavedMeal) => void
   /** Called on "Not now"; without it the card collapses to a "Not saved" note. */
   onDiscard?: () => void
@@ -53,6 +55,7 @@ export function MealLogCard({
   safetyMode,
   traceId,
   fromChat = false,
+  isEstimate = false,
   onSaved,
   onDiscard,
 }: MealLogCardProps) {
@@ -157,6 +160,14 @@ export function MealLogCard({
         </button>
       </div>
 
+      {/* ── Estimate note ── */}
+      {isEstimate && (
+        <div className="flex items-center gap-1.5 px-4 pt-2.5 text-[13px] text-sproutine-text-secondary">
+          <Icon name="photo_camera" size={16} />
+          {t.chat.estimatedPortions}
+        </div>
+      )}
+
       {/* ── Food items ── */}
       <div className="flex flex-col px-4 py-0.5">
         {items.map((it, i) => {
@@ -190,8 +201,12 @@ export function MealLogCard({
                   )}
                 </span>
                 <label
-                  className={`flex h-10 w-[84px] items-center justify-between rounded-xl border bg-sproutine-bg px-3 text-[15px] font-semibold ${
-                    gramsInvalid ? 'border-sproutine-red' : 'border-sproutine-border-strong'
+                  className={`flex h-10 w-[88px] items-center justify-between rounded-xl bg-sproutine-bg px-3 text-[15px] font-semibold ${
+                    gramsInvalid
+                      ? 'border-[1.5px] border-sproutine-red'
+                      : isEstimate
+                        ? 'border-[1.5px] border-dashed border-sproutine-border-strong'
+                        : 'border border-sproutine-border-strong'
                   }`}
                 >
                   <span className="sr-only">
@@ -258,25 +273,25 @@ export function MealLogCard({
         <div className="grid grid-cols-4 border-t border-sproutine-border px-4 py-3">
           {preview.totals.kcal != null && (
             <span className="flex flex-col">
-              <span className="font-display text-xl">{preview.totals.kcal}</span>
+              <span className="font-display text-xl">{isEstimate ? '≈' : ''}{preview.totals.kcal}</span>
               <span className="text-xs text-sproutine-text-secondary">{t.meal.kcal}</span>
             </span>
           )}
           {preview.totals.protein != null && (
             <span className="flex flex-col">
-              <span className="font-display text-xl">{Math.round(preview.totals.protein)} g</span>
+              <span className="font-display text-xl">{isEstimate ? '≈' : ''}{Math.round(preview.totals.protein)} g</span>
               <span className="text-xs text-sproutine-text-secondary">{t.meal.protein}</span>
             </span>
           )}
           {preview.totals.carbs != null && (
             <span className="flex flex-col">
-              <span className="font-display text-xl">{Math.round(preview.totals.carbs)} g</span>
+              <span className="font-display text-xl">{isEstimate ? '≈' : ''}{Math.round(preview.totals.carbs)} g</span>
               <span className="text-xs text-sproutine-text-secondary">{t.meal.carbs}</span>
             </span>
           )}
           {preview.totals.fat != null && (
             <span className="flex flex-col">
-              <span className="font-display text-xl">{Math.round(preview.totals.fat)} g</span>
+              <span className="font-display text-xl">{isEstimate ? '≈' : ''}{Math.round(preview.totals.fat)} g</span>
               <span className="text-xs text-sproutine-text-secondary">{t.meal.fat}</span>
             </span>
           )}

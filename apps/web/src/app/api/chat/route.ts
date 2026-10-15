@@ -37,6 +37,9 @@ import {
   proposeMealLog,
   validatePlan,
   type MealLogProposal,
+  type MealSlot,
+  type Nutrients,
+  type LoggedItem,
 } from '@sproutine/food'
 import {
   createFoodCache,
@@ -130,9 +133,27 @@ async function enableSafetyMode(db: ReturnType<typeof createServerClient>, userI
  * Streams a fixed, pre-written reply — safety responses and the meal card's
  * caption, never model output. A meal proposal rides along as a data part.
  */
+type DayReview = {
+  date: string
+  meals: { slot: string; names: string; time: string }[]
+  totals?: { kcal?: number; protein?: number; carbs?: number; fat?: number }
+  gentle: boolean
+}
+
+type MealEditAction = {
+  type: 'move' | 'delete'
+  mealId: string
+  mealName: string
+  mealTime: string
+  currentSlot: MealSlot
+  suggestedSlot?: MealSlot
+}
+
 type CardPart =
   | { type: 'data-meal-log'; data: MealLogProposal }
   | { type: 'data-meal-plan'; data: MealPlanSummary }
+  | { type: 'data-day-review'; data: DayReview }
+  | { type: 'data-meal-edit'; data: MealEditAction }
 
 function templatedResponse(text: string, metadata: Record<string, unknown>, card?: CardPart) {
   const stream = createUIMessageStream({
@@ -470,6 +491,185 @@ export async function POST(request: NextRequest) {
                     }
                   )
                 }
+              }
+
+              // Meal editing: find the most recent meal and determine the action.
+              if (intent.intent === 'edit_log') {
+                const editAction = await startActiveObservation('edit-log', async (span) => {
+                  span.update({ input: message })
+                  try {
+                    const tz = profile.timezone || 'Europe/Berlin'
+                    const dateStr = new Date().toLocaleDateString('sv-SE', { timeZone: tz })
+                    const since = new Date(`${dateStr}T00:00:00`)
+                    const { data } = await db
+                      .from('meal_logs')
+                      .select('id, eaten_at, meal_slot, items')
+                      .eq('user_id', user.id)
+                      .gte('eaten_at', since.toISOString())
+                      .order('eaten_at', { ascending: false })
+                      .limit(10)
+
+                    if (!data?.length) {
+                      span.update({ output: null, metadata: { reason: 'no meals today' } })
+                      return null
+                    }
+
+                    const lowerMsg = message.toLowerCase()
+                    const isDelete = /\b(delete|remove|undo|take off|entfern)\b/i.test(message)
+
+                    // Try to figure out which meal and what slot they want
+                    const slotMentions: Partial<Record<MealSlot, boolean>> = {}
+                    if (/\b(breakfast|frühstück)\b/i.test(lowerMsg)) slotMentions.breakfast = true
+                    if (/\b(lunch|mittagessen)\b/i.test(lowerMsg)) slotMentions.lunch = true
+                    if (/\b(dinner|abendessen)\b/i.test(lowerMsg)) slotMentions.dinner = true
+                    if (/\b(snack)\b/i.test(lowerMsg)) slotMentions.snack = true
+
+                    // Find the target meal: mentioned slot or most recent
+                    type LogRow = { id: string; eaten_at: string; meal_slot: MealSlot; items: LoggedItem[] }
+                    const logs = data as LogRow[]
+                    let target = logs[0]!
+                    for (const log of logs) {
+                      if (slotMentions[log.meal_slot]) { target = log; break }
+                    }
+
+                    // Determine suggested new slot from the message
+                    let suggestedSlot: MealSlot | undefined
+                    if (!isDelete) {
+                      const mentionedSlots = Object.keys(slotMentions) as MealSlot[]
+                      // The new slot is the one mentioned that isn't the current slot
+                      suggestedSlot = mentionedSlots.find((s) => s !== target.meal_slot)
+                      // If "it was dinner" pattern
+                      if (!suggestedSlot) {
+                        const wasMatch = lowerMsg.match(/(?:was|it's|it was|should be|actually)\s+(\w+)/i)
+                        if (wasMatch) {
+                          const w = wasMatch[1]!.toLowerCase()
+                          if (/breakfast|frühstück/.test(w)) suggestedSlot = 'breakfast'
+                          else if (/lunch|mittag/.test(w)) suggestedSlot = 'lunch'
+                          else if (/dinner|abend/.test(w)) suggestedSlot = 'dinner'
+                          else if (/snack/.test(w)) suggestedSlot = 'snack'
+                        }
+                      }
+                    }
+
+                    const mealName = target.items.map((i) => i.name).join(', ')
+                    const mealTime = new Date(target.eaten_at).toLocaleTimeString([], {
+                      hour: '2-digit', minute: '2-digit', timeZone: tz,
+                    })
+
+                    const action: MealEditAction = {
+                      type: isDelete ? 'delete' : 'move',
+                      mealId: target.id,
+                      mealName,
+                      mealTime,
+                      currentSlot: target.meal_slot,
+                      ...(suggestedSlot ? { suggestedSlot } : {}),
+                    }
+                    span.update({ output: action })
+                    return action
+                  } catch (e) {
+                    span.update({ level: 'WARNING', statusMessage: String(e) })
+                    return null
+                  }
+                })
+
+                if (editAction) {
+                  const caption = editAction.type === 'delete'
+                    ? "Sure. This is the one I'd take off today's log:"
+                    : "No problem. Here's the change:"
+                  endTurn({ output: caption, metadata: { editType: editAction.type } })
+                  pendingWrites.push(
+                    saveMessage(db, user.id, { role: 'assistant', content: caption })
+                  )
+                  return templatedResponse(
+                    caption,
+                    {
+                      traceId: turn.traceId,
+                      feedbackToken: signTrace(turn.traceId, profile.llmPseudonym),
+                      speechTone: 'neutral' satisfies SpeechTone,
+                      createdAt: new Date().toISOString(),
+                    },
+                    { type: 'data-meal-edit', data: editAction }
+                  )
+                }
+                // Fall through to normal response if no meals found
+              }
+
+              // Daily review: fetch today's meals and build a review card.
+              if (intent.intent === 'daily_review') {
+                const review = await startActiveObservation('daily-review', async (span) => {
+                  try {
+                    const tz = profile.timezone || 'Europe/Berlin'
+                    const now = new Date()
+                    // Get midnight in the user's timezone
+                    const dateStr = now.toLocaleDateString('sv-SE', { timeZone: tz })
+                    const since = new Date(`${dateStr}T00:00:00`)
+                    const { data } = await db
+                      .from('meal_logs')
+                      .select('id, eaten_at, meal_slot, items, totals, partial')
+                      .eq('user_id', user.id)
+                      .gte('eaten_at', since.toISOString())
+                      .order('eaten_at', { ascending: true })
+                      .limit(50)
+
+                    type LogRow = { id: string; eaten_at: string; meal_slot: MealSlot; items: LoggedItem[]; totals: Nutrients; partial: string[] }
+                    const logs = (data ?? []) as LogRow[]
+                    const meals = logs.map((r) => ({
+                      slot: r.meal_slot,
+                      names: r.items.map((i) => i.name).join(', '),
+                      time: new Date(r.eaten_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: tz }),
+                    }))
+
+                    const gentle = profile.safetyMode === true
+                    let totals: { kcal?: number; protein?: number; carbs?: number; fat?: number } | undefined
+                    if (!gentle && logs.length > 0) {
+                      const sum = { kcal: 0, protein: 0, carbs: 0, fat: 0 }
+                      for (const r of logs) {
+                        if (r.totals) {
+                          sum.kcal += r.totals.kcal ?? 0
+                          sum.protein += r.totals.protein ?? 0
+                          sum.carbs += r.totals.carbs ?? 0
+                          sum.fat += r.totals.fat ?? 0
+                        }
+                      }
+                      totals = { kcal: Math.round(sum.kcal), protein: sum.protein, carbs: sum.carbs, fat: sum.fat }
+                    }
+
+                    const review = {
+                      date: now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: tz }),
+                      meals,
+                      totals,
+                      gentle,
+                    }
+                    span.update({ output: { mealCount: meals.length, gentle } })
+                    return review
+                  } catch (e) {
+                    span.update({ level: 'WARNING', statusMessage: String(e) })
+                    return null
+                  }
+                })
+
+                if (review && review.meals.length > 0) {
+                  // Send a templated card with the day's meals
+                  const reviewCaption = "Here's your day so far."
+                  endTurn({ output: reviewCaption, metadata: { intent: 'daily_review', mealCount: review.meals.length } })
+                  pendingWrites.push(
+                    saveMessage(db, user.id, {
+                      role: 'assistant',
+                      content: `Daily review: ${review.meals.map((m) => `${m.slot}: ${m.names}`).join('; ')}.`,
+                    })
+                  )
+                  return templatedResponse(
+                    reviewCaption,
+                    {
+                      traceId: turn.traceId,
+                      feedbackToken: signTrace(turn.traceId, profile.llmPseudonym),
+                      speechTone: 'neutral' satisfies SpeechTone,
+                      createdAt: new Date().toISOString(),
+                    },
+                    { type: 'data-day-review', data: review }
+                  )
+                }
+                // If no meals or all providers failed, fall through to normal response
               }
 
               // Knowledge retrieval for nutrition questions: search the

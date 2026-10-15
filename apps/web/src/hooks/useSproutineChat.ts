@@ -7,6 +7,8 @@ import { usePersistedPreference } from './usePersistedPreference'
 import { useTextToSpeech, type SpeechTone } from './useTextToSpeech'
 import type { MealLogProposal } from '@sproutine/food/client'
 import type { MealPlanSummary } from '@/lib/planSummary'
+import type { DayReview } from '@/components/DayReviewCard'
+import type { MealEditAction } from '@/components/MealEditCard'
 
 // Metadata the chat route attaches to each assistant message (see chat/route.ts).
 export type ChatMetadata = {
@@ -29,6 +31,10 @@ export type ChatDataParts = {
   'meal-log': MealLogProposal
   /** A new weekly plan; rendered as a MealPlanCard. */
   'meal-plan': MealPlanSummary
+  /** Daily summary; rendered as a DayReviewCard. */
+  'day-review': DayReview
+  /** Meal edit/delete action; rendered as a MealEditCard. */
+  'meal-edit': MealEditAction
 }
 
 export type SproutineUIMessage = UIMessage<ChatMetadata, ChatDataParts>
@@ -40,6 +46,16 @@ export function mealProposalOf(m: SproutineUIMessage): MealLogProposal | null {
 
 export function planSummaryOf(m: SproutineUIMessage): MealPlanSummary | null {
   for (const p of m.parts) if (p.type === 'data-meal-plan') return p.data
+  return null
+}
+
+export function dayReviewOf(m: SproutineUIMessage): DayReview | null {
+  for (const p of m.parts) if (p.type === 'data-day-review') return p.data
+  return null
+}
+
+export function mealEditOf(m: SproutineUIMessage): MealEditAction | null {
+  for (const p of m.parts) if (p.type === 'data-meal-edit') return p.data
   return null
 }
 
