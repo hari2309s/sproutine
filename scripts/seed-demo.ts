@@ -47,21 +47,29 @@ async function main() {
   console.log('🌱 Seeding demo account...')
 
   // 1. Find or create the demo user
-  const { data: existing } = await db.auth.admin.listUsers()
+  const { data: existing } = await db.auth.admin.listUsers({ perPage: 1000 })
   let userId = existing?.users?.find((u) => u.email === DEMO_EMAIL)?.id
 
   if (userId) {
     // Wipe existing data (cascade doesn't help here since we keep the user)
     console.log('  Resetting existing demo user...')
-    await db.from('chat_messages').delete().eq('user_id', userId)
-    await db.from('habit_checkins').delete().eq('user_id', userId)
-    await db.from('goals_habits').delete().eq('user_id', userId)
-    await db.from('plan_adjustments').delete().eq('user_id', userId)
-    await db.from('meal_plans').delete().eq('user_id', userId)
-    await db.from('meal_logs').delete().eq('user_id', userId)
-    await db.from('push_subscriptions').delete().eq('user_id', userId)
-    await db.from('user_usage').delete().eq('user_id', userId)
-    await db.from('profiles').delete().eq('user_id', userId)
+    const tables = [
+      'chat_messages',
+      'habit_checkins',
+      'goals_habits',
+      'plan_adjustments',
+      'meal_plans',
+      'meal_logs',
+      'push_subscriptions',
+      'user_usage',
+      'foods',
+      'profiles',
+    ] as const
+    for (const table of tables) {
+      const col = table === 'foods' ? 'created_by' : 'user_id'
+      const { error } = await db.from(table).delete().eq(col, userId)
+      if (error) console.warn(`  ⚠ ${table}: ${error.message}`)
+    }
   } else {
     console.log('  Creating demo user...')
     const { data, error } = await db.auth.admin.createUser({
