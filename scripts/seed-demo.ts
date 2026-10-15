@@ -167,10 +167,12 @@ async function main() {
     // Add some check-ins over the last week
     const checkinDays = h.period === 'daily' ? [1, 2, 3, 5] : [3]
     for (const d of checkinDays) {
-      await db
+      const { error: checkinErr } = await db
         .from('habit_checkins')
         .insert({ habit_id: data.id, user_id: userId, date: daysAgo(d) })
-        .catch(() => {})
+      if (checkinErr && checkinErr.code !== '23505') {
+        console.warn(`  ⚠ checkin: ${checkinErr.message}`)
+      }
     }
   }
 
