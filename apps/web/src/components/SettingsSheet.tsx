@@ -80,20 +80,45 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
   const handleExport = async () => {
     setIsExporting(true)
     try {
-      const [profileRes, messagesRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
-        supabase
-          .from('chat_messages')
-          .select('role, content, is_proactive, created_at')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: true }),
-      ])
+      const [profileRes, messagesRes, mealsRes, plansRes, habitsRes, checkinsRes] =
+        await Promise.all([
+          supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+          supabase
+            .from('chat_messages')
+            .select('role, content, is_proactive, created_at')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: true }),
+          supabase
+            .from('meal_logs')
+            .select('slot, items, created_at')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: true }),
+          supabase
+            .from('meal_plans')
+            .select('week_start, plan, status, created_at')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: true }),
+          supabase
+            .from('goals_habits')
+            .select('title, period, created_at, archived_at')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: true }),
+          supabase
+            .from('habit_checkins')
+            .select('habit_id, date')
+            .eq('user_id', userId)
+            .order('date', { ascending: true }),
+        ])
       if (profileRes.error) throw profileRes.error
       if (messagesRes.error) throw messagesRes.error
       const exportData = {
         exportedAt: new Date().toISOString(),
         profile: profileRes.data,
         chatMessages: messagesRes.data ?? [],
+        mealLogs: mealsRes.data ?? [],
+        mealPlans: plansRes.data ?? [],
+        habits: habitsRes.data ?? [],
+        habitCheckins: checkinsRes.data ?? [],
       }
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
