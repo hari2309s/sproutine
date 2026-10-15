@@ -188,6 +188,11 @@ export interface Translations {
     gentleMode: string
     gentleModeDesc: string
     gentleModeOn: string
+    notifications: string
+    notificationsDesc: string
+    notificationsOn: string
+    notificationsHomeScreen: string
+    notificationsUnsupported: string
     yourData: string
     downloadData: string
     preparing: string
@@ -556,6 +561,11 @@ export const translations: Record<Locale, Translations> = {
       gentleModeDesc:
         'Hides calories, grams, portions and targets everywhere. Rosie still notes your meals and keeps you company.',
       gentleModeOn: 'On. Numbers, portions and targets are hidden.',
+      notifications: 'Notifications',
+      notificationsDesc: 'Rosie sends a gentle nudge when you haven\u2019t logged a meal, and weekly check-ins.',
+      notificationsOn: 'On. You\u2019ll get nudges from Rosie.',
+      notificationsHomeScreen: 'Add Sproutine to your Home Screen first to enable notifications.',
+      notificationsUnsupported: 'Notifications aren\u2019t supported in this browser.',
       yourData: 'Your data',
       downloadData: 'Download my data',
       preparing: 'Preparing…',

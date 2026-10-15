@@ -58,9 +58,9 @@ Sproutine is being built in phases (see [docs/dev-plan.md](docs/dev-plan.md)).
 | 0 · Foundation              | ✅  | Auth, onboarding with health-data consent, chat with Rosie, voice, safety gate, LLM router, Langfuse tracing |
 | 1 · Food data               | ✅  | Open Food Facts + USDA lookups, nutrient maths, food cache, barcode scanner                                  |
 | 2 · Logging                 | ✅  | Log meals from chat or barcode, confirm card, Today view, 50-case logging eval (photo logging still to come) |
-| 3 · Planning + shopping     | ⏳  | Weekly meal plans, shopping lists for Rewe, Edeka, Aldi, Lidl                                                |
+| 3 · Planning + shopping     | ✅  | Weekly meal plans, cost-optimised planner, swap meals, shopping lists by aisle with estimated prices          |
 | 4 · Knowledge + coach       | ⏳  | Nutrition answers with citations                                                                             |
-| 5 · Nudges + habits         | ⏳  | Gentle proactive nudges, habit streaks                                                                       |
+| 5 · Nudges + habits         | ✅  | Daily/weekly habit streaks, timed nudges (no-log, weekly review, plan reminder), Web Push notifications       |
 | 6 · Safety + eval hardening | ⏳  | Full safety-golden set, CI gates                                                                             |
 | 7 · Beta                    | ⏳  | Demo account, polish                                                                                         |
 

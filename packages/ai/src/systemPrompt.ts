@@ -35,7 +35,7 @@ const NOT_YET: Partial<Record<Intent, string>> = {
   shopping_list:
     "Their shopping list is built from their weekly plan, in the Week tab under Shopping list, grouped by aisle with estimated prices. If they have no plan yet, they can say \"plan my week\". Don't write out a list yourself.",
   set_habit:
-    "Habit tracking isn't available yet. Talk through the habit they want, but don't claim you set it up.",
+    "Habits are tracked on the Today screen. They can add a daily or weekly habit there, and check it off each day. Streaks build automatically. Encourage them to go to the Today screen and tap the + button next to Habits to get started. Don't claim you created a habit for them — they do it themselves from the app.",
 }
 
 /**

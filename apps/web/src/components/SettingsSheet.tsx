@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { useVoicePreference } from '@/contexts/VoiceContext'
 import { type Locale } from '@/lib/i18n'
 import { type VoiceId } from '@/lib/voices'
+import { pushSupport, isSubscribed, subscribe, unsubscribe, type PushSupport } from '@/lib/pushClient'
 import { LanguagePicker } from './LanguagePicker'
 import { ThemeSegmented } from './ThemeToggle'
 import { Icon } from './Icon'
@@ -24,6 +25,8 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
   const { voiceId, setVoiceId } = useVoicePreference()
   const [isExporting, setIsExporting] = useState(false)
   const [gentleMode, setGentleMode] = useState<boolean | null>(null)
+  const [pushState, setPushState] = useState<PushSupport>('unsupported')
+  const [pushOn, setPushOn] = useState<boolean | null>(null)
   const [deleteInput, setDeleteInput] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -35,6 +38,14 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
       .then((p) => setGentleMode(p?.safetyMode ?? false))
       .catch(() => setGentleMode(false))
   }, [userId])
+
+  useEffect(() => {
+    const support = pushSupport()
+    setPushState(support)
+    if (support === 'supported') {
+      isSubscribed().then(setPushOn).catch(() => setPushOn(false))
+    }
+  }, [])
 
   // Move focus into the sheet on open, and let Escape close it.
   useEffect(() => {
@@ -134,6 +145,20 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
     ])
   }
 
+  const handlePushChange = async (next: boolean) => {
+    try {
+      if (next) {
+        const ok = await subscribe()
+        setPushOn(ok)
+      } else {
+        await unsubscribe()
+        setPushOn(false)
+      }
+    } catch {
+      setPushOn(!next)
+    }
+  }
+
   const handleGentleModeChange = async (next: boolean) => {
     const previous = gentleMode
     setGentleMode(next)
@@ -229,6 +254,36 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
               {gentleMode ? t.settings.gentleModeOn : t.settings.gentleModeDesc}
             </p>
           </section>
+
+          {pushState !== 'unsupported' && pushState !== 'not-configured' && (
+            <section className="card space-y-2 p-4 shadow-none">
+              <label className="flex min-h-11 cursor-pointer items-center gap-3">
+                <Icon
+                  name="notifications"
+                  filled={!!pushOn}
+                  size={22}
+                  className="text-sproutine-text-secondary"
+                />
+                <span className="flex-1 text-base font-semibold text-sproutine-text">
+                  {t.settings.notifications}
+                </span>
+                {pushState === 'supported' ? (
+                  <Toggle
+                    checked={pushOn ?? false}
+                    disabled={pushOn === null}
+                    onChange={handlePushChange}
+                  />
+                ) : null}
+              </label>
+              <p className="text-sm leading-normal text-sproutine-text-secondary">
+                {pushState === 'needs-home-screen'
+                  ? t.settings.notificationsHomeScreen
+                  : pushOn
+                    ? t.settings.notificationsOn
+                    : t.settings.notificationsDesc}
+              </p>
+            </section>
+          )}
 
           <section className="space-y-2.5">
             <h3 className="eyebrow">{t.settings.yourData}</h3>
