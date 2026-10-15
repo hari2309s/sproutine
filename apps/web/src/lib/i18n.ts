@@ -212,8 +212,11 @@ export interface Translations {
     muted: string
     emptyTitle: string
     emptyBody: string
-    suggestions: string[]
+    suggestions: { title: string; subtitle: string }[]
+    composerPlaceholder: string
     holdToTalk: string
+    cancel: string
+    rosieThinking: string
     releaseToSend: string
     recording: string
     listening: string
@@ -284,6 +287,7 @@ export interface Translations {
     notNow: string
     savedTo: string
     notSaved: string
+    editSlot: string
     saveFailed: string
     lookupFailed: string
     notFoundBarcode: string
@@ -585,11 +589,14 @@ export const translations: Record<Locale, Translations> = {
       emptyTitle: "What's on your plate today?",
       emptyBody: "Tell me what you ate, ask me anything about food, or let's plan your week.",
       suggestions: [
-        'I had muesli for breakfast',
-        'Plan my meals for this week',
-        'Easy snacks for cravings',
+        { title: 'Log a meal', subtitle: 'I had muesli with berries' },
+        { title: 'Plan my week', subtitle: 'Dinners under €40 at Aldi' },
+        { title: 'Ask about food', subtitle: 'Is Quark a good protein source?' },
       ],
+      composerPlaceholder: 'Type, or hold the mic to talk',
       holdToTalk: 'Hold to talk',
+      cancel: 'Cancel',
+      rosieThinking: 'Rosie is thinking',
       releaseToSend: 'Release to send',
       recording: 'Recording',
       listening: 'Listening…',
@@ -667,6 +674,7 @@ export const translations: Record<Locale, Translations> = {
       notNow: 'Not now',
       savedTo: 'Saved to {slot}',
       notSaved: 'Not saved',
+      editSlot: 'Edit',
       saveFailed: "Couldn't save that. Please try again.",
       lookupFailed: "Couldn't look that up right now. Please try again in a moment.",
       notFoundBarcode: "I don't know this product yet. Tell Rosie what it is instead.",

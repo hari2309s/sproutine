@@ -11,10 +11,11 @@ interface VoiceDockProps {
   onStart: () => void
   onStop: () => void
   onStopSpeaking: () => void
+  onCancel?: () => void
 }
 
-// Decorative level bars for the recording state (heights from the design).
-const BARS = [8, 14, 22, 12, 26, 18, 10, 24, 16, 28, 20, 12, 22, 8, 18, 26, 14, 10, 20, 6]
+// Decorative level bars for the recording state.
+const BARS = [6, 10, 16, 24, 14, 28, 20, 12, 26, 18, 8, 22, 30, 16, 10, 24, 14, 20, 28, 12, 18, 26, 10, 16, 22, 8, 14, 24, 18, 10, 6, 12]
 
 function useElapsed(running: boolean): number {
   const [seconds, setSeconds] = useState(0)
@@ -31,16 +32,18 @@ function useElapsed(running: boolean): number {
 }
 
 /**
- * Hold-to-talk mic and its states. Recording is shown by a ring, bars, a timer
- * and the word "Recording", so it never depends on colour alone.
+ * 2a "Kitchen Table" voice dock.
+ *
+ * - Idle: nothing rendered (mic lives inside the composer pill).
+ * - Recording: warm accent-soft panel with transcript area, waveform, timer,
+ *   cancel button and a large mic button.
+ * - Transcribing / Speaking: compact inline states.
  */
-export function VoiceDock({ status, onStart, onStop, onStopSpeaking }: VoiceDockProps) {
+export function VoiceDock({ status, onStart, onStop, onStopSpeaking, onCancel }: VoiceDockProps) {
   const { t } = useLanguage()
   const isRecording = status === 'recording'
   const elapsed = useElapsed(isRecording)
 
-  // Tracks the physical press, not the recorder: the release must reach the
-  // recorder even if recording hasn't started yet (mic permission pending).
   const pressedRef = useRef(false)
 
   const start = useCallback(() => {
@@ -55,7 +58,6 @@ export function VoiceDock({ status, onStart, onStop, onStopSpeaking }: VoiceDock
     onStop()
   }, [onStop])
 
-  // Space/Enter behave like holding the button.
   const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
     if (e.key !== ' ' && e.key !== 'Enter') return
     e.preventDefault()
@@ -67,93 +69,135 @@ export function VoiceDock({ status, onStart, onStop, onStopSpeaking }: VoiceDock
     stop()
   }
 
+  // Idle: nothing — the mic button is in the composer.
+  if (status === 'idle') return null
+
   if (status === 'speaking') {
     return (
-      <div className="flex flex-col items-center gap-2 pt-1 pb-3">
+      <div className="flex items-center justify-center gap-3 px-4 pb-3">
         <button
           type="button"
           onClick={onStopSpeaking}
-          aria-label={t.chat.stopSpeaking}
-          className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-sproutine-accent bg-sproutine-card text-sproutine-accent"
+          className="flex h-11 items-center gap-2 rounded-full bg-sproutine-surface px-4 text-sm font-semibold text-sproutine-text-secondary"
         >
-          <Icon name="stop" filled size={34} />
-        </button>
-        <span className="mt-1.5 text-[13px] font-medium text-sproutine-text-secondary">
+          <Icon name="stop" filled size={18} />
           {t.chat.rosieSpeaking}
-        </span>
+        </button>
       </div>
     )
   }
 
   if (status === 'transcribing') {
     return (
-      <div className="flex flex-col items-center gap-2 pt-1 pb-3" role="status">
-        <span className="flex h-20 w-20 items-center justify-center rounded-full border border-sproutine-border bg-sproutine-card">
-          <span className="h-[34px] w-[34px] animate-spin rounded-full border-[3px] border-sproutine-accent-soft border-t-sproutine-accent motion-reduce:animate-none" />
-        </span>
-        <span className="mt-1.5 text-[13px] font-medium text-sproutine-text-secondary">
+      <div className="flex items-center justify-center gap-3 px-4 pb-3" role="status">
+        <span className="flex h-11 items-center gap-2 rounded-full bg-sproutine-accent-soft px-4 text-sm font-semibold text-sproutine-text-secondary">
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-sproutine-accent-soft border-t-sproutine-accent motion-reduce:animate-none" />
           {t.chat.transcribing}
         </span>
       </div>
     )
   }
 
+  // Recording: warm panel
   const mm = Math.floor(elapsed / 60)
   const ss = String(elapsed % 60).padStart(2, '0')
 
   return (
-    <div
-      className={`flex flex-col items-center ${
-        isRecording
-          ? 'gap-3.5 border-t border-sproutine-border bg-sproutine-surface pt-3.5 pb-5'
-          : 'gap-2 pt-1 pb-3'
-      }`}
-    >
-      {isRecording && (
-        <>
-          <div className="flex items-center gap-2.5" role="status">
-            <span className="flex items-center gap-1.5 text-sm font-semibold text-sproutine-text">
-              <span className="h-2 w-2 rounded-full bg-sproutine-accent" />
-              {t.chat.recording}
-            </span>
-            <span className="font-mono text-sm text-sproutine-text-secondary tabular-nums">
-              {mm}:{ss}
-            </span>
-          </div>
-          <div aria-hidden className="flex h-7 items-center gap-1">
-            {BARS.map((h, i) => (
-              <span
-                key={i}
-                className="block w-1 origin-center rounded-sm bg-sproutine-accent motion-safe:animate-eq"
-                style={{ height: h, animationDelay: `${(i % 7) * 0.12}s` }}
-              />
-            ))}
-          </div>
-        </>
-      )}
-      <button
-        type="button"
-        onPointerDown={start}
-        onPointerUp={stop}
-        onPointerLeave={stop}
-        onKeyDown={onKeyDown}
-        onKeyUp={onKeyUp}
-        onContextMenu={(e) => e.preventDefault()}
-        aria-label={isRecording ? t.chat.releaseToSend : t.chat.holdToTalk}
-        aria-pressed={isRecording}
-        className={`flex touch-none select-none items-center justify-center rounded-full bg-sproutine-accent text-sproutine-bg transition-all duration-150 ${
-          isRecording
-            ? 'my-2 h-24 w-24 shadow-[0_0_0_10px_var(--t-accent-soft),0_0_0_12px_var(--t-accent)]'
-            : 'h-20 w-20 shadow-[0_0_0_8px_var(--t-accent-soft)] hover:bg-sproutine-accent-hover'
-        }`}
-      >
-        <Icon name="mic" filled size={isRecording ? 38 : 34} />
-      </button>
-      <span
-        className={`text-[13px] font-medium ${isRecording ? 'text-sproutine-text-secondary' : 'mt-1.5 text-sproutine-muted'}`}
-      >
-        {isRecording ? t.chat.releaseToSend : t.chat.holdToTalk}
-      </span>
+    <div className="mx-3 mb-3 flex flex-col gap-3.5 rounded-[28px] bg-sproutine-accent-soft p-4">
+      {/* Status row */}
+      <div className="flex items-center gap-2">
+        <span className="h-2 w-2 rounded-full bg-sproutine-accent" />
+        <span className="text-sm font-semibold">{t.chat.recording}</span>
+        <span className="flex-1" />
+        <span className="font-mono text-sm text-sproutine-text-secondary tabular-nums">
+          {mm}:{ss}
+        </span>
+      </div>
+
+      {/* Waveform bars */}
+      <div aria-hidden className="flex h-8 items-center gap-[3px]">
+        {BARS.map((h, i) => (
+          <span
+            key={i}
+            className="block flex-1 origin-center rounded-sm bg-sproutine-accent motion-safe:animate-eq"
+            style={{ height: h, animationDelay: `${(i % 7) * 0.12}s` }}
+          />
+        ))}
+      </div>
+
+      {/* Controls: cancel – mic – release hint */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            pressedRef.current = false
+            ;(onCancel ?? onStop)()
+          }}
+          className="flex h-11 w-fit items-center gap-1 rounded-full bg-sproutine-card px-4 text-sm font-semibold"
+        >
+          <Icon name="close" size={20} />
+          {t.chat.cancel}
+        </button>
+
+        <button
+          type="button"
+          onPointerDown={start}
+          onPointerUp={stop}
+          onPointerLeave={stop}
+          onKeyDown={onKeyDown}
+          onKeyUp={onKeyUp}
+          onContextMenu={(e) => e.preventDefault()}
+          aria-label={t.chat.releaseToSend}
+          aria-pressed
+          className="flex h-[72px] w-[72px] touch-none select-none items-center justify-center rounded-full bg-sproutine-accent text-sproutine-bg shadow-[0_0_0_6px_var(--t-card)]"
+        >
+          <Icon name="mic" filled size={32} />
+        </button>
+
+        <span className="justify-self-end text-right text-[13px] leading-tight text-sproutine-text-secondary">
+          {t.chat.releaseToSend}
+        </span>
+      </div>
     </div>
+  )
+}
+
+/** Mic button for inside the composer pill. */
+export function ComposerMicButton({
+  onStart,
+  onStop,
+  status,
+}: {
+  onStart: () => void
+  onStop: () => void
+  status: VoiceButtonStatus
+}) {
+  const { t } = useLanguage()
+  const pressedRef = useRef(false)
+
+  const start = useCallback(() => {
+    if (status !== 'idle') return
+    pressedRef.current = true
+    onStart()
+  }, [status, onStart])
+
+  const stop = useCallback(() => {
+    if (!pressedRef.current) return
+    pressedRef.current = false
+    onStop()
+  }, [onStop])
+
+  return (
+    <button
+      type="button"
+      onPointerDown={start}
+      onPointerUp={stop}
+      onPointerLeave={stop}
+      onContextMenu={(e) => e.preventDefault()}
+      aria-label={t.chat.holdToTalk}
+      className="flex h-11 w-11 touch-none select-none items-center justify-center rounded-full bg-sproutine-accent text-sproutine-bg"
+    >
+      <Icon name="mic" filled size={24} />
+    </button>
   )
 }

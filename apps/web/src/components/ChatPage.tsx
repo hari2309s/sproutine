@@ -3,7 +3,6 @@
 import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { staggerItemVariants, staggerListVariants } from '@/lib/motion'
 import {
   mealProposalOf,
   planSummaryOf,
@@ -15,15 +14,14 @@ import { ChatBubble } from './ChatBubble'
 import { SafetyCard } from './SafetyCard'
 import { MealLogCard } from './MealLogCard'
 import { MealPlanCard } from './MealPlanCard'
-import { VoiceDock, type VoiceButtonStatus } from './VoiceButton'
+import { VoiceDock, ComposerMicButton, type VoiceButtonStatus } from './VoiceButton'
 import { AppColumn } from './AppColumn'
 import { BottomNav } from './BottomNav'
-import { RosieAvatar } from './Brand'
 import { Icon, type IconName } from './Icon'
 import { ErrorBoundary } from './ErrorBoundary'
 import { useLanguage } from '@/contexts/LanguageContext'
 
-const SUGGESTION_ICONS: IconName[] = ['restaurant', 'calendar_view_week', 'nutrition']
+const SUGGESTION_ICONS: IconName[] = ['restaurant', 'calendar_month', 'nutrition']
 
 interface ChatPageProps {
   initialMessages: SproutineUIMessage[]
@@ -39,8 +37,6 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
   const processedTranscriptRef = useRef<string | null>(null)
   const reactedRef = useRef<Set<string>>(new Set())
   const [reactions, setReactions] = useState<Record<string, 1 | -1>>({})
-  // Kept local (not in useSproutineChat's return) so typing doesn't re-render
-  // anything that depends on the hook's messages/status.
   const [input, setInput] = useState('')
   const sendText = chat.sendText
   const startVoice = chat.startVoice
@@ -71,7 +67,6 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chat.messages, status])
 
-  // Submit each voice transcript once.
   useEffect(() => {
     if (voice.transcript && voice.transcript !== processedTranscriptRef.current) {
       processedTranscriptRef.current = voice.transcript
@@ -80,18 +75,26 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
   }, [voice.transcript, startVoice])
 
   const lastAssistantId = [...chat.messages].reverse().find((m) => m.role === 'assistant')?.id
-  // An eating-disorder signal this session turns gentle mode on server-side;
-  // honour it straight away rather than after a reload.
   const gentle = safetyMode || chat.messages.some((m) => m.metadata?.safety === 'ed_risk')
   const isEmpty = chat.messages.length === 0
+  const showComposer = status !== 'recording'
 
   return (
     <AppColumn>
-      {/* Header: Rosie + sound toggle */}
-      <header className="flex shrink-0 items-center gap-2.5 border-b border-sproutine-border py-3 pr-3 pl-5">
-        <RosieAvatar />
+      {/* ── Header ── */}
+      <header className="flex shrink-0 items-center gap-3 py-1 pr-3 pl-5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sproutine-accent-soft">
+          <Image
+            src="/icons/sproutine.png"
+            alt=""
+            width={70}
+            height={70}
+            priority
+            className="object-cover"
+          />
+        </span>
         <span className="flex flex-1 flex-col leading-tight">
-          <span className="text-base font-semibold text-sproutine-text">{t.chat.rosieName}</span>
+          <span className="font-display text-[19px] text-sproutine-text">{t.chat.rosieName}</span>
           <span className="text-[13px] text-sproutine-muted">{t.chat.rosieRole}</span>
         </span>
         <button
@@ -111,53 +114,59 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
 
       <ErrorBoundary>
         <main
-          className={`flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-4 ${isEmpty ? 'justify-end' : ''}`}
+          className={`flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-3 ${isEmpty ? 'justify-end' : ''}`}
           aria-live="polite"
         >
+          {/* ── Empty state ── */}
           {isEmpty && (
             <>
-              <div className="flex flex-1 flex-col items-center justify-center gap-2.5 px-2 text-center">
+              <div className="flex flex-1 flex-col justify-end gap-2.5 px-0">
                 <Image
                   src="/icons/sproutine.png"
                   alt=""
                   width={140}
                   height={140}
                   priority
-                  className="-mb-4"
+                  className="-mb-5 -ml-[18px]"
                 />
-                <h1 className="font-display text-[26px] leading-tight text-sproutine-text">
+                <h1 className="font-display text-[32px] leading-[1.1] text-sproutine-text" style={{ textWrap: 'balance' as never }}>
                   {t.chat.emptyTitle}
                 </h1>
-                <p className="max-w-[290px] text-[15px] leading-normal text-sproutine-text-secondary">
+                <p className="text-[16px] leading-[1.55] text-sproutine-text-secondary" style={{ textWrap: 'pretty' as never }}>
                   {t.chat.emptyBody}
                 </p>
               </div>
-              <motion.div
-                className="flex flex-col items-start gap-2"
-                initial="hidden"
-                animate="show"
-                variants={staggerListVariants}
-              >
+
+              {/* Suggestion card */}
+              <div className="overflow-hidden rounded-[22px] border border-sproutine-border bg-sproutine-card shadow-soft">
                 {t.chat.suggestions.map((suggestion, i) => (
-                  <motion.button
-                    key={suggestion}
+                  <button
+                    key={suggestion.title}
                     type="button"
-                    variants={staggerItemVariants}
-                    onClick={() => sendText(suggestion)}
-                    className="flex min-h-11 items-center gap-2 rounded-full border border-sproutine-border-strong bg-sproutine-card px-4 text-[15px] font-medium text-sproutine-text hover:bg-sproutine-surface"
+                    onClick={() => sendText(suggestion.subtitle)}
+                    className={`flex min-h-16 w-full items-center gap-3 px-4 text-left hover:bg-sproutine-surface ${
+                      i < t.chat.suggestions.length - 1 ? 'border-b border-sproutine-border' : ''
+                    }`}
                   >
-                    <Icon
-                      name={SUGGESTION_ICONS[i] ?? 'restaurant'}
-                      size={18}
-                      className="text-sproutine-accent"
-                    />
-                    {suggestion}
-                  </motion.button>
+                    <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-sproutine-accent-soft text-sproutine-accent">
+                      <Icon name={SUGGESTION_ICONS[i] ?? 'restaurant'} size={20} />
+                    </span>
+                    <span className="flex flex-1 flex-col leading-[1.3]">
+                      <span className="text-[15px] font-semibold text-sproutine-text">
+                        {suggestion.title}
+                      </span>
+                      <span className="text-[13px] text-sproutine-text-secondary">
+                        &ldquo;{suggestion.subtitle}&rdquo;
+                      </span>
+                    </span>
+                    <Icon name="chevron_right" size={22} className="text-sproutine-muted" />
+                  </button>
                 ))}
-              </motion.div>
+              </div>
             </>
           )}
 
+          {/* ── Messages ── */}
           {chat.messages.map((message, idx) => {
             const isLast = idx === chat.messages.length - 1
             const failed = isLast && !!chat.error && message.role === 'user'
@@ -217,7 +226,6 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
                   timestamp={message.metadata?.createdAt}
                   speaking={chat.isSpeaking && message.id === lastAssistantId}
                   failed={failed}
-                  // Feedback needs the server-signed token; reloaded history has none.
                   traceId={message.metadata?.feedbackToken ? message.metadata.traceId : undefined}
                   reaction={reactions[message.id] ?? null}
                   onReact={(tid, score) =>
@@ -245,35 +253,32 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
             )
           })}
 
-          {/* In-progress voice input, shown as a pending user bubble */}
-          {status === 'recording' && (
-            <div className="self-end rounded-[20px] rounded-br-md border-[1.5px] border-dashed border-sproutine-border-strong px-3.5 py-2.5 text-[15px] text-sproutine-text-secondary">
-              {t.chat.listening}
-            </div>
-          )}
-          {status === 'transcribing' && (
-            <div className="flex items-center gap-1 self-end rounded-[20px] rounded-br-md bg-sproutine-accent-soft px-3.5 py-2.5 text-[13px] text-sproutine-text-secondary">
-              <Icon name="graphic_eq" size={16} />
-              {t.chat.transcribing}
-            </div>
-          )}
-
+          {/* ── Typing indicator: avatar + dots ── */}
           <AnimatePresence>
             {chat.isLoading && (
               <motion.div
                 key="typing"
-                className="flex items-center gap-2.5 self-start"
+                className="flex items-center gap-2"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, transition: { duration: 0.15 } }}
                 role="status"
               >
-                <span className="flex gap-[5px] rounded-[20px] rounded-bl-md border border-sproutine-border bg-sproutine-card px-4 py-3.5">
-                  <span className="h-2 w-2 rounded-full bg-sproutine-muted opacity-45 motion-safe:animate-pulse" />
-                  <span className="h-2 w-2 rounded-full bg-sproutine-muted opacity-70 motion-safe:animate-pulse [animation-delay:150ms]" />
-                  <span className="h-2 w-2 rounded-full bg-sproutine-muted motion-safe:animate-pulse [animation-delay:300ms]" />
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sproutine-accent-soft">
+                  <Image
+                    src="/icons/sproutine.png"
+                    alt=""
+                    width={42}
+                    height={42}
+                    className="object-cover"
+                  />
                 </span>
-                <span className="text-[13px] text-sproutine-muted">{t.chat.typing}</span>
+                <span className="flex gap-[4px]">
+                  <span className="h-[7px] w-[7px] rounded-full bg-sproutine-accent opacity-35 motion-safe:animate-pulse" />
+                  <span className="h-[7px] w-[7px] rounded-full bg-sproutine-accent opacity-65 motion-safe:animate-pulse [animation-delay:150ms]" />
+                  <span className="h-[7px] w-[7px] rounded-full bg-sproutine-accent motion-safe:animate-pulse [animation-delay:300ms]" />
+                </span>
+                <span className="text-[13px] text-sproutine-muted">{t.chat.rosieThinking}</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -287,7 +292,6 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
               {voice.error}
             </p>
           )}
-          {/* Errors on a user message show inline as "Not sent"; this covers the rest. */}
           {chat.error && chat.messages.at(-1)?.role !== 'user' && (
             <p role="alert" className="text-center text-sm text-sproutine-red">
               {t.chat.anErrorOccurred}
@@ -298,6 +302,7 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
         </main>
       </ErrorBoundary>
 
+      {/* ── Voice dock (recording / transcribing / speaking panels) ── */}
       <VoiceDock
         status={status}
         onStart={voice.startRecording}
@@ -305,7 +310,8 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
         onStopSpeaking={chat.cancelSpeech}
       />
 
-      {status !== 'recording' && (
+      {/* ── Composer pill ── */}
+      {showComposer && (
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -314,27 +320,37 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
             setInput('')
             sendText(text)
           }}
-          className={`flex shrink-0 gap-2 px-4 pb-3 ${status === 'transcribing' ? 'opacity-60' : ''}`}
+          className="shrink-0 px-3 pb-3"
         >
-          <label htmlFor="chat-input" className="sr-only">
-            {t.chat.typePlaceholder}
-          </label>
-          <input
-            id="chat-input"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={t.chat.typePlaceholder}
-            autoComplete="off"
-            className="field h-12 flex-1 text-[15px]"
-          />
-          <button
-            type="submit"
-            disabled={chat.isLoading || !input.trim()}
-            aria-label={t.chat.send}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-sproutine-accent text-sproutine-bg hover:bg-sproutine-accent-hover disabled:bg-sproutine-surface disabled:text-sproutine-muted"
-          >
-            <Icon name="arrow_upward" size={22} />
-          </button>
+          <div className="flex h-14 items-center gap-1.5 rounded-full border border-sproutine-border-strong bg-sproutine-card pr-1.5 pl-5 shadow-soft">
+            <label htmlFor="chat-input" className="sr-only">
+              {t.chat.composerPlaceholder}
+            </label>
+            <input
+              id="chat-input"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t.chat.composerPlaceholder}
+              autoComplete="off"
+              className="min-w-0 flex-1 bg-transparent text-[15px] text-sproutine-text placeholder:text-sproutine-muted focus:outline-none"
+            />
+            {input.trim() ? (
+              <button
+                type="submit"
+                disabled={chat.isLoading}
+                aria-label={t.chat.send}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sproutine-accent text-sproutine-bg disabled:bg-sproutine-surface disabled:text-sproutine-muted"
+              >
+                <Icon name="arrow_upward" size={22} />
+              </button>
+            ) : (
+              <ComposerMicButton
+                status={status}
+                onStart={voice.startRecording}
+                onStop={voice.stopRecording}
+              />
+            )}
+          </div>
         </form>
       )}
 
