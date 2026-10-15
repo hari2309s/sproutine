@@ -19,3 +19,5 @@ export { logEval, incrementUsage, getGlobalUsage, consumeUserQuota } from './eva
 export type { Provider, TaskType, EvalLogEntry } from './types'
 export { parseMeal, normalizeParsedMeal, ParsedMealSchema } from './mealParse'
 export { parsePlanRequest, keywordPlanPreferences, normalizePlanRequest } from './planRequest'
+export { searchKnowledge, formatKnowledgeContext, KNOWLEDGE } from './knowledge'
+export type { SearchResult, KnowledgeChunk } from './knowledge'

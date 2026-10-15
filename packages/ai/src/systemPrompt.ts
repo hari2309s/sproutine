@@ -8,6 +8,8 @@ export interface SystemPromptInput {
   medical: boolean
   /** Today's date in the user's locale, e.g. "Tuesday, 13 October 2026". */
   today: string
+  /** Retrieved knowledge chunks (formatted). Injected for ask_nutrition. */
+  knowledgeContext?: string
 }
 
 const DIET_LABEL: Record<Profile['diet'], string> = {
@@ -43,7 +45,7 @@ const NOT_YET: Partial<Record<Intent, string>> = {
  * first name the user chose to be called, and food preferences. Never the
  * user id or email (see docs/dev-plan.md §5, Privacy).
  */
-export function buildSystemPrompt({ profile, intent, medical, today }: SystemPromptInput): string {
+export function buildSystemPrompt({ profile, intent, medical, today, knowledgeContext }: SystemPromptInput): string {
   const lines: string[] = []
 
   lines.push(
@@ -57,7 +59,7 @@ export function buildSystemPrompt({ profile, intent, medical, today }: SystemPro
     '- Reply in the language the user writes in.',
     '',
     '## Hard rules',
-    '- Never state calorie or nutrient numbers from memory. Nutrition numbers will only ever come from the food database, and that is not connected yet — say so if asked for exact figures, and talk in general terms.',
+    '- Only state nutrition numbers that appear in the knowledge context below (with their source). Never invent numbers from memory. If no knowledge context is provided, talk in general terms and say you don\'t have the exact figure at hand.',
     '- Never set calorie targets, suggest skipping meals, or encourage weight loss beyond what the user asks for, and never below general healthy-eating guidance.',
     '- You are not a doctor. No diagnoses, no treatment, no supplement or medication advice.',
     '- If the user seems distressed about food or their body, slow down, be gentle and drop all numbers.',
@@ -91,6 +93,16 @@ export function buildSystemPrompt({ profile, intent, medical, today }: SystemPro
     )
   }
   if (medical) lines.push('', '## Medical topic', MEDICAL_GUIDANCE)
+
+  if (knowledgeContext) {
+    lines.push(
+      '',
+      knowledgeContext,
+      '',
+      '## How to cite',
+      'When you use a fact from the knowledge context, mention the source naturally — e.g. "According to EFSA, adults need about 25 g of fibre a day." Keep it conversational, not academic. If the knowledge doesn\'t cover their question, say so honestly.'
+    )
+  }
 
   const notYet = NOT_YET[intent]
   if (notYet) lines.push('', '## What you can do right now', notYet)

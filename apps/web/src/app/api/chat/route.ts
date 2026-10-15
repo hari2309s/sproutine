@@ -26,6 +26,8 @@ import {
   SAFETY_MAX_CHARS,
   parseMeal,
   parsePlanRequest,
+  searchKnowledge,
+  formatKnowledgeContext,
 } from '@sproutine/ai'
 import {
   generatePlan,
@@ -470,6 +472,18 @@ export async function POST(request: NextRequest) {
                 }
               }
 
+              // Knowledge retrieval for nutrition questions: search the
+              // curated knowledge base and inject relevant chunks so the
+              // model can cite sources.
+              let knowledgeContext: string | undefined
+              if (intent.intent === 'ask_nutrition') {
+                const results = searchKnowledge(message)
+                if (results.length) {
+                  knowledgeContext = formatKnowledgeContext(results)
+                  turn.update({ metadata: { knowledgeChunks: results.map((r) => r.chunk.id) } })
+                }
+              }
+
               const instructions = buildSystemPrompt({
                 profile,
                 intent: intent.intent,
@@ -481,6 +495,7 @@ export async function POST(request: NextRequest) {
                   year: 'numeric',
                   timeZone: 'Europe/Berlin',
                 }),
+                knowledgeContext,
               })
 
               // Stored turns plus this message; empty turns are dropped (some

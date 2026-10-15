@@ -59,7 +59,7 @@ Sproutine is being built in phases (see [docs/dev-plan.md](docs/dev-plan.md)).
 | 1 · Food data               | ✅  | Open Food Facts + USDA lookups, nutrient maths, food cache, barcode scanner                                  |
 | 2 · Logging                 | ✅  | Log meals from chat or barcode, confirm card, Today view, 50-case logging eval (photo logging still to come) |
 | 3 · Planning + shopping     | ✅  | Weekly meal plans, cost-optimised planner, swap meals, shopping lists by aisle with estimated prices          |
-| 4 · Knowledge + coach       | ⏳  | Nutrition answers with citations                                                                             |
+| 4 · Knowledge + coach       | ✅  | 30-chunk knowledge base (EFSA, WHO), keyword retrieval, cited answers, 40-item coach-golden eval (100% retrieval) |
 | 5 · Nudges + habits         | ✅  | Daily/weekly habit streaks, timed nudges (no-log, weekly review, plan reminder), Web Push notifications       |
 | 6 · Safety + eval hardening | ⏳  | Full safety-golden set, CI gates                                                                             |
 | 7 · Beta                    | ⏳  | Demo account, polish                                                                                         |
