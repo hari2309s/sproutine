@@ -3,7 +3,6 @@ import { searchKnowledge } from '../knowledge'
 import { COACH_ITEMS } from '../../evals/coach-items'
 
 describe('coach-golden: retrieval accuracy', () => {
-  let hits = 0
   const total = COACH_ITEMS.length
 
   for (const item of COACH_ITEMS) {
@@ -12,7 +11,6 @@ describe('coach-golden: retrieval accuracy', () => {
       const ids = results.map((r) => r.chunk.id)
       // At least one of the expected chunks must appear.
       const found = item.expectedChunks.some((ec) => ids.includes(ec))
-      if (found) hits++
       expect(found).toBe(true)
     })
   }
