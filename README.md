@@ -62,7 +62,7 @@ Sproutine is being built in phases (see [docs/dev-plan.md](docs/dev-plan.md)).
 | 4 · Knowledge + coach       | ✅  | 30-chunk knowledge base (EFSA, WHO), keyword retrieval, cited answers, 40-item coach-golden eval (100% retrieval) |
 | 5 · Nudges + habits         | ✅  | Daily/weekly habit streaks, timed nudges (no-log, weekly review, plan reminder), Web Push notifications       |
 | 6 · Safety + eval hardening | ✅  | 65-case safety eval (red-team, DE, role-play), GDPR export covers all tables, cascade delete verified         |
-| 7 · Beta                    | ⏳  | Demo account, polish                                                                                         |
+| 7 · Beta                    | ✅  | Demo account with nightly reset, one-click demo login, seed script                                           |
 
 ---
 
