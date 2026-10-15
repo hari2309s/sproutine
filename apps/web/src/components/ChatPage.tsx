@@ -181,6 +181,7 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
                     content={clean}
                     timestamp={message.metadata?.createdAt}
                     speaking={chat.isSpeaking && message.id === lastAssistantId}
+                    sources={message.metadata?.sources}
                   />
                   <MealPlanCard summary={planSummary} />
                 </div>
@@ -196,6 +197,7 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
                     content={clean}
                     timestamp={message.metadata?.createdAt}
                     speaking={chat.isSpeaking && message.id === lastAssistantId}
+                    sources={message.metadata?.sources}
                   />
                   <MealLogCard
                     proposal={mealProposal}
@@ -221,6 +223,7 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
                   onReact={(tid, score) =>
                     handleReact(tid, message.metadata?.feedbackToken ?? '', score, message.id)
                   }
+                  sources={message.metadata?.sources}
                 />
                 {failed && (
                   <div className="mt-1 flex items-center justify-end gap-1">

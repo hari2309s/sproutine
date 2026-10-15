@@ -20,6 +20,8 @@ export type ChatMetadata = {
   safety?: 'crisis' | 'ed_risk'
   /** On user messages that came from the mic (meal logs record the source). */
   viaVoice?: boolean
+  /** Knowledge sources cited in a nutrition answer. */
+  sources?: { id: string; source: string }[]
 }
 
 export type ChatDataParts = {

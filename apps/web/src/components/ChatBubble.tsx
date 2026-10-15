@@ -5,6 +5,11 @@ import { motion } from 'framer-motion'
 import { Icon } from './Icon'
 import { useLanguage } from '@/contexts/LanguageContext'
 
+export interface ChatSource {
+  id: string
+  source: string
+}
+
 interface ChatBubbleProps {
   role: 'user' | 'assistant'
   content: string
@@ -16,6 +21,8 @@ interface ChatBubbleProps {
   traceId?: string
   reaction?: 1 | -1 | null
   onReact?: (traceId: string, score: 1 | -1) => void
+  /** Knowledge sources cited in this answer. */
+  sources?: ChatSource[]
 }
 
 export const ChatBubble = memo(function ChatBubble({
@@ -27,6 +34,7 @@ export const ChatBubble = memo(function ChatBubble({
   traceId,
   reaction,
   onReact,
+  sources,
 }: ChatBubbleProps) {
   const { t } = useLanguage()
   const isUser = role === 'user'
@@ -57,6 +65,19 @@ export const ChatBubble = memo(function ChatBubble({
           </span>
         )}
         <p className="whitespace-pre-wrap break-words">{content}</p>
+        {!isUser && sources && sources.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {[...new Map(sources.map((s) => [s.source, s])).values()].map((s) => (
+              <span
+                key={s.id}
+                className="inline-flex items-center gap-1 rounded-full bg-sproutine-accent-soft px-2.5 py-0.5 text-[11px] font-semibold text-sproutine-accent"
+              >
+                <Icon name="nutrition" size={12} />
+                {s.source}
+              </span>
+            ))}
+          </div>
+        )}
         {time && !failed && (
           <p className={`mt-1 text-xs ${isUser ? 'text-sproutine-bg/75' : 'text-sproutine-muted'}`}>
             {time}

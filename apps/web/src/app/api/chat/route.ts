@@ -476,11 +476,16 @@ export async function POST(request: NextRequest) {
               // curated knowledge base and inject relevant chunks so the
               // model can cite sources.
               let knowledgeContext: string | undefined
+              let knowledgeSources: { id: string; source: string }[] | undefined
               if (intent.intent === 'ask_nutrition') {
                 const results = searchKnowledge(message)
                 if (results.length) {
                   knowledgeContext = formatKnowledgeContext(results)
-                  turn.update({ metadata: { knowledgeChunks: results.map((r) => r.chunk.id) } })
+                  knowledgeSources = results.map((r) => ({
+                    id: r.chunk.id,
+                    source: r.chunk.source,
+                  }))
+                  turn.update({ metadata: { knowledgeChunks: knowledgeSources.map((s) => s.id) } })
                 }
               }
 
@@ -561,10 +566,10 @@ export async function POST(request: NextRequest) {
                       part.type === 'start'
                         ? {
                             traceId: turn.traceId,
-                            // Proves to /api/chat/feedback that this trace is the caller's.
                             feedbackToken: signTrace(turn.traceId, profile.llmPseudonym),
                             speechTone,
                             createdAt: new Date().toISOString(),
+                            ...(knowledgeSources?.length ? { sources: knowledgeSources } : {}),
                           }
                         : undefined,
                     onError: (error: unknown) => {
