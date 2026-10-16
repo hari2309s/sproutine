@@ -26,6 +26,7 @@ A voice-first healthy eating companion that logs your meals, plans your week and
 ![Groq](https://img.shields.io/badge/Groq-GPT--OSS_%2B_Whisper-F55036?logoColor=white)
 ![Gemini](https://img.shields.io/badge/Gemini-3.8_Flash_%2B_embedding-4285F4?logo=google&logoColor=white)
 
+![BLS](https://img.shields.io/badge/BLS_4.0-CC_BY_4.0-003366?logoColor=white)
 ![Open Food Facts](https://img.shields.io/badge/Open_Food_Facts-ODbL-FF8714?logo=openfoodfacts&logoColor=white)
 ![USDA FoodData Central](https://img.shields.io/badge/USDA-FoodData_Central-2E5E3E?logoColor=white)
 
@@ -56,7 +57,7 @@ Sproutine is being built in phases (see [docs/dev-plan.md](docs/dev-plan.md)).
 | Phase                       |     |                                                                                                              |
 | --------------------------- | --- | ------------------------------------------------------------------------------------------------------------ |
 | 0 · Foundation              | ✅  | Auth, onboarding with health-data consent, chat with Rosie, voice, safety gate, LLM router, Langfuse tracing |
-| 1 · Food data               | ✅  | Open Food Facts + USDA lookups, nutrient maths, food cache, barcode scanner                                  |
+| 1 · Food data               | ✅  | BLS 4.0 + Open Food Facts + USDA lookups, nutrient maths, food cache, barcode scanner                        |
 | 2 · Logging                 | ✅  | Log meals from chat or barcode, confirm card, Today view, 50-case logging eval (photo logging still to come) |
 | 3 · Planning + shopping     | ✅  | Weekly meal plans, cost-optimised planner, swap meals, shopping lists by aisle with estimated prices          |
 | 4 · Knowledge + coach       | ✅  | 30-chunk knowledge base (EFSA, WHO), keyword retrieval, cited answers, 40-item coach-golden eval (100% retrieval) |
@@ -72,7 +73,7 @@ Sproutine is being built in phases (see [docs/dev-plan.md](docs/dev-plan.md)).
 - 🥗 **Log meals by talking:** say "zwei Scheiben Vollkornbrot mit Käse" or "a bowl of porridge with blueberries". Rosie shows a card with the matched foods and estimated grams. Change grams, swap a match, remove items or pick the meal, then save.
 - 📷 **Barcode scanning:** scan a pack on the Today screen. Uses the browser's built-in `BarcodeDetector` where available and a self-hosted `zxing-wasm` fallback elsewhere (iOS Safari, Firefox), so scanning makes no third-party requests.
 - 📅 **Today view:** the day's meals by breakfast, lunch, dinner and snack, with a day total.
-- 🔢 **Numbers from data, not the model:** the model only lists what you said. Matching, portion grams and nutrients are computed in code from Open Food Facts and USDA data, and the server recomputes them on save.
+- 🔢 **Numbers from data, not the model:** the model only lists what you said. Matching, portion grams and nutrients are computed in code from BLS 4.0 (7,140 German foods), Open Food Facts and USDA data, and the server recomputes them on save.
 - 🇩🇪 **German-aware portions:** understands compounds ("Linsensuppe", "Orangensaft"), units like Scheibe, Becher, Handvoll and Tafel, and typical German portion sizes.
 - 🌿 **Allergen-aware data:** foods carry the EU-14 allergens, and "unknown" is never treated as "none".
 - 🫶 **Safety first:** every message passes a safety gate. Crisis and eating-disorder signals get fixed, human-written replies with German helplines, and gentle mode removes all numbers from the app.
@@ -86,7 +87,7 @@ Sproutine is being built in phases (see [docs/dev-plan.md](docs/dev-plan.md)).
 You speak → Groq Whisper transcribes
 → Safety gate (keyword screen + gpt-oss-safeguard) and intent check run in parallel
 → log_meal: the model lists foods, counts and units you said (no weights, no nutrients)
-→ Code matches each food: food cache → Open Food Facts (Germany) → USDA
+→ Code matches each food: food cache → BLS 4.0 → Open Food Facts (Germany) → USDA
 → Code estimates grams from a German-context portion table
 → A confirm card appears; nothing is saved until you tap Save
 → The server recomputes nutrients from the foods table and stores a snapshot
@@ -109,7 +110,7 @@ Other messages get a streamed reply from Rosie through the LLM router, read alou
 | Voice output  | Web Speech API with selectable voice personas                                                              |
 | AI            | Vercel AI SDK 7, Zod 4 structured output                                                                   |
 | LLM router    | Custom multi-provider router with daily budgets ([`packages/ai/src/router.ts`](packages/ai/src/router.ts)) |
-| Food data     | Open Food Facts API v3 + Search-a-licious, USDA FoodData Central                                           |
+| Food data     | BLS 4.0 (7,140 German foods), Open Food Facts API v3 + Search-a-licious, USDA FoodData Central              |
 | Barcode       | `BarcodeDetector` → `zxing-wasm` fallback                                                                  |
 | Database      | Supabase (PostgreSQL, Auth, RLS, `pg_trgm` food search, pgvector)                                          |
 | Observability | Langfuse v5 (OpenTelemetry traces, masked content, datasets, experiments)                                  |
@@ -147,7 +148,7 @@ sproutine/
 │       └── src/app/api/      chat, voice, meals, food/search, food/barcode, account
 ├── packages/
 │   ├── ai/                   LLM router, safety gate, intent, meal parser, Langfuse, evals
-│   ├── food/                 OFF + USDA clients, nutrients, portions, search, meal logs
+│   ├── food/                 BLS + OFF + USDA clients, nutrients, portions, search, meal logs
 │   ├── db/                   Supabase client, profile, food cache, meal logs
 │   ├── types/                Shared types (diets, EU-14 allergens, intents, safety)
 │   └── ui/                   Shared UI pieces
@@ -264,7 +265,7 @@ Golden datasets live in [`packages/ai/evals`](packages/ai/evals) and run as Lang
 | ------------------------ | ----------------------------------------------------------------------- | ----------------------------------------------------------- |
 | Intent routing           | Correct intent for messages that miss the keyword fast path             | ≥ 75 %                                                      |
 | Safety                   | Must-trigger recall, exact category, false positives on benign messages | 100 % recall, ≥ 70 % exact category, ≤ 20 % false positives |
-| Logging (50 EN/DE cases) | Foods found, grams within ±25 %, meal slot                              | ≥ 80 %                                                      |
+| Logging (55 EN/DE cases) | Foods found, grams within ±25 %, meal slot                              | ≥ 80 %                                                      |
 
 ```bash
 pnpm --filter @sproutine/ai eval:sync-dataset   # push the cases to Langfuse
@@ -285,7 +286,7 @@ pnpm test
 
 | Package         | Covered                                                                                                                                                 |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/food` | Open Food Facts and USDA normalisation against recorded fixtures (±2 %), nutrient maths, portion estimates, search ranking, rate limits, meal proposals |
+| `packages/food` | BLS normalisation and quality checks, Open Food Facts and USDA normalisation against recorded fixtures (±2 %), nutrient maths, portion estimates, search ranking, rate limits, meal proposals |
 | `packages/ai`   | Safety screen, intent rules, system prompt, router, trace masking, meal-parse normalisation, logging-golden portions                                    |
 | `apps/web`      | Icon font subset, feedback tokens, translations                                                                                                         |
 
@@ -303,7 +304,7 @@ pnpm test:e2e:ui
 
 ## Food data attribution
 
-Product data from [Open Food Facts](https://world.openfoodfacts.org), available under the [Open Database License](https://opendatacommons.org/licenses/odbl/1-0/). Generic food data from [USDA FoodData Central](https://fdc.nal.usda.gov) (public domain).
+German generic food data from the [Bundeslebensmittelschlüssel (BLS) 4.0](https://blsdb.de) by the Max Rubner-Institut, available under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Product data from [Open Food Facts](https://world.openfoodfacts.org), available under the [Open Database License](https://opendatacommons.org/licenses/odbl/1-0/). Generic food data from [USDA FoodData Central](https://fdc.nal.usda.gov) (public domain). See [docs/data-sources.md](docs/data-sources.md) for full licence details.
 
 ## License
 
