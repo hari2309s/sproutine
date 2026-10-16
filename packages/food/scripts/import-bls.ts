@@ -165,23 +165,28 @@ function createDb() {
 
 // ── Embedding helper ────────────────────────────────────────────────────────
 
-async function embedText(text: string): Promise<number[]> {
+/** Batch-embed up to 100 texts in a single API call. */
+async function embedBatch(texts: string[]): Promise<(number[] | null)[]> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set')
+  const model = 'models/gemini-embedding-2'
   const res = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-2:embedContent',
+    `https://generativelanguage.googleapis.com/v1beta/${model}:batchEmbedContents`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify({
-        content: { parts: [{ text }] },
-        outputDimensionality: 768,
+        requests: texts.map((text) => ({
+          model,
+          content: { parts: [{ text }] },
+          outputDimensionality: 768,
+        })),
       }),
     }
   )
-  if (!res.ok) throw new Error(`Gemini embed error: ${await res.text()}`)
-  const json = (await res.json()) as { embedding: { values: number[] } }
-  return json.embedding?.values ?? []
+  if (!res.ok) throw new Error(`Gemini batch embed error: ${await res.text()}`)
+  const json = (await res.json()) as { embeddings: { values: number[] }[] }
+  return (json.embeddings ?? []).map((e) => e.values?.length === 768 ? e.values : null)
 }
 
 // ── Parsing ─────────────────────────────────────────────────────────────────
@@ -422,27 +427,42 @@ async function main() {
 
   // ── Embeddings ──────────────────────────────────────────────────────────
   if (!skipEmbed && process.env.GEMINI_API_KEY && db) {
-    console.log(`\n  Generating embeddings for ${embedQueue.length} foods...`)
-    for (let i = 0; i < embedQueue.length; i += EMBED_BATCH_SIZE) {
-      const chunk = embedQueue.slice(i, i + EMBED_BATCH_SIZE)
-      for (const item of chunk) {
-        try {
-          const embedding = await embedText(item.text)
-          if (embedding.length === 768) {
+    // Skip foods that already have embeddings
+    const { data: existing } = await db
+      .from('foods')
+      .select('source_id')
+      .eq('source', 'bls')
+      .not('embedding', 'is', null)
+    const alreadyEmbedded = new Set((existing ?? []).map((r: { source_id: string }) => r.source_id))
+    const needsEmbed = embedQueue.filter((item) => !alreadyEmbedded.has(item.code))
+    console.log(`\n  Generating embeddings: ${needsEmbed.length} remaining (${alreadyEmbedded.size} already done)...`)
+    const embedWork = needsEmbed
+    for (let i = 0; i < embedWork.length; i += EMBED_BATCH_SIZE) {
+      const chunk = embedWork.slice(i, i + EMBED_BATCH_SIZE)
+      try {
+        const embeddings = await embedBatch(chunk.map((c) => c.text))
+        for (let j = 0; j < chunk.length; j++) {
+          const vec = embeddings[j]
+          if (vec) {
             await db
               .from('foods')
-              .update({ embedding: JSON.stringify(embedding) })
+              .update({ embedding: JSON.stringify(vec) })
               .eq('source', 'bls')
-              .eq('source_id', item.code)
+              .eq('source_id', chunk[j].code)
             stats.embedded++
           }
-        } catch (e) {
-          console.warn(`    Embed failed for ${item.code}: ${(e as Error).message}`)
+        }
+      } catch (e) {
+        const msg = (e as Error).message
+        console.warn(`    Embed batch failed at offset ${i}: ${msg}`)
+        if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
+          console.warn('    Quota exhausted — stopping embeddings. Re-run tomorrow to resume.')
+          break
         }
       }
-      process.stdout.write(`\r  Embedded ${stats.embedded} / ${embedQueue.length}...`)
+      process.stdout.write(`\r  Embedded ${stats.embedded + alreadyEmbedded.size} / ${embedQueue.length}...`)
       // Respect Gemini free-tier rate limits
-      if (i + EMBED_BATCH_SIZE < embedQueue.length) {
+      if (i + EMBED_BATCH_SIZE < embedWork.length) {
         await new Promise((r) => setTimeout(r, EMBED_DELAY_MS))
       }
     }
