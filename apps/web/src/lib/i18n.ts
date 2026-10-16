@@ -313,6 +313,7 @@ export interface Translations {
     keep: string
     deleteMeal: string
     deleted: string
+    sourceLabels: Record<string, string>
   }
   states: {
     loading: string
@@ -718,6 +719,7 @@ export const translations: Record<Locale, Translations> = {
       keep: 'Keep',
       deleteMeal: 'Delete',
       deleted: 'Deleted',
+      sourceLabels: { bls: 'BLS', off: 'OFF', usda: 'USDA' },
     },
     states: {
       loading: 'Setting the table…',

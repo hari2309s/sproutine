@@ -15,7 +15,7 @@ export interface Nutrients {
 export const NUTRIENT_KEYS = ['kcal', 'protein', 'fat', 'carbs', 'fiber', 'sugar', 'salt'] as const
 export type NutrientKey = (typeof NUTRIENT_KEYS)[number]
 
-export type FoodSource = 'off' | 'usda' | 'user'
+export type FoodSource = 'off' | 'usda' | 'user' | 'bls'
 
 /**
  * A food normalised from any source. This is the shape stored in the `foods`
@@ -45,7 +45,7 @@ export interface FoodRecord {
   /** Pack-declared serving size in grams, when the source has one. */
   servingG: number | null
   /** Set when kcal disagrees with the macros by more than the tolerance. */
-  quality: 'ok' | 'inconsistent' | 'incomplete'
+  quality: 'ok' | 'inconsistent' | 'incomplete' | 'flagged'
 }
 
 export interface FoodItem {

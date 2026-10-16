@@ -193,7 +193,14 @@ export function MealLogCard({
             >
               <div className="flex items-center gap-2.5">
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] font-semibold">{food.name}</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="truncate text-[15px] font-semibold">{food.name}</span>
+                    {t.meal.sourceLabels[food.source] && (
+                      <span className="shrink-0 rounded bg-sproutine-surface px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none text-sproutine-muted">
+                        {t.meal.sourceLabels[food.source]}
+                      </span>
+                    )}
+                  </span>
                   {food.brand && (
                     <span className="block text-[13px] text-sproutine-text-secondary">
                       {food.brand}

@@ -376,17 +376,28 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
           <p className="text-center text-[13px] leading-normal text-sproutine-muted">
             {t.settings.disclaimer}
           </p>
-          {/* Required attribution: OFF is ODbL; USDA asks to be credited. */}
-          <p className="-mt-4 text-center text-[13px] leading-normal text-sproutine-muted">
-            <a
-              href="https://world.openfoodfacts.org"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline-offset-2 hover:underline"
-            >
-              {t.settings.dataSources}
-            </a>
-          </p>
+          {/* Required attribution: BLS (CC BY 4.0), OFF (ODbL), USDA (CC0). */}
+          <div className="-mt-4 space-y-1 text-center text-[11px] leading-normal text-sproutine-muted">
+            <p className="text-[13px]">{t.settings.dataSources}</p>
+            <p>
+              <a href="https://blsdb.de/" target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
+                BLS 4.0
+              </a>
+              {' '}— Max Rubner-Institut (CC BY 4.0)
+            </p>
+            <p>
+              <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
+                Open Food Facts
+              </a>
+              {' '}— ODbL
+            </p>
+            <p>
+              <a href="https://fdc.nal.usda.gov" target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
+                USDA FoodData Central
+              </a>
+              {' '}— Public Domain
+            </p>
+          </div>
         </div>
       </motion.div>
     </div>

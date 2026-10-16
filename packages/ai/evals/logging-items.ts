@@ -210,4 +210,33 @@ export const LOGGING_CASES: LoggingCase[] = [
   c('mx-03', 'I wanted cake but had an apple instead', [it(['apple'], 180, 'apple', 1)]),
   c('mx-04', '10 Mandeln', [it(['mandel'], 12, 'Mandeln', 10)]),
   c('mx-05', 'half a pizza', [it(['pizza'], 165, 'pizza', 0.5)]),
+
+  // ── BLS-targeted (German generic foods that should resolve to BLS) ──
+  c('bls-01', 'Ein Teller Naturreis mit Hähnchenbrust', [
+    it(['reis', 'naturreis', 'rice'], 350, 'Naturreis', 1, 'plate'),
+    it(['hähnchen', 'chicken'], 150, 'Hähnchenbrust'),
+  ]),
+  c(
+    'bls-02',
+    'Zum Frühstück gab es Haferflocken mit Banane und Milch',
+    [
+      it(['hafer', 'oat'], 50, 'Haferflocken'),
+      it(['banan'], 120, 'Banane', 1),
+      it(['milch'], 200, 'Milch'),
+    ],
+    'breakfast'
+  ),
+  c('bls-03', 'Ein Stück Butter aufs Brot', [
+    it(['butter'], 10, 'Butter'),
+    it(['brot'], 90, 'Brot'),
+  ]),
+  c('bls-04', '200 g Magerquark mit einer Karotte', [
+    it(['quark'], 200, 'Magerquark', 200, 'g'),
+    it(['karotte'], 70, 'Karotte', 1),
+  ]),
+  c('bls-05', 'Brokkoli mit Olivenöl und Lachs', [
+    it(['brokkoli', 'broccoli'], 150, 'Brokkoli'),
+    it(['olivenöl', 'olive'], 15, 'Olivenöl', 1, 'tbsp'),
+    it(['lachs', 'salmon'], 125, 'Lachs'),
+  ]),
 ]

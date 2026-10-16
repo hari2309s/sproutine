@@ -239,7 +239,7 @@ describe('searchFood', () => {
       fetchOffProduct: vi.fn(),
     }
     const res = await searchFood('lentils', cache, { sources })
-    expect(res.sources).toEqual({ cache: 0, off: 'skipped', usda: 1 })
+    expect(res.sources).toEqual({ cache: 0, bls: 0, off: 'skipped', usda: 1 })
     expect(res.foods[0]!.name).toBe('Lentils, cooked')
     expect(cache.stored).toHaveLength(1)
   })

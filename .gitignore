@@ -17,6 +17,9 @@ dist/
 # ChromaDB
 chroma_data/
 
+# Raw data files (BLS, etc.) — not committed; see docs/data-sources.md
+data/
+
 # OS
 .DS_Store
 Thumbs.db

@@ -90,8 +90,9 @@ export function createFoodCache(db: Db, userId?: string): FoodCache {
     },
 
     async upsert(foods) {
-      // User entries are created through their own route, never via the cache.
-      const rows = foods.filter((f) => f.source !== 'user').map(foodToRow)
+      // User entries are created through their own route; BLS is pre-imported
+      // via the import script, not cached from search results.
+      const rows = foods.filter((f) => f.source !== 'user' && f.source !== 'bls').map(foodToRow)
       if (!rows.length) return
       const { error } = await db.from('foods').upsert(rows, { onConflict: 'source,source_id' })
       if (error) throw new Error(`foods.upsert: ${error.message}`)

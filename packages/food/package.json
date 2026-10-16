@@ -11,14 +11,17 @@
   "scripts": {
     "lint": "eslint src",
     "type-check": "tsc --noEmit",
-    "fixtures:record": "tsx scripts/record-fixtures.ts"
+    "fixtures:record": "tsx scripts/record-fixtures.ts",
+    "bls:import": "tsx scripts/import-bls.ts"
   },
   "dependencies": {
     "@sproutine/types": "workspace:*"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.117.3",
     "@types/node": "^26.6.5",
     "tsx": "^4.23.15",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "xlsx": "^0.18.5"
   }
 }

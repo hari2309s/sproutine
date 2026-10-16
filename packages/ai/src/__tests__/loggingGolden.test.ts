@@ -6,9 +6,9 @@ import { GRAMS_TOLERANCE, LOGGING_CASES } from '../../evals/logging-items'
 // the estimator must land within tolerance of what the person meant. The LLM
 // eval (evals/) then only measures how well the model reads the sentence.
 describe('logging-golden portions', () => {
-  it('has 50 cases with unique ids', () => {
-    expect(LOGGING_CASES).toHaveLength(50)
-    expect(new Set(LOGGING_CASES.map((c) => c.id)).size).toBe(50)
+  it('has 55 cases with unique ids', () => {
+    expect(LOGGING_CASES).toHaveLength(55)
+    expect(new Set(LOGGING_CASES.map((c) => c.id)).size).toBe(55)
   })
 
   for (const c of LOGGING_CASES) {

@@ -54,4 +54,5 @@ export type {
   LoggedItem,
   MealLogRecord,
 } from './meal'
+export type { FoodSourceAdapter, AdapterRegistry } from './adapter'
 export * from './planning'

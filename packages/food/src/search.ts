@@ -22,7 +22,7 @@ const LIVE_SOURCES: SearchSources = { searchOff, searchUsda, fetchOffProduct }
 export interface SearchResult {
   foods: FoodRecord[]
   /** Which sources answered, for tracing. Skipped = rate limited or failed. */
-  sources: { cache: number; off: number | 'skipped'; usda: number | 'skipped' }
+  sources: { cache: number; bls: number; off: number | 'skipped'; usda: number | 'skipped' }
 }
 
 /** Guards for the shared external-API budget. */
@@ -59,7 +59,10 @@ export async function lookupBarcode(
 
 const normalise = (s: string) => s.toLowerCase().normalize('NFKD').replace(/\p{M}/gu, '').trim()
 
-/** Higher is better. Name match dominates; data quality breaks ties. */
+/**
+ * Higher is better. Name match dominates; data quality and source priority
+ * break ties. BLS is preferred for generic German foods.
+ */
 export function rankFood(food: FoodRecord, query: string): number {
   const q = normalise(query)
   const names = [food.name, food.nameDe].filter((n): n is string => !!n).map(normalise)
@@ -74,7 +77,12 @@ export function rankFood(food: FoodRecord, query: string): number {
   }
   if (food.quality === 'ok') score += 10
   else if (food.quality === 'inconsistent') score -= 30
+  else if (food.quality === 'flagged') score -= 100
   if (food.estimatedNutrients.length === 0) score += 3
+  // BLS (national reference data) ranks above OFF/USDA for generic foods.
+  // OFF ranks highest for branded/packaged products (has barcode).
+  if (food.source === 'bls') score += 8
+  else if (food.source === 'off' && food.barcode) score += 5
   // Shorter names are usually the generic form of what was asked for.
   score -= Math.min(names[0]?.length ?? 0, 60) / 20
   return score
@@ -104,21 +112,22 @@ export async function searchFood(
   }: { limit?: number; sources?: SearchSources } & Pick<ExternalGuards, 'canCallExternal'> = {}
 ): Promise<SearchResult> {
   const q = query.trim().slice(0, 120)
-  if (!q) return { foods: [], sources: { cache: 0, off: 0, usda: 0 } }
+  if (!q) return { foods: [], sources: { cache: 0, bls: 0, off: 0, usda: 0 } }
 
   const cached = await cache.search(q, limit)
+  const blsCount = cached.filter((f) => f.source === 'bls').length
   const strongCached = cached.filter((f) => rankFood(f, q) >= 40 && f.quality !== 'inconsistent')
   if (strongCached.length >= Math.min(3, limit)) {
     return {
       foods: rank(cached, q).slice(0, limit),
-      sources: { cache: cached.length, off: 'skipped', usda: 'skipped' },
+      sources: { cache: cached.length, bls: blsCount, off: 'skipped', usda: 'skipped' },
     }
   }
 
   if (!canCallExternal()) {
     return {
       foods: rank(cached, q).slice(0, limit),
-      sources: { cache: cached.length, off: 'skipped', usda: 'skipped' },
+      sources: { cache: cached.length, bls: blsCount, off: 'skipped', usda: 'skipped' },
     }
   }
 
@@ -145,6 +154,7 @@ export async function searchFood(
     foods: rank(merged, q).slice(0, limit),
     sources: {
       cache: cached.length,
+      bls: blsCount,
       off: off === 'skipped' ? 'skipped' : off.length,
       usda: usda === 'skipped' ? 'skipped' : usda.length,
     },
