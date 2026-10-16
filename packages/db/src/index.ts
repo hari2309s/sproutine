@@ -31,3 +31,7 @@ export {
   markPushed,
 } from './push'
 export type { PushSubscriptionRow } from './push'
+export { getTodayWater, addWater, removeWater } from './waterLogs'
+export type { WaterEntry } from './waterLogs'
+export { setFavourite, getFavourites, getYesterdayMeals } from './favourites'
+export type { FavouriteMeal } from './favourites'

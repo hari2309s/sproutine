@@ -36,6 +36,8 @@ interface MealLogCardProps {
   fromChat?: boolean
   /** Photo-based: show dashed gram borders and ≈ prefix on numbers. */
   isEstimate?: boolean
+  /** Label shown on copied meals, e.g. "Copied from yesterday". */
+  copiedLabel?: string
   onSaved?: (meal: SavedMeal) => void
   /** Called on "Not now"; without it the card collapses to a "Not saved" note. */
   onDiscard?: () => void
@@ -56,6 +58,7 @@ export function MealLogCard({
   traceId,
   fromChat = false,
   isEstimate = false,
+  copiedLabel,
   onSaved,
   onDiscard,
 }: MealLogCardProps) {
@@ -159,6 +162,14 @@ export function MealLogCard({
           {t.meal.editSlot}
         </button>
       </div>
+
+      {/* ── Copied label ── */}
+      {copiedLabel && (
+        <div className="flex items-center gap-1.5 px-4 pt-2.5 text-[13px] text-sproutine-accent">
+          <Icon name="repeat" size={16} />
+          {copiedLabel}
+        </div>
+      )}
 
       {/* ── Estimate note ── */}
       {isEstimate && (

@@ -23,6 +23,8 @@ export function rowToProfile(row: ProfileRow): Profile {
     consentHealthAt: row.consent_health_at,
     llmPseudonym: row.llm_pseudonym,
     timezone: row.timezone || 'Europe/Berlin',
+    waterGoalMl: row.water_goal_ml ?? 2000,
+    waterGlassMl: row.water_glass_ml ?? 250,
   }
 }
 

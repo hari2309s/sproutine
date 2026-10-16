@@ -43,6 +43,10 @@ export interface Profile {
   llmPseudonym: string
   /** IANA zone (e.g. Europe/Berlin) for local nudge times. */
   timezone: string
+  /** Daily water intake goal in ml (default 2000). */
+  waterGoalMl: number
+  /** Size of one glass in ml (default 250). */
+  waterGlassMl: number
 }
 
 // ─── Agents ───────────────────────────────────────────────────────────────────

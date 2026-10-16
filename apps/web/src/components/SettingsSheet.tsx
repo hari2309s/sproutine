@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
-import { signOut } from '@/lib/auth'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useVoicePreference } from '@/contexts/VoiceContext'
 import { type Locale } from '@/lib/i18n'
@@ -11,9 +10,13 @@ import { pushSupport, isSubscribed, subscribe, unsubscribe, type PushSupport } f
 import { LanguagePicker } from './LanguagePicker'
 import { ThemeSegmented } from './ThemeToggle'
 import { Icon } from './Icon'
+import { Toggle } from './Toggle'
 import { VoicePicker } from './VoicePicker'
-import { supabase } from '@/lib/supabase'
+import { ReportSheet } from './ReportSheet'
+import { DeleteAccountSection, AttributionFooter } from './DeleteAccountSection'
 import { fetchOwnProfile } from '@/lib/profile'
+import { exportAllData, updateProfileField } from '@/lib/settingsApi'
+import { supabase } from '@/lib/supabase'
 
 interface SettingsSheetProps {
   userId: string
@@ -27,15 +30,19 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
   const [gentleMode, setGentleMode] = useState<boolean | null>(null)
   const [pushState] = useState<PushSupport>(() => pushSupport())
   const [pushOn, setPushOn] = useState<boolean | null>(null)
-  const [deleteInput, setDeleteInput] = useState('')
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [waterGoalMl, setWaterGoalMl] = useState(2000)
+  const [waterGlassMl, setWaterGlassMl] = useState(250)
+  const [showReports, setShowReports] = useState(false)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchOwnProfile(userId)
-      .then((p) => setGentleMode(p?.safetyMode ?? false))
+      .then((p) => {
+        setGentleMode(p?.safetyMode ?? false)
+        setWaterGoalMl(p?.waterGoalMl ?? 2000)
+        setWaterGlassMl(p?.waterGlassMl ?? 250)
+      })
       .catch(() => setGentleMode(false))
   }, [userId])
 
@@ -45,7 +52,6 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
     }
   }, [pushState])
 
-  // Move focus into the sheet on open, and let Escape close it.
   useEffect(() => {
     closeButtonRef.current?.focus()
 
@@ -74,59 +80,10 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
-  // GDPR Art. 20 export: everything stored about the user, read through RLS.
   const handleExport = async () => {
     setIsExporting(true)
     try {
-      const [profileRes, messagesRes, mealsRes, plansRes, habitsRes, checkinsRes] =
-        await Promise.all([
-          supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
-          supabase
-            .from('chat_messages')
-            .select('role, content, is_proactive, created_at')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: true }),
-          supabase
-            .from('meal_logs')
-            .select('slot, items, created_at')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: true }),
-          supabase
-            .from('meal_plans')
-            .select('week_start, plan, status, created_at')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: true }),
-          supabase
-            .from('goals_habits')
-            .select('title, period, created_at, archived_at')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: true }),
-          supabase
-            .from('habit_checkins')
-            .select('habit_id, date')
-            .eq('user_id', userId)
-            .order('date', { ascending: true }),
-        ])
-      if (profileRes.error) throw profileRes.error
-      if (messagesRes.error) throw messagesRes.error
-      const exportData = {
-        exportedAt: new Date().toISOString(),
-        profile: profileRes.data,
-        chatMessages: messagesRes.data ?? [],
-        mealLogs: mealsRes.data ?? [],
-        mealPlans: plansRes.data ?? [],
-        habits: habitsRes.data ?? [],
-        habitCheckins: checkinsRes.data ?? [],
-      }
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `sproutine-export-${new Date().toISOString().slice(0, 10)}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      await exportAllData(userId)
     } catch (e) {
       console.error('[settings] export failed:', e)
     } finally {
@@ -134,29 +91,11 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
     }
   }
 
-  const handleDelete = async () => {
-    if (deleteInput !== t.settings.deleteConfirmWord) return
-    setIsDeleting(true)
-    setDeleteError(null)
-    try {
-      const res = await fetch('/api/account/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      })
-      if (!res.ok) throw new Error('server error')
-      await signOut()
-    } catch {
-      setDeleteError(t.settings.deleteError)
-      setIsDeleting(false)
-    }
-  }
-
   const handleLocaleChange = async (next: Locale) => {
     setLocale(next)
     await Promise.all([
       supabase.auth.updateUser({ data: { language: next } }),
-      supabase.from('profiles').update({ locale: next }).eq('user_id', userId),
+      updateProfileField(userId, { locale: next }),
     ])
   }
 
@@ -164,7 +103,7 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
     setVoiceId(next)
     await Promise.all([
       supabase.auth.updateUser({ data: { voice: next } }),
-      supabase.from('profiles').update({ voice_id: next }).eq('user_id', userId),
+      updateProfileField(userId, { voice_id: next }),
     ])
   }
 
@@ -185,14 +124,25 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
   const handleGentleModeChange = async (next: boolean) => {
     const previous = gentleMode
     setGentleMode(next)
-    const { error } = await supabase
-      .from('profiles')
-      .update({ safety_mode: next })
-      .eq('user_id', userId)
+    const { error } = await updateProfileField(userId, { safety_mode: next })
     if (error) setGentleMode(previous)
   }
 
-  const deleteArmed = deleteInput === t.settings.deleteConfirmWord
+  const handleWaterGoalChange = async (delta: number) => {
+    const prev = waterGoalMl
+    const next = Math.max(500, Math.min(5000, waterGoalMl + delta))
+    setWaterGoalMl(next)
+    const { error } = await updateProfileField(userId, { water_goal_ml: next })
+    if (error) setWaterGoalMl(prev)
+  }
+
+  const handleWaterGlassChange = async (delta: number) => {
+    const prev = waterGlassMl
+    const next = Math.max(100, Math.min(1000, waterGlassMl + delta))
+    setWaterGlassMl(next)
+    const { error } = await updateProfileField(userId, { water_glass_ml: next })
+    if (error) setWaterGlassMl(prev)
+  }
 
   return (
     <div
@@ -309,6 +259,71 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
           )}
 
           <section className="space-y-2.5">
+            <h3 className="eyebrow">{t.water.title}</h3>
+            <div className="card space-y-3 p-4 shadow-none">
+              <div className="flex items-center justify-between">
+                <span className="text-[15px] text-sproutine-text">{t.settings.waterGoal}</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleWaterGoalChange(-250)}
+                    className="icon-btn h-9 w-9"
+                  >
+                    <Icon name="remove" size={20} />
+                  </button>
+                  <span className="w-16 text-center text-[15px] font-semibold tabular-nums">
+                    {waterGoalMl} ml
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleWaterGoalChange(250)}
+                    className="icon-btn h-9 w-9"
+                  >
+                    <Icon name="add" size={20} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[15px] text-sproutine-text">{t.settings.glassSize}</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleWaterGlassChange(-50)}
+                    className="icon-btn h-9 w-9"
+                  >
+                    <Icon name="remove" size={20} />
+                  </button>
+                  <span className="w-16 text-center text-[15px] font-semibold tabular-nums">
+                    {waterGlassMl} ml
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleWaterGlassChange(50)}
+                    className="icon-btn h-9 w-9"
+                  >
+                    <Icon name="add" size={20} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-2.5">
+            <h3 className="eyebrow">{t.reports.title}</h3>
+            <button
+              type="button"
+              onClick={() => setShowReports(true)}
+              className="card flex w-full items-center gap-3 p-4 shadow-none transition-colors hover:bg-sproutine-surface"
+            >
+              <Icon name="table_chart" size={22} className="text-sproutine-accent" />
+              <span className="flex-1 text-left text-[15px] font-semibold text-sproutine-text">
+                {t.settings.downloadReport}
+              </span>
+              <Icon name="chevron_right" size={20} className="text-sproutine-text-secondary" />
+            </button>
+          </section>
+
+          <section className="space-y-2.5">
             <h3 className="eyebrow">{t.settings.yourData}</h3>
             <button
               type="button"
@@ -321,127 +336,14 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
             </button>
           </section>
 
-          <section className="space-y-3 rounded-[22px] border-[1.5px] border-sproutine-red p-4">
-            <h3 className="flex items-center gap-2 text-xs font-semibold tracking-[0.06em] text-sproutine-red uppercase">
-              <Icon name="delete" size={18} />
-              {t.settings.dangerZone}
-            </h3>
-            <p className="text-[15px] leading-normal text-sproutine-text">
-              {t.settings.deleteAccountDesc}
-            </p>
-            <div className="space-y-1.5">
-              <label htmlFor="delete-confirm" className="text-sm font-semibold text-sproutine-text">
-                {t.settings.deleteConfirmLabel}
-              </label>
-              <input
-                id="delete-confirm"
-                type="text"
-                value={deleteInput}
-                onChange={(e) => setDeleteInput(e.target.value)}
-                autoComplete="off"
-                autoCapitalize="characters"
-                spellCheck={false}
-                className="field font-mono tracking-[0.06em]"
-              />
-            </div>
-            {deleteError && (
-              <p
-                role="alert"
-                className="flex items-center gap-1.5 text-sm font-medium text-sproutine-red"
-              >
-                <Icon name="error" size={18} />
-                {deleteError}
-              </p>
-            )}
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={!deleteArmed || isDeleting}
-              className="btn-destructive w-full"
-            >
-              <Icon name="delete" size={20} />
-              {isDeleting ? t.settings.deleting : t.settings.deleteMyAccount}
-            </button>
-            {deleteInput && (
-              <button
-                type="button"
-                onClick={() => setDeleteInput('')}
-                className="btn-ghost h-11 w-full text-[15px] text-sproutine-text-secondary"
-              >
-                {t.settings.keepAccount}
-              </button>
-            )}
-          </section>
-
-          <p className="text-center text-[13px] leading-normal text-sproutine-muted">
-            {t.settings.disclaimer}
-          </p>
-          {/* Required attribution: BLS (CC BY 4.0), OFF (ODbL), USDA (CC0). */}
-          <div className="-mt-4 space-y-1 text-center text-[11px] leading-normal text-sproutine-muted">
-            <p className="text-[13px]">{t.settings.dataSources}</p>
-            <p>
-              <a href="https://blsdb.de/" target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
-                BLS 4.0
-              </a>
-              {' '}— Max Rubner-Institut (CC BY 4.0)
-            </p>
-            <p>
-              <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
-                Open Food Facts
-              </a>
-              {' '}— ODbL
-            </p>
-            <p>
-              <a href="https://fdc.nal.usda.gov" target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
-                USDA FoodData Central
-              </a>
-              {' '}— Public Domain
-            </p>
-          </div>
+          <DeleteAccountSection />
+          <AttributionFooter />
         </div>
       </motion.div>
-    </div>
-  )
-}
 
-/** 52×32 switch; the knob shows a check when on so state never relies on colour. */
-function Toggle({
-  checked,
-  disabled,
-  onChange,
-}: {
-  checked: boolean
-  disabled?: boolean
-  onChange: (next: boolean) => void
-}) {
-  return (
-    <span className="relative inline-flex">
-      <input
-        type="checkbox"
-        role="switch"
-        checked={checked}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.checked)}
-        className="peer absolute inset-0 h-full w-full cursor-pointer appearance-none rounded-full"
-      />
-      <span
-        aria-hidden
-        className={`flex h-8 w-[52px] items-center rounded-full px-1 transition-colors peer-focus-visible:shadow-[0_0_0_2px_var(--t-bg),0_0_0_4px_var(--t-text)] ${
-          checked
-            ? 'justify-end bg-sproutine-accent'
-            : 'justify-start border-2 border-sproutine-border-strong bg-sproutine-surface'
-        } ${disabled ? 'opacity-50' : ''}`}
-      >
-        <span
-          className={`flex items-center justify-center rounded-full ${
-            checked
-              ? 'h-6 w-6 bg-sproutine-bg text-sproutine-accent'
-              : 'h-5 w-5 bg-sproutine-border-strong'
-          }`}
-        >
-          {checked && <Icon name="check" size={16} />}
-        </span>
-      </span>
-    </span>
+      <AnimatePresence>
+        {showReports && <ReportSheet onClose={() => setShowReports(false)} />}
+      </AnimatePresence>
+    </div>
   )
 }

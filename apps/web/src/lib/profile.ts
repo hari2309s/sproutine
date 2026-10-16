@@ -7,6 +7,8 @@ export interface ClientProfile {
   voiceId: string
   safetyMode: boolean
   timezone: string
+  waterGoalMl: number
+  waterGlassMl: number
 }
 
 /** The browser's IANA time zone, or Berlin if it can't tell. */
@@ -21,7 +23,7 @@ export function browserTimeZone(): string {
 export async function fetchOwnProfile(userId: string): Promise<ClientProfile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('display_name, locale, voice_id, safety_mode, timezone')
+    .select('display_name, locale, voice_id, safety_mode, timezone, water_goal_ml, water_glass_ml')
     .eq('user_id', userId)
     .maybeSingle()
   if (error) throw error
@@ -32,5 +34,7 @@ export async function fetchOwnProfile(userId: string): Promise<ClientProfile | n
     voiceId: data.voice_id as string,
     safetyMode: Boolean(data.safety_mode),
     timezone: (data.timezone as string) ?? 'Europe/Berlin',
+    waterGoalMl: (data.water_goal_ml as number) ?? 2000,
+    waterGlassMl: (data.water_glass_ml as number) ?? 250,
   }
 }

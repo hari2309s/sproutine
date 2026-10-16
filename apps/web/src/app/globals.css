@@ -177,7 +177,7 @@
   font-style: normal;
   font-weight: 400 600;
   font-display: block;
-  src: url('/fonts/material-symbols-rounded.woff2?v=eb4457d0bf') format('woff2');
+  src: url('/fonts/material-symbols-rounded.woff2?v=9af9b0c867') format('woff2');
 }
 
 @utility icon {
@@ -256,4 +256,10 @@
 
 @utility eyebrow {
   @apply text-xs font-semibold tracking-[0.06em] text-sproutine-muted uppercase;
+}
+
+/* Horizontal scroll with faded edges for Quick Add chips. */
+@utility scroll-fade-x {
+  mask-image: linear-gradient(to right, transparent 0, black 20px, black calc(100% - 20px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 20px, black calc(100% - 20px), transparent 100%);
 }

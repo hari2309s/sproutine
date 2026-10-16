@@ -20,6 +20,8 @@ export interface Database {
           llm_pseudonym: string
           timezone: string
           created_at: string
+          water_goal_ml: number
+          water_glass_ml: number
           updated_at: string
         }
         Insert: {
@@ -35,6 +37,8 @@ export interface Database {
           voice_id?: string
           consent_health_at: string
           timezone?: string
+          water_goal_ml?: number
+          water_glass_ml?: number
         }
         Update: {
           display_name?: string
@@ -48,6 +52,8 @@ export interface Database {
           voice_id?: string
           safety_mode?: boolean
           timezone?: string
+          water_goal_ml?: number
+          water_glass_ml?: number
         }
       }
       chat_messages: {
@@ -105,6 +111,21 @@ export interface Database {
           latency_ms?: number | null
           tokens_used?: number | null
           trace_id?: string | null
+        }
+        Update: Record<string, never>
+      }
+      water_logs: {
+        Row: {
+          id: string
+          user_id: string
+          ml: number
+          logged_at: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          ml: number
+          logged_at?: string
         }
         Update: Record<string, never>
       }

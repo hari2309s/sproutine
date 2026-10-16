@@ -13,6 +13,7 @@ const RULES: [Intent, RegExp][] = [
   [INTENT.PLAN_WEEK, /\b(plan|planning)\s+(my|the|next|this)?\s*(week|meals|menu)\b|\bmeal\s+plan\b|\bwochenplan\b|\bessensplan\b/i],
   [INTENT.DAILY_REVIEW, /\bhow\s+(did|am|was)\s+i\s+(do|doing)\b|\b(today|this\s+week)'?s?\s+(summary|review|recap)\b|\bwhat\s+did\s+i\s+eat\b/i],
   [INTENT.SET_HABIT, /\b(habit|streak|every\s+day|daily\s+goal|remind\s+me)\b/i],
+  [INTENT.LOG_MEAL, /\b(same\s+as\s+yesterday|repeat\s+yesterday|yesterday'?s?\s+(breakfast|lunch|dinner|meal)|wie\s+gestern)\b/i],
   [INTENT.LOG_MEAL, /\b(i\s+(just\s+)?(had|ate|eaten|drank|snacked)|for\s+(breakfast|lunch|dinner)\s+i|log\s+(my\s+)?(meal|breakfast|lunch|dinner|snack)|ich\s+(habe|hatte)\b.*\b(gegessen|getrunken))\b/i],
   [INTENT.ASK_NUTRITION, /\b(how\s+much|how\s+many|is\s+it\s+(ok|okay|healthy|bad)|should\s+i\s+eat|what'?s\s+(a\s+)?(good|healthy)|protein|fibre|fiber|vitamin|calories\s+in|kcal\s+in|healthy)\b/i],
 ]

@@ -7,15 +7,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import {
   MEAL_SLOTS,
-  mealSlotAt,
   PLAN_SLOTS,
   RECIPES_BY_ID,
-  weekStartOf,
-  type MealPlan,
-  type FoodRecord,
   type MealLogProposal,
   type MealSlot,
-  type Nutrients,
 } from '@sproutine/food/client'
 import { AppColumn } from './AppColumn'
 import { BottomNav } from './BottomNav'
@@ -25,64 +20,39 @@ import { Icon } from './Icon'
 import { BarcodeScanner } from './BarcodeScanner'
 import { MealLogCard } from './MealLogCard'
 import { HabitsCard } from './HabitsCard'
+import { WaterRow } from './WaterRow'
+import { QuickAddSection } from './QuickAddSection'
+import { MealCopySheet } from './MealCopySheet'
+import { ShareSheet } from './ShareSheet'
+import { Toast } from './Toast'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { supabase } from '@/lib/supabase'
-
-
-interface TodayLog {
-  id: string
-  eatenAt: string
-  slot: MealSlot
-  items: { name: string; brand: string | null; grams: number }[]
-  /** Absent in gentle mode. */
-  totals?: Nutrients
-  partial?: string[]
-}
-
-function startOfToday(): Date {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return d
-}
-
-/** A single-item card for a scanned product: one pack serving, else 100 g. */
-function proposalForScan(food: FoodRecord): MealLogProposal {
-  const grams = food.servingG ? Math.round(food.servingG) : 100
-  return {
-    // The device's own clock decides breakfast vs lunch here.
-    slot: mealSlotAt(new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone),
-    source: 'barcode',
-    items: [
-      {
-        query: food.name,
-        match: food,
-        alternatives: [],
-        grams,
-        portion: food.servingG
-          ? { grams, basis: 'food-unit', confidence: 'medium' }
-          : { grams, basis: 'generic-unit', confidence: 'low' },
-      },
-    ],
-  }
-}
+import {
+  type TodayLog,
+  startOfToday,
+  proposalForScan,
+  fetchTodayMeals,
+  lookupBarcode,
+  removeMealLog,
+  setMealFavourite,
+  copyMeal,
+  fetchPlannedMeals,
+} from '@/lib/mealApi'
 
 export function TodayPage({ userId, name }: { userId: string; name: string }) {
   const { t, locale } = useLanguage()
   const router = useRouter()
   const [logs, setLogs] = useState<TodayLog[] | null>(null)
-  // Until the server says otherwise, show no numbers.
   const [gentle, setGentle] = useState(true)
   const [scanning, setScanning] = useState(false)
   const [scanned, setScanned] = useState<MealLogProposal | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [copySlot, setCopySlot] = useState<MealSlot | null>(null)
+  const [showShare, setShowShare] = useState(false)
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(
-        `/api/meals?since=${encodeURIComponent(startOfToday().toISOString())}`
-      )
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const body = (await res.json()) as { logs: TodayLog[]; gentle: boolean }
+      const body = await fetchTodayMeals(startOfToday().toISOString())
       setLogs(body.logs)
       setGentle(body.gentle)
     } catch (e) {
@@ -92,51 +62,65 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
   }, [])
 
   useEffect(() => {
-    // Fetching on mount; the state updates happen after the await.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load()
   }, [load])
 
-  // Today's meals from this week's plan, if there is one.
   const [planned, setPlanned] = useState<Partial<
     Record<(typeof PLAN_SLOTS)[number], string>
   > | null>(null)
   useEffect(() => {
-    const today = new Date().toLocaleDateString('sv-SE')
-    fetch(`/api/plans?week=${weekStartOf(new Date())}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((body: { plan: { plan: MealPlan } | null } | null) => {
-        const day = body?.plan?.plan.days.find((d) => d.date === today)
-        setPlanned(day && Object.keys(day.meals).length ? day.meals : null)
-      })
-      .catch(() => setPlanned(null))
+    fetchPlannedMeals().then(setPlanned).catch(() => setPlanned(null))
   }, [])
 
   const handleDetected = async (code: string) => {
     setScanning(false)
     setNotice(null)
     try {
-      const res = await fetch(`/api/food/barcode/${encodeURIComponent(code)}`)
-      if (res.status === 404) return setNotice(t.meal.notFoundBarcode)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const { food } = (await res.json()) as { food: FoodRecord }
+      const food = await lookupBarcode(code)
+      if (!food) return setNotice(t.meal.notFoundBarcode)
       setScanned(proposalForScan(food))
-    } catch (e) {
-      console.warn('[today] barcode lookup failed:', e)
+    } catch {
       setNotice(t.meal.lookupFailed)
     }
   }
 
   const removeLog = async (id: string) => {
-    // A delete that matches nothing (e.g. an expired session) isn't an error
-    // to PostgREST, so check that the row really went.
-    const { data, error } = await supabase.from('meal_logs').delete().eq('id', id).select('id')
-    if (error || !data?.length) {
-      console.warn('[today] remove failed:', error?.message ?? 'no row deleted')
-      setNotice(t.meal.removeFailed)
-      return
-    }
+    const removed = await removeMealLog(id)
+    if (!removed) return setNotice(t.meal.removeFailed)
     setLogs((prev) => prev?.filter((l) => l.id !== id) ?? null)
+  }
+
+  const toggleFavourite = async (logId: string) => {
+    const log = logs?.find((l) => l.id === logId)
+    if (!log) return
+    const next = !log.isFavourite
+    setLogs((prev) =>
+      prev?.map((l) => (l.id === logId ? { ...l, isFavourite: next } : l)) ?? null
+    )
+    try {
+      await setMealFavourite(logId, next)
+    } catch {
+      setLogs((prev) =>
+        prev?.map((l) => (l.id === logId ? { ...l, isFavourite: !next } : l)) ?? null
+      )
+    }
+  }
+
+  const replayMeal = async (item: {
+    slot: MealSlot
+    items: { source: string; sourceId: string; grams: number }[]
+  }) => {
+    const ok = await copyMeal(item.slot, item.items)
+    if (ok) {
+      setToastMsg(t.copy.copied)
+      void load()
+    }
+  }
+
+  const handleMealCopied = () => {
+    setToastMsg(t.copy.copied)
+    void load()
   }
 
   const now = new Date()
@@ -169,11 +153,25 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
       <PageEnter className="flex min-h-0 flex-1 flex-col">
         <main className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 pt-3 pb-8">
           <div className="space-y-1.5">
-            <p className="text-sm text-sproutine-muted">{dateLabel}</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-sproutine-muted">{dateLabel}</p>
+              {hasLogs && (
+                <button
+                  type="button"
+                  onClick={() => setShowShare(true)}
+                  aria-label={t.share.title}
+                  className="icon-btn h-9 w-9"
+                >
+                  <Icon name="ios_share" size={20} />
+                </button>
+              )}
+            </div>
             <h1 className="font-display text-[34px] leading-[1.08] text-sproutine-text">
               {greeting}
             </h1>
           </div>
+
+          <WaterRow gentle={gentle} />
 
           {notice && (
             <p
@@ -188,10 +186,7 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
             <MealLogCard
               proposal={scanned}
               safetyMode={gentle}
-              onSaved={() => {
-                setScanned(null)
-                void load()
-              }}
+              onSaved={() => { setScanned(null); void load() }}
               onDiscard={() => setScanned(null)}
             />
           )}
@@ -216,6 +211,8 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
             </Link>
           )}
 
+          <QuickAddSection gentle={gentle} onReplay={replayMeal} />
+
           {hasLogs ? (
             <section className="space-y-3">
               {dayKcal && (
@@ -232,7 +229,17 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
                 if (!inSlot.length) return null
                 return (
                   <div key={slot} className="card space-y-1 px-4 py-3">
-                    <h2 className="eyebrow">{t.meal.slots[slot]}</h2>
+                    <div className="flex items-center justify-between">
+                      <h2 className="eyebrow">{t.meal.slots[slot]}</h2>
+                      <button
+                        type="button"
+                        onClick={() => setCopySlot(slot)}
+                        aria-label={t.copy.repeatSlot(t.meal.slots[slot])}
+                        className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold text-sproutine-accent hover:bg-sproutine-accent-soft"
+                      >
+                        <Icon name="repeat" size={14} />
+                      </button>
+                    </div>
                     <ul className="divide-y divide-sproutine-border">
                       {inSlot.map((log) => (
                         <li key={log.id} className="flex items-start gap-2 py-2">
@@ -253,6 +260,19 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
                           </ul>
                           <button
                             type="button"
+                            onClick={() => toggleFavourite(log.id)}
+                            aria-label="Favourite"
+                            className="icon-btn -mt-1.5 h-10 w-10"
+                          >
+                            <Icon
+                              name="favorite"
+                              filled={!!log.isFavourite}
+                              size={20}
+                              className={log.isFavourite ? 'text-sproutine-accent' : ''}
+                            />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => removeLog(log.id)}
                             aria-label={t.meal.removeMeal}
                             className="icon-btn -mt-1.5 h-10 w-10"
@@ -269,17 +289,8 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
           ) : (
             logs && (
               <section className="card flex flex-col items-center gap-2.5 px-5 py-6 text-center">
-                <Image
-                  src="/icons/sproutine.png"
-                  alt=""
-                  width={120}
-                  height={120}
-                  priority
-                  className="-mt-3.5 -mb-4"
-                />
-                <h2 className="font-display text-[22px] text-sproutine-text">
-                  {t.today.emptyTitle}
-                </h2>
+                <Image src="/icons/sproutine.png" alt="" width={120} height={120} priority className="-mt-3.5 -mb-4" />
+                <h2 className="font-display text-[22px] text-sproutine-text">{t.today.emptyTitle}</h2>
                 <p className="max-w-[280px] text-[15px] leading-normal text-pretty text-sproutine-text-secondary">
                   {t.today.emptyBody}
                 </p>
@@ -296,17 +307,13 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
             </Link>
             <button
               type="button"
-              onClick={() => {
-                setNotice(null)
-                setScanning(true)
-              }}
+              onClick={() => { setNotice(null); setScanning(true) }}
               className="btn-secondary h-12 px-5 text-[15px]"
             >
               <Icon name="barcode_scanner" size={20} />
               {t.meal.scanAction}
             </button>
           </div>
-
         </main>
       </PageEnter>
 
@@ -320,7 +327,19 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
             onTellRosie={() => router.push('/chat')}
           />
         )}
+        {copySlot && (
+          <MealCopySheet slot={copySlot} onClose={() => setCopySlot(null)} onCopy={handleMealCopied} />
+        )}
+        {showShare && logs && (
+          <ShareSheet
+            logs={logs.map((l) => ({ slot: l.slot, items: l.items.map((i) => ({ name: i.name })), totals: l.totals }))}
+            gentle={gentle}
+            onClose={() => setShowShare(false)}
+          />
+        )}
       </AnimatePresence>
+
+      {toastMsg && <Toast message={toastMsg} icon="check_circle" onDone={() => setToastMsg(null)} />}
     </AppColumn>
   )
 }

@@ -31,7 +31,7 @@ const Body = z.object({
   items: z
     .array(
       z.object({
-        source: z.enum(['off', 'usda', 'user']),
+        source: z.enum(['off', 'usda', 'user', 'bls']),
         sourceId: z.string().min(1).max(64),
         grams: z.number().positive().max(MAX_ITEM_GRAMS),
       })
@@ -116,6 +116,7 @@ interface MealLogRow {
   items: LoggedItem[]
   totals: Nutrients
   partial: string[]
+  is_favourite: boolean
 }
 
 /**
@@ -142,7 +143,7 @@ export async function GET(request: NextRequest) {
       getProfile(db, user.id),
       db
         .from('meal_logs')
-        .select('id, eaten_at, meal_slot, items, totals, partial')
+        .select('id, eaten_at, meal_slot, items, totals, partial, is_favourite')
         .eq('user_id', user.id)
         .gte('eaten_at', since.toISOString())
         .order('eaten_at', { ascending: true })
@@ -162,6 +163,7 @@ export async function GET(request: NextRequest) {
         ...(gentle ? {} : { nutrients: i.nutrients }),
       })),
       ...(gentle ? {} : { totals: r.totals, partial: r.partial }),
+      isFavourite: r.is_favourite ?? false,
     }))
     return NextResponse.json({ logs, gentle })
   } catch (error) {

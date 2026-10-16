@@ -193,6 +193,9 @@ export interface Translations {
     notificationsOn: string
     notificationsHomeScreen: string
     notificationsUnsupported: string
+    waterGoal: string
+    glassSize: string
+    downloadReport: string
     yourData: string
     downloadData: string
     preparing: string
@@ -314,6 +317,40 @@ export interface Translations {
     deleteMeal: string
     deleted: string
     sourceLabels: Record<string, string>
+    copiedFrom: string
+  }
+  water: {
+    title: string
+    addGlass: string
+    removeGlass: string
+    goalReached: string
+    glasses: (n: number) => string
+  }
+  copy: {
+    title: string
+    subtitle: string
+    noYesterday: string
+    copied: string
+    repeatSlot: (slot: string) => string
+  }
+  quickAdd: {
+    title: string
+  }
+  reports: {
+    title: string
+    subtitle: string
+    weekly: string
+    weeklyDesc: string
+    monthly: string
+    monthlyDesc: string
+  }
+  share: {
+    title: string
+    story: string
+    square: string
+    privacy: string
+    shareButton: string
+    sharing: string
   }
   states: {
     loading: string
@@ -587,6 +624,9 @@ export const translations: Record<Locale, Translations> = {
       notificationsOn: 'On. You\u2019ll get nudges from Rosie.',
       notificationsHomeScreen: 'Add Sproutine to your Home Screen first to enable notifications.',
       notificationsUnsupported: 'Notifications aren\u2019t supported in this browser.',
+      waterGoal: 'Daily goal',
+      glassSize: 'Glass size',
+      downloadReport: 'Download nutrition report',
       yourData: 'Your data',
       downloadData: 'Download my data',
       preparing: 'Preparing…',
@@ -720,6 +760,40 @@ export const translations: Record<Locale, Translations> = {
       deleteMeal: 'Delete',
       deleted: 'Deleted',
       sourceLabels: { bls: 'BLS', off: 'OFF', usda: 'USDA' },
+      copiedFrom: 'Copied from yesterday',
+    },
+    water: {
+      title: 'Water',
+      addGlass: 'Add a glass of water',
+      removeGlass: 'Remove last glass',
+      goalReached: 'Goal reached!',
+      glasses: (n) => (n === 1 ? '1 glass' : `${n} glasses`),
+    },
+    copy: {
+      title: 'Yesterday\u2019s meals',
+      subtitle: 'Tap a meal to log it again today.',
+      noYesterday: 'Nothing logged yesterday for this meal.',
+      copied: 'Copied from yesterday',
+      repeatSlot: (slot: string) => `Repeat ${slot}`,
+    },
+    quickAdd: {
+      title: 'Quick add',
+    },
+    reports: {
+      title: 'Nutrition report',
+      subtitle: 'Download a CSV of your meals and daily averages.',
+      weekly: 'Last 7 days',
+      weeklyDesc: 'Meals, macros and daily averages',
+      monthly: 'Last 30 days',
+      monthlyDesc: 'A full month of nutrition data',
+    },
+    share: {
+      title: 'Share your day',
+      story: 'Story',
+      square: 'Square',
+      privacy: 'Only the meals you\u2019ve logged today are included. No personal data is shared.',
+      shareButton: 'Share',
+      sharing: 'Preparing\u2026',
     },
     states: {
       loading: 'Setting the table…',

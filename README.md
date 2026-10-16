@@ -56,6 +56,11 @@ Sproutine is an AI-native nutrition companion. Tell **Rosie** (from _Rosenkohl_,
 - 🥗 **Log meals by talking:** say "zwei Scheiben Vollkornbrot mit Käse" or "a bowl of porridge with blueberries". Rosie shows a card with the matched foods and estimated grams. Change grams, swap a match, remove items or pick the meal, then save.
 - 📷 **Barcode scanning:** scan a pack on the Today screen. Uses the browser's built-in `BarcodeDetector` where available and a self-hosted `zxing-wasm` fallback elsewhere (iOS Safari, Firefox), so scanning makes no third-party requests.
 - 📅 **Today view:** the day's meals by breakfast, lunch, dinner and snack, with a day total.
+- 💧 **Water tracking:** tap the water row to log a glass, long-press to undo. A progress ring fills toward your daily goal. Goal and glass size are adjustable in Settings.
+- ⭐ **Favourites & quick add:** heart a meal to mark it as a favourite. Quick-add chips appear at the top of the Today screen so you can re-log frequent meals in one tap.
+- 🔁 **Copy yesterday's meals:** tap the repeat button on any meal slot to copy what you had yesterday.
+- 📊 **CSV reports:** download a week or month nutrition report from Settings. Includes daily averages.
+- 📤 **Share your day:** tap the share button on the Today screen to generate a summary card (Story or Square format) and share it via the Web Share API or download it as an image.
 - 🔢 **Numbers from data, not the model:** the model only lists what you said. Matching, portion grams and nutrients are computed in code from BLS 4.0 (7,140 German foods), Open Food Facts and USDA data, and the server recomputes them on save.
 - 🇩🇪 **German-aware portions:** understands compounds ("Linsensuppe", "Orangensaft"), units like Scheibe, Becher, Handvoll and Tafel, and typical German portion sizes.
 - 🌿 **Allergen-aware data:** foods carry the EU-14 allergens, and "unknown" is never treated as "none".
@@ -128,11 +133,11 @@ Run `pnpm --filter @sproutine/ai models:check` to confirm the model IDs are stil
 sproutine/
 ├── apps/
 │   └── web/                  Next.js app (UI, API routes, e2e tests)
-│       └── src/app/api/      chat, voice, meals, food/search, food/barcode, account
+│       └── src/app/api/      chat, voice, meals, water, reports, food/search, food/barcode, account
 ├── packages/
 │   ├── ai/                   LLM router, safety gate, intent, meal parser, Langfuse, evals
 │   ├── food/                 BLS + OFF + USDA clients, nutrients, portions, search, meal logs
-│   ├── db/                   Supabase client, profile, food cache, meal logs
+│   ├── db/                   Supabase client, profile, food cache, meal logs, water logs, favourites
 │   ├── types/                Shared types (diets, EU-14 allergens, intents, safety)
 │   └── ui/                   Shared UI pieces
 ├── supabase/
