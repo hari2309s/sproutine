@@ -25,6 +25,10 @@ export function rowToProfile(row: ProfileRow): Profile {
     timezone: row.timezone || 'Europe/Berlin',
     waterGoalMl: row.water_goal_ml ?? 2000,
     waterGlassMl: row.water_glass_ml ?? 250,
+    kcalGoal: row.kcal_goal ?? null,
+    proteinGoalG: row.protein_goal_g ?? null,
+    carbsGoalG: row.carbs_goal_g ?? null,
+    fatGoalG: row.fat_goal_g ?? null,
   }
 }
 

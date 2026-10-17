@@ -14,6 +14,7 @@ import { Toggle } from './Toggle'
 import { VoicePicker } from './VoicePicker'
 import { ReportSheet } from './ReportSheet'
 import { DeleteAccountSection, AttributionFooter } from './DeleteAccountSection'
+import { GoalSettings } from './GoalSettings'
 import { fetchOwnProfile } from '@/lib/profile'
 import { exportAllData, updateProfileField } from '@/lib/settingsApi'
 import { supabase } from '@/lib/supabase'
@@ -33,6 +34,7 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
   const [waterGoalMl, setWaterGoalMl] = useState(2000)
   const [waterGlassMl, setWaterGlassMl] = useState(250)
   const [showReports, setShowReports] = useState(false)
+  const [goals, setGoals] = useState<Record<string, number | null>>({ kcalGoal: null, proteinGoalG: null, carbsGoalG: null, fatGoalG: null })
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
 
@@ -42,6 +44,7 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
         setGentleMode(p?.safetyMode ?? false)
         setWaterGoalMl(p?.waterGoalMl ?? 2000)
         setWaterGlassMl(p?.waterGlassMl ?? 250)
+        setGoals({ kcalGoal: p?.kcalGoal ?? null, proteinGoalG: p?.proteinGoalG ?? null, carbsGoalG: p?.carbsGoalG ?? null, fatGoalG: p?.fatGoalG ?? null })
       })
       .catch(() => setGentleMode(false))
   }, [userId])
@@ -142,6 +145,18 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
     setWaterGlassMl(next)
     const { error } = await updateProfileField(userId, { water_glass_ml: next })
     if (error) setWaterGlassMl(prev)
+  }
+
+  const goalDbMap: Record<string, keyof Parameters<typeof updateProfileField>[1]> = {
+    kcalGoal: 'kcal_goal', proteinGoalG: 'protein_goal_g', carbsGoalG: 'carbs_goal_g', fatGoalG: 'fat_goal_g',
+  }
+  const handleGoalChange = async (field: string, value: number | null) => {
+    const prev = goals[field] ?? null
+    setGoals((g) => ({ ...g, [field]: value }))
+    const key = goalDbMap[field]
+    if (!key) return
+    const { error } = await updateProfileField(userId, { [key]: value })
+    if (error) setGoals((g) => ({ ...g, [field]: prev }))
   }
 
   return (
@@ -261,52 +276,37 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
           <section className="space-y-2.5">
             <h3 className="eyebrow">{t.water.title}</h3>
             <div className="card space-y-3 p-4 shadow-none">
-              <div className="flex items-center justify-between">
-                <span className="text-[15px] text-sproutine-text">{t.settings.waterGoal}</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleWaterGoalChange(-250)}
-                    className="icon-btn h-9 w-9"
-                  >
-                    <Icon name="remove" size={20} />
-                  </button>
-                  <span className="w-16 text-center text-[15px] font-semibold tabular-nums">
-                    {waterGoalMl} ml
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleWaterGoalChange(250)}
-                    className="icon-btn h-9 w-9"
-                  >
-                    <Icon name="add" size={20} />
-                  </button>
+              {([
+                { label: t.settings.waterGoal, value: waterGoalMl, onDec: () => handleWaterGoalChange(-250), onInc: () => handleWaterGoalChange(250) },
+                { label: t.settings.glassSize, value: waterGlassMl, onDec: () => handleWaterGlassChange(-50), onInc: () => handleWaterGlassChange(50) },
+              ] as const).map(({ label, value, onDec, onInc }) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span className="text-[15px] text-sproutine-text">{label}</span>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={onDec} className="icon-btn h-9 w-9"><Icon name="remove" size={20} /></button>
+                    <span className="w-16 text-center text-[15px] font-semibold tabular-nums">{value} ml</span>
+                    <button type="button" onClick={onInc} className="icon-btn h-9 w-9"><Icon name="add" size={20} /></button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[15px] text-sproutine-text">{t.settings.glassSize}</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleWaterGlassChange(-50)}
-                    className="icon-btn h-9 w-9"
-                  >
-                    <Icon name="remove" size={20} />
-                  </button>
-                  <span className="w-16 text-center text-[15px] font-semibold tabular-nums">
-                    {waterGlassMl} ml
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleWaterGlassChange(50)}
-                    className="icon-btn h-9 w-9"
-                  >
-                    <Icon name="add" size={20} />
-                  </button>
-                </div>
-              </div>
+              ))}
             </div>
           </section>
+
+          {!gentleMode && (
+            <GoalSettings
+              userId={userId}
+              kcalGoal={goals.kcalGoal ?? null}
+              proteinGoalG={goals.proteinGoalG ?? null}
+              carbsGoalG={goals.carbsGoalG ?? null}
+              fatGoalG={goals.fatGoalG ?? null}
+              onChange={handleGoalChange}
+              onClearAll={async () => {
+                setGoals({ kcalGoal: null, proteinGoalG: null, carbsGoalG: null, fatGoalG: null })
+                const { error } = await updateProfileField(userId, { kcal_goal: null, protein_goal_g: null, carbs_goal_g: null, fat_goal_g: null })
+                if (error) void fetchOwnProfile(userId).then((p) => { if (p) setGoals({ kcalGoal: p.kcalGoal ?? null, proteinGoalG: p.proteinGoalG ?? null, carbsGoalG: p.carbsGoalG ?? null, fatGoalG: p.fatGoalG ?? null }) })
+              }}
+            />
+          )}
 
           <section className="space-y-2.5">
             <h3 className="eyebrow">{t.reports.title}</h3>

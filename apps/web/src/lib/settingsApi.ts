@@ -2,7 +2,7 @@ import { supabase } from './supabase'
 
 /** GDPR Art. 20 export: download everything stored about the user. */
 export async function exportAllData(userId: string): Promise<void> {
-  const [profileRes, messagesRes, mealsRes, plansRes, habitsRes, checkinsRes, waterRes] =
+  const [profileRes, messagesRes, mealsRes, plansRes, habitsRes, checkinsRes, waterRes, weightRes] =
     await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
       supabase
@@ -35,9 +35,15 @@ export async function exportAllData(userId: string): Promise<void> {
         .select('ml, logged_at, created_at')
         .eq('user_id', userId)
         .order('logged_at', { ascending: true }),
+      supabase
+        .from('weight_logs')
+        .select('weight_kg, logged_at, created_at')
+        .eq('user_id', userId)
+        .order('logged_at', { ascending: true }),
     ])
-  if (profileRes.error) throw profileRes.error
-  if (messagesRes.error) throw messagesRes.error
+  for (const r of [profileRes, messagesRes, mealsRes, plansRes, habitsRes, checkinsRes, waterRes, weightRes]) {
+    if (r.error) throw r.error
+  }
   const exportData = {
     exportedAt: new Date().toISOString(),
     profile: profileRes.data,
@@ -47,6 +53,7 @@ export async function exportAllData(userId: string): Promise<void> {
     habits: habitsRes.data ?? [],
     habitCheckins: checkinsRes.data ?? [],
     waterLogs: waterRes.data ?? [],
+    weightLogs: weightRes.data ?? [],
   }
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
@@ -75,6 +82,10 @@ type MutableProfileFields = Partial<{
   timezone: string
   water_goal_ml: number
   water_glass_ml: number
+  kcal_goal: number | null
+  protein_goal_g: number | null
+  carbs_goal_g: number | null
+  fat_goal_g: number | null
 }>
 
 export async function updateProfileField(

@@ -61,6 +61,10 @@ Sproutine is an AI-native nutrition companion. Tell **Rosie** (from _Rosenkohl_,
 - 🔁 **Copy yesterday's meals:** tap the repeat button on any meal slot to copy what you had yesterday.
 - 📊 **CSV reports:** download a week or month nutrition report from Settings. Includes daily averages.
 - 📤 **Share your day:** tap the share button on the Today screen to generate a summary card (Story or Square format) and share it via the Web Share API or download it as an image.
+- 🌱 **Streak tracking:** consecutive logging days are counted and displayed with a sprout icon. Milestones at 7, 14, 30, 60 and 100 days trigger a full-screen celebration with a Rosie quote. Gentle mode shows the streak without numbers.
+- 🎯 **Daily nutrient goals:** set targets for kcal, protein, carbs and fat in Settings. Four animated SVG progress rings on the Today screen fill as you log. The grid adapts when fewer than four goals are active.
+- 📈 **Weekly review:** every Monday a review card appears. Tap it for a stats sheet with daily kcal bar chart, macros breakdown, best day highlight, and a Rosie quote. Gentle mode shows a qualitative view instead.
+- ⚖️ **Body & weight tracking:** a fourth tab (hidden in gentle mode) with an SVG trend chart, linear regression trend line, stats row, and a weight log sheet. Private by design — the lock icon makes that clear.
 - 🔢 **Numbers from data, not the model:** the model only lists what you said. Matching, portion grams and nutrients are computed in code from BLS 4.0 (7,140 German foods), Open Food Facts and USDA data, and the server recomputes them on save.
 - 🇩🇪 **German-aware portions:** understands compounds ("Linsensuppe", "Orangensaft"), units like Scheibe, Becher, Handvoll and Tafel, and typical German portion sizes.
 - 🌿 **Allergen-aware data:** foods carry the EU-14 allergens, and "unknown" is never treated as "none".
@@ -133,11 +137,11 @@ Run `pnpm --filter @sproutine/ai models:check` to confirm the model IDs are stil
 sproutine/
 ├── apps/
 │   └── web/                  Next.js app (UI, API routes, e2e tests)
-│       └── src/app/api/      chat, voice, meals, water, reports, food/search, food/barcode, account
+│       └── src/app/api/      chat, voice, meals, water, weight, streaks, weekly-review, reports, food/search, food/barcode, account
 ├── packages/
 │   ├── ai/                   LLM router, safety gate, intent, meal parser, Langfuse, evals
 │   ├── food/                 BLS + OFF + USDA clients, nutrients, portions, search, meal logs
-│   ├── db/                   Supabase client, profile, food cache, meal logs, water logs, favourites
+│   ├── db/                   Supabase client, profile, food cache, meal logs, water logs, favourites, streaks, weight logs, weekly stats
 │   ├── types/                Shared types (diets, EU-14 allergens, intents, safety)
 │   └── ui/                   Shared UI pieces
 ├── supabase/

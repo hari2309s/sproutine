@@ -1,12 +1,10 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import {
-  MEAL_SLOTS,
   PLAN_SLOTS,
   RECIPES_BY_ID,
   type MealLogProposal,
@@ -19,15 +17,24 @@ import { PageEnter } from './PageMotion'
 import { Icon } from './Icon'
 import { BarcodeScanner } from './BarcodeScanner'
 import { MealLogCard } from './MealLogCard'
+import { MealLogSection } from './MealLogSection'
 import { HabitsCard } from './HabitsCard'
 import { WaterRow } from './WaterRow'
 import { QuickAddSection } from './QuickAddSection'
 import { MealCopySheet } from './MealCopySheet'
 import { ShareSheet } from './ShareSheet'
 import { Toast } from './Toast'
+import { StreakRow } from './StreakRow'
+import { StreakMilestone } from './StreakMilestone'
+import { GoalRings } from './GoalRings'
+import { WeeklyReviewCard } from './WeeklyReviewCard'
+import { WeeklyReviewSheet } from './WeeklyReviewSheet'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { fetchOwnProfile } from '@/lib/profile'
 import {
   type TodayLog,
+  type StreakData,
+  type WeeklyReviewData,
   startOfToday,
   proposalForScan,
   fetchTodayMeals,
@@ -36,6 +43,8 @@ import {
   setMealFavourite,
   copyMeal,
   fetchPlannedMeals,
+  fetchStreak,
+  fetchWeeklyReview,
 } from '@/lib/mealApi'
 
 export function TodayPage({ userId, name }: { userId: string; name: string }) {
@@ -49,6 +58,11 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
   const [copySlot, setCopySlot] = useState<MealSlot | null>(null)
   const [showShare, setShowShare] = useState(false)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const [streak, setStreak] = useState<StreakData | null>(null)
+  const [showMilestone, setShowMilestone] = useState<number | null>(null)
+  const [goals, setGoals] = useState<{ kcal: number | null; protein: number | null; carbs: number | null; fat: number | null }>({ kcal: null, protein: null, carbs: null, fat: null })
+  const [weeklyReview, setWeeklyReview] = useState<WeeklyReviewData | null>(null)
+  const [showWeeklyReview, setShowWeeklyReview] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -62,9 +76,23 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
   }, [])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load()
-  }, [load])
+    fetchStreak().then((s) => {
+      setStreak(s)
+      if (s.milestone && !localStorage.getItem(`milestone-${s.milestone}`)) setShowMilestone(s.milestone)
+    }).catch(() => {})
+    fetchOwnProfile(userId).then((p) => {
+      if (p) setGoals({ kcal: p.kcalGoal, protein: p.proteinGoalG, carbs: p.carbsGoalG, fat: p.fatGoalG })
+    }).catch(() => {})
+    // Check if it's Monday and load weekly review
+    const now = new Date()
+    if (now.getDay() === 1) {
+      const lastMon = new Date(now)
+      lastMon.setDate(lastMon.getDate() - 7)
+      const ws = lastMon.toISOString().slice(0, 10)
+      fetchWeeklyReview(ws).then(setWeeklyReview).catch(() => {})
+    }
+  }, [load, userId])
 
   const [planned, setPlanned] = useState<Partial<
     Record<(typeof PLAN_SLOTS)[number], string>
@@ -171,6 +199,36 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
             </h1>
           </div>
 
+          {streak && (
+            <StreakRow
+              current={streak.current}
+              best={streak.best}
+              milestone={streak.milestone}
+              gentle={gentle}
+              isFresh={streak.current === 0}
+            />
+          )}
+
+          {weeklyReview && !showWeeklyReview && (
+            <WeeklyReviewCard
+              weekRange={weeklyReview.dailyKcal.length ? `${weeklyReview.dailyKcal[0]!.day.slice(5)}–${weeklyReview.dailyKcal.at(-1)!.day.slice(5)}` : ''}
+              onClick={() => setShowWeeklyReview(true)}
+            />
+          )}
+
+          {!gentle && (
+            <GoalRings
+              goals={goals}
+              totals={{
+                kcal: logs?.reduce((a, l) => a + (l.totals?.kcal ?? 0), 0) ?? 0,
+                protein: logs?.reduce((a, l) => a + (l.totals?.protein ?? 0), 0) ?? 0,
+                carbs: logs?.reduce((a, l) => a + (l.totals?.carbs ?? 0), 0) ?? 0,
+                fat: logs?.reduce((a, l) => a + (l.totals?.fat ?? 0), 0) ?? 0,
+              }}
+              gentle={gentle}
+            />
+          )}
+
           <WaterRow gentle={gentle} />
 
           {notice && (
@@ -213,90 +271,14 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
 
           <QuickAddSection gentle={gentle} onReplay={replayMeal} />
 
-          {hasLogs ? (
-            <section className="space-y-3">
-              {dayKcal && (
-                <p className="text-[15px] text-sproutine-text-secondary">
-                  {t.meal.total}:{' '}
-                  <span className="font-semibold text-sproutine-text">
-                    {dayKcal.partial ? `${t.meal.atLeast} ` : ''}
-                    {Math.round(dayKcal.kcal)} {t.meal.kcal}
-                  </span>
-                </p>
-              )}
-              {MEAL_SLOTS.map((slot) => {
-                const inSlot = logs.filter((l) => l.slot === slot)
-                if (!inSlot.length) return null
-                return (
-                  <div key={slot} className="card space-y-1 px-4 py-3">
-                    <div className="flex items-center justify-between">
-                      <h2 className="eyebrow">{t.meal.slots[slot]}</h2>
-                      <button
-                        type="button"
-                        onClick={() => setCopySlot(slot)}
-                        aria-label={t.copy.repeatSlot(t.meal.slots[slot])}
-                        className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold text-sproutine-accent hover:bg-sproutine-accent-soft"
-                      >
-                        <Icon name="repeat" size={14} />
-                      </button>
-                    </div>
-                    <ul className="divide-y divide-sproutine-border">
-                      {inSlot.map((log) => (
-                        <li key={log.id} className="flex items-start gap-2 py-2">
-                          <ul className="min-w-0 flex-1 space-y-0.5">
-                            {log.items.map((item, i) => (
-                              <li key={i} className="flex gap-2 text-[15px] text-sproutine-text">
-                                <span className="min-w-0 flex-1 truncate">{item.name}</span>
-                                <span className="shrink-0 text-sproutine-text-secondary tabular-nums">
-                                  {Math.round(item.grams)} g
-                                </span>
-                              </li>
-                            ))}
-                            {!gentle && log.totals?.kcal != null && (
-                              <li className="text-[13px] text-sproutine-muted">
-                                {Math.round(log.totals.kcal)} {t.meal.kcal}
-                              </li>
-                            )}
-                          </ul>
-                          <button
-                            type="button"
-                            onClick={() => toggleFavourite(log.id)}
-                            aria-label="Favourite"
-                            className="icon-btn -mt-1.5 h-10 w-10"
-                          >
-                            <Icon
-                              name="favorite"
-                              filled={!!log.isFavourite}
-                              size={20}
-                              className={log.isFavourite ? 'text-sproutine-accent' : ''}
-                            />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeLog(log.id)}
-                            aria-label={t.meal.removeMeal}
-                            className="icon-btn -mt-1.5 h-10 w-10"
-                          >
-                            <Icon name="delete" size={20} />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )
-              })}
-            </section>
-          ) : (
-            logs && (
-              <section className="card flex flex-col items-center gap-2.5 px-5 py-6 text-center">
-                <Image src="/icons/sproutine.png" alt="" width={120} height={120} priority className="-mt-3.5 -mb-4" />
-                <h2 className="font-display text-[22px] text-sproutine-text">{t.today.emptyTitle}</h2>
-                <p className="max-w-[280px] text-[15px] leading-normal text-pretty text-sproutine-text-secondary">
-                  {t.today.emptyBody}
-                </p>
-              </section>
-            )
-          )}
+          <MealLogSection
+            logs={logs}
+            gentle={gentle}
+            dayKcal={dayKcal}
+            onCopySlot={setCopySlot}
+            onToggleFavourite={toggleFavourite}
+            onRemoveLog={removeLog}
+          />
 
           <HabitsCard gentle={gentle} />
 
@@ -317,9 +299,28 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
         </main>
       </PageEnter>
 
-      <BottomNav active="today" />
+      <BottomNav active="today" gentle={gentle} />
 
       <AnimatePresence>
+        {showMilestone && (
+          <StreakMilestone
+            milestone={showMilestone}
+            name={name}
+            onClose={() => {
+              localStorage.setItem(`milestone-${showMilestone}`, '1')
+              setShowMilestone(null)
+            }}
+          />
+        )}
+        {showWeeklyReview && weeklyReview && (
+          <WeeklyReviewSheet
+            stats={weeklyReview}
+            streak={streak?.current ?? 0}
+            gentle={gentle}
+            weekRange={weeklyReview.dailyKcal.length ? `${weeklyReview.dailyKcal[0]!.day.slice(5)}–${weeklyReview.dailyKcal.at(-1)!.day.slice(5)}` : ''}
+            onClose={() => setShowWeeklyReview(false)}
+          />
+        )}
         {scanning && (
           <BarcodeScanner
             onDetected={handleDetected}

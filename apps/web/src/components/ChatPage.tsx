@@ -558,7 +558,7 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
         </form>
       )}
 
-      <BottomNav active="chat" />
+      <BottomNav active="chat" gentle={gentle} />
     </AppColumn>
   )
 }

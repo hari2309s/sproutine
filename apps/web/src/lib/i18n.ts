@@ -132,9 +132,71 @@ export interface Translations {
     rosieLeftNote: string
     noMealLogged: string
   }
+  streak: {
+    dayStreak: string
+    best: (n: number) => string
+    freshStart: string
+    freshStartSub: string
+    backAtIt: string
+    gentleLabel: string
+    milestone: string
+    keepGoing: string
+    share: string
+    milestoneLines: Record<number, string>
+  }
+  goals: {
+    title: string
+    subtitle: string
+    setInSettings: string
+    setInSettingsSub: string
+    of: string
+    kcal: string
+    protein: string
+    carbs: string
+    fat: string
+    stepsOf: (step: string) => string
+    clearAll: string
+    settingsHint: string
+  }
+  weeklyReview: {
+    ready: string
+    title: string
+    weekTotals: string
+    energyByDay: string
+    avgDashed: string
+    bestDay: string
+    bestDayPrefix: string
+    missedNote: (day: string) => string
+    shareWeek: string
+    daysOf7: (n: number) => string
+    checkedInMost: string
+    dailyAvg: string
+    mealsLogged: string
+    waterAvg: string
+    currentStreak: string
+  }
+  body: {
+    title: string
+    private: string
+    logWeight: string
+    weight: string
+    date: string
+    save: string
+    current: string
+    start: string
+    change: string
+    recent: string
+    days30: string
+    days90: string
+    all: string
+    emptyHint: string
+    lastEntry: (kg: string, date: string) => string
+    cancel: string
+  }
   nav: {
     today: string
     week: string
+    body: string
     chat: string
   }
   week: {
@@ -195,6 +257,7 @@ export interface Translations {
     notificationsUnsupported: string
     waterGoal: string
     glassSize: string
+    dailyGoals: string
     downloadReport: string
     yourData: string
     downloadData: string
@@ -540,9 +603,79 @@ export const translations: Record<Locale, Translations> = {
       rosieLeftNote: 'Rosie left you a note in',
       noMealLogged: 'No meal logged',
     },
+    streak: {
+      dayStreak: 'day streak',
+      best: (n) => `Best ${n}`,
+      freshStart: 'Fresh start today',
+      freshStartSub: 'Log one meal and we\u2019re off again.',
+      backAtIt: 'back at it',
+      gentleLabel: 'Checking in most days',
+      milestone: 'Logging streak',
+      keepGoing: 'Keep going',
+      share: 'Share',
+      milestoneLines: {
+        7: 'A whole week of showing up. That\u2019s how routines start.',
+        14: 'Two weeks in. This is starting to feel like yours.',
+        30: 'A month of checking in. That\u2019s not a streak any more, it\u2019s a habit.',
+        60: 'Sixty days. You\u2019ve built something really steady here.',
+        100: 'One hundred days. I\u2019m properly proud of you.',
+      },
+    },
+    goals: {
+      title: 'Today\u2019s goals',
+      subtitle: 'A guide, not a rule',
+      setInSettings: 'Set your daily goals in Settings',
+      setInSettingsSub: 'Optional. Rings appear here once you do.',
+      of: 'of',
+      kcal: 'kcal',
+      protein: 'Protein',
+      carbs: 'Carbs',
+      fat: 'Fat',
+      stepsOf: (step) => `Steps of ${step}`,
+      clearAll: 'Clear all goals',
+      settingsHint:
+        'Step any goal down past its lowest value to turn it Off, which hides its ring. With every goal Off, Today shows a gentle prompt instead. Gentle mode hides all goals.',
+    },
+    weeklyReview: {
+      ready: 'Your week in review is ready',
+      title: 'Your Week in Review',
+      weekTotals: 'Week totals',
+      energyByDay: 'Energy by day',
+      avgDashed: 'kcal \u00B7 dashed line = average',
+      bestDay: 'Best day',
+      bestDayPrefix: 'Best day \u00B7',
+      missedNote: (day) => `Nothing logged on ${day}. Weekends happen.`,
+      shareWeek: 'Share my week',
+      daysOf7: (n) => `${n} of 7 days`,
+      checkedInMost: 'You checked in almost every day.',
+      dailyAvg: 'Daily average',
+      mealsLogged: 'Logged this week',
+      waterAvg: 'Water, daily average',
+      currentStreak: 'Current streak',
+    },
+    body: {
+      title: 'Body',
+      private: 'Private to you',
+      logWeight: 'Log weight',
+      weight: 'Weight',
+      date: 'Date',
+      save: 'Save',
+      current: 'Current',
+      start: 'Start',
+      change: 'Change',
+      recent: 'Recent',
+      days30: '30 days',
+      days90: '90 days',
+      all: 'All',
+      emptyHint:
+        'Weigh-ins stay private and never appear in shares or chat. After a few entries, your trend shows up here. Weekly is plenty.',
+      lastEntry: (kg, date) => `Last entry: ${kg} kg on ${date}`,
+      cancel: 'Cancel',
+    },
     nav: {
       today: 'Today',
       week: 'Week',
+      body: 'Body',
       chat: 'Chat',
     },
     week: {
@@ -626,6 +759,7 @@ export const translations: Record<Locale, Translations> = {
       notificationsUnsupported: 'Notifications aren\u2019t supported in this browser.',
       waterGoal: 'Daily goal',
       glassSize: 'Glass size',
+      dailyGoals: 'Daily goals',
       downloadReport: 'Download nutrition report',
       yourData: 'Your data',
       downloadData: 'Download my data',

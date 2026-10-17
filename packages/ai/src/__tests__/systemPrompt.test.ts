@@ -19,6 +19,10 @@ const profile: Profile = {
   timezone: 'Europe/Berlin',
   waterGoalMl: 2000,
   waterGlassMl: 250,
+  kcalGoal: null,
+  proteinGoalG: null,
+  carbsGoalG: null,
+  fatGoalG: null,
 }
 
 const base = { profile, intent: 'ask_nutrition' as const, medical: false, today: 'Tuesday' }

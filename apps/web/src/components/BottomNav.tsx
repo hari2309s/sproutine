@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Icon, type IconName } from './Icon'
 
-type Tab = 'today' | 'week' | 'chat'
+type Tab = 'today' | 'week' | 'body' | 'chat'
 
 async function fetchUnreadCount(): Promise<number> {
   const {
@@ -25,24 +25,24 @@ async function fetchUnreadCount(): Promise<number> {
 }
 
 /** In-flow bottom bar (the page column is a flex layout, so no fixed positioning). */
-export function BottomNav({ active }: { active: Tab }) {
+export function BottomNav({ active, gentle = false }: { active: Tab; gentle?: boolean }) {
   const { t } = useLanguage()
-  // Shared query cache: each page mounts its own BottomNav, so without it
-  // every navigation would refetch the unread count.
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ['chat-unread-count'],
     queryFn: fetchUnreadCount,
   })
 
-  const tabs: { id: Tab; href: string; icon: IconName; label: string; badge?: number }[] = [
+  const allTabs: { id: Tab; href: string; icon: IconName; label: string; badge?: number }[] = [
     { id: 'today', href: '/', icon: 'wb_sunny', label: t.nav.today },
     { id: 'week', href: '/week', icon: 'calendar_view_week', label: t.nav.week },
+    { id: 'body', href: '/body', icon: 'monitor_weight', label: t.nav.body },
     { id: 'chat', href: '/chat', icon: 'chat_bubble', label: t.nav.chat, badge: unreadCount },
   ]
+  const tabs = gentle ? allTabs.filter((t) => t.id !== 'body') : allTabs
 
   return (
     <nav className="safe-bottom shrink-0 border-t border-sproutine-border bg-sproutine-surface">
-      <div className="grid h-[72px] grid-cols-3">
+      <div className={`grid h-[72px] ${tabs.length === 4 ? 'grid-cols-4' : 'grid-cols-3'}`}>
         {tabs.map((tab) => {
           const isActive = tab.id === active
           return (

@@ -22,6 +22,10 @@ export interface Database {
           created_at: string
           water_goal_ml: number
           water_glass_ml: number
+          kcal_goal: number | null
+          protein_goal_g: number | null
+          carbs_goal_g: number | null
+          fat_goal_g: number | null
           updated_at: string
         }
         Insert: {
@@ -39,6 +43,10 @@ export interface Database {
           timezone?: string
           water_goal_ml?: number
           water_glass_ml?: number
+          kcal_goal?: number | null
+          protein_goal_g?: number | null
+          carbs_goal_g?: number | null
+          fat_goal_g?: number | null
         }
         Update: {
           display_name?: string
@@ -54,6 +62,10 @@ export interface Database {
           timezone?: string
           water_goal_ml?: number
           water_glass_ml?: number
+          kcal_goal?: number | null
+          protein_goal_g?: number | null
+          carbs_goal_g?: number | null
+          fat_goal_g?: number | null
         }
       }
       chat_messages: {
@@ -128,6 +140,24 @@ export interface Database {
           logged_at?: string
         }
         Update: Record<string, never>
+      }
+      weight_logs: {
+        Row: {
+          id: string
+          user_id: string
+          weight_kg: number
+          logged_at: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          weight_kg: number
+          logged_at?: string
+        }
+        Update: {
+          weight_kg?: number
+          logged_at?: string
+        }
       }
     }
   }

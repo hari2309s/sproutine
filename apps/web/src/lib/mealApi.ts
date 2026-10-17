@@ -93,6 +93,37 @@ export async function copyMeal(
   return res.ok
 }
 
+export interface StreakData {
+  current: number
+  best: number
+  milestone: number | null
+}
+
+export async function fetchStreak(): Promise<StreakData> {
+  const res = await fetch('/api/streaks')
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
+
+export interface WeeklyReviewData {
+  avgKcal: number
+  totalMeals: number
+  avgWaterGlasses: number
+  streak: number
+  totalProtein: number
+  totalCarbs: number
+  totalFat: number
+  dailyKcal: { day: string; kcal: number }[]
+  bestDay: { day: string; reason: string } | null
+  missedDays: string[]
+}
+
+export async function fetchWeeklyReview(weekStart: string): Promise<WeeklyReviewData> {
+  const res = await fetch(`/api/weekly-review?weekStart=${encodeURIComponent(weekStart)}`)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
+
 type PlannedMeals = Partial<Record<(typeof PLAN_SLOTS)[number], string>>
 
 export async function fetchPlannedMeals(): Promise<PlannedMeals | null> {

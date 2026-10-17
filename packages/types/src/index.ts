@@ -47,6 +47,14 @@ export interface Profile {
   waterGoalMl: number
   /** Size of one glass in ml (default 250). */
   waterGlassMl: number
+  /** Daily kcal goal, or null if not set. */
+  kcalGoal: number | null
+  /** Daily protein goal in grams, or null if not set. */
+  proteinGoalG: number | null
+  /** Daily carbs goal in grams, or null if not set. */
+  carbsGoalG: number | null
+  /** Daily fat goal in grams, or null if not set. */
+  fatGoalG: number | null
 }
 
 // ─── Agents ───────────────────────────────────────────────────────────────────
