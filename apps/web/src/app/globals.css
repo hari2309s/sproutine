@@ -32,6 +32,9 @@
   --t-red: #9e1f4a;
   --t-red-soft: #f6dde3;
   --t-amber: #b07a12;
+  --t-blue: #3d6b8c;
+  --t-blue-soft: #d4e5f0;
+  --t-green-light: #e4ebd2;
   --t-overlay: rgba(46, 34, 25, 0.42);
   --t-shadow: 0 1px 2px rgba(74, 48, 24, 0.06), 0 8px 24px rgba(74, 48, 24, 0.08);
 }
@@ -54,6 +57,9 @@
   --t-red: #ee8fb0;
   --t-red-soft: #3a1e28;
   --t-amber: #e3b04b;
+  --t-blue: #8fb6d3;
+  --t-blue-soft: #1e3040;
+  --t-green-light: #26301f;
   --t-overlay: rgba(0, 0, 0, 0.6);
   --t-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
@@ -77,6 +83,9 @@
     --t-red: #ee8fb0;
     --t-red-soft: #3a1e28;
     --t-amber: #e3b04b;
+    --t-blue: #8fb6d3;
+    --t-blue-soft: #1e3040;
+    --t-green-light: #26301f;
     --t-overlay: rgba(0, 0, 0, 0.6);
     --t-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   }
@@ -98,6 +107,9 @@
   --color-sproutine-secondary: var(--t-secondary);
   --color-sproutine-green: var(--t-green);
   --color-sproutine-amber: var(--t-amber);
+  --color-sproutine-blue: var(--t-blue);
+  --color-sproutine-blue-soft: var(--t-blue-soft);
+  --color-sproutine-green-light: var(--t-green-light);
   --color-sproutine-red: var(--t-red);
   --color-sproutine-red-soft: var(--t-red-soft);
   --color-sproutine-overlay: var(--t-overlay);
@@ -181,7 +193,7 @@
   font-style: normal;
   font-weight: 400 600;
   font-display: block;
-  src: url('/fonts/material-symbols-rounded.woff2?v=38f4416978') format('woff2');
+  src: url('/fonts/material-symbols-rounded.woff2?v=65a60f8049') format('woff2');
 }
 
 @utility icon {

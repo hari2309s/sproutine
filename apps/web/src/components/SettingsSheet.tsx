@@ -15,6 +15,7 @@ import { VoicePicker } from './VoicePicker'
 import { ReportSheet } from './ReportSheet'
 import { DeleteAccountSection, AttributionFooter } from './DeleteAccountSection'
 import { GoalSettings } from './GoalSettings'
+import { CalendarExportSection } from './CalendarExportSection'
 import { fetchOwnProfile } from '@/lib/profile'
 import { exportAllData, updateProfileField } from '@/lib/settingsApi'
 import { supabase } from '@/lib/supabase'
@@ -307,6 +308,8 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
               }}
             />
           )}
+
+          <CalendarExportSection userId={userId} />
 
           <section className="space-y-2.5">
             <h3 className="eyebrow">{t.reports.title}</h3>

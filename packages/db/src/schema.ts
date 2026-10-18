@@ -159,6 +159,35 @@ export interface Database {
           logged_at?: string
         }
       }
+      calendar_feed_tokens: {
+        Row: {
+          id: string
+          user_id: string
+          token: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+        }
+        Update: Record<string, never>
+      }
+      on_this_day_dismissals: {
+        Row: {
+          id: string
+          user_id: string
+          shown_at: string
+          meal_log_id: string | null
+          action: 'logged' | 'dismissed'
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          shown_at?: string
+          meal_log_id?: string | null
+          action: 'logged' | 'dismissed'
+        }
+        Update: Record<string, never>
+      }
     }
   }
 }

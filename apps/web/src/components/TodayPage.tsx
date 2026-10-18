@@ -29,6 +29,8 @@ import { StreakMilestone } from './StreakMilestone'
 import { GoalRings } from './GoalRings'
 import { WeeklyReviewCard } from './WeeklyReviewCard'
 import { WeeklyReviewSheet } from './WeeklyReviewSheet'
+import { CalendarInsightsCard } from './CalendarInsightsCard'
+import { OnThisDayCard } from './OnThisDayCard'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { fetchOwnProfile } from '@/lib/profile'
 import {
@@ -215,6 +217,10 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
               onClick={() => setShowWeeklyReview(true)}
             />
           )}
+
+          <CalendarInsightsCard gentle={gentle} onTapCalendar={() => router.push('/week')} />
+
+          <OnThisDayCard gentle={gentle} onReplay={() => void load()} />
 
           {!gentle && (
             <GoalRings

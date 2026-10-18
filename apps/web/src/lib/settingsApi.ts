@@ -2,7 +2,7 @@ import { supabase } from './supabase'
 
 /** GDPR Art. 20 export: download everything stored about the user. */
 export async function exportAllData(userId: string): Promise<void> {
-  const [profileRes, messagesRes, mealsRes, plansRes, habitsRes, checkinsRes, waterRes, weightRes] =
+  const [profileRes, messagesRes, mealsRes, plansRes, habitsRes, checkinsRes, waterRes, weightRes, feedTokenRes, otdDismissRes] =
     await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
       supabase
@@ -40,8 +40,17 @@ export async function exportAllData(userId: string): Promise<void> {
         .select('weight_kg, logged_at, created_at')
         .eq('user_id', userId)
         .order('logged_at', { ascending: true }),
+      supabase
+        .from('calendar_feed_tokens')
+        .select('created_at')
+        .eq('user_id', userId),
+      supabase
+        .from('on_this_day_dismissals')
+        .select('shown_at, action, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true }),
     ])
-  for (const r of [profileRes, messagesRes, mealsRes, plansRes, habitsRes, checkinsRes, waterRes, weightRes]) {
+  for (const r of [profileRes, messagesRes, mealsRes, plansRes, habitsRes, checkinsRes, waterRes, weightRes, feedTokenRes, otdDismissRes]) {
     if (r.error) throw r.error
   }
   const exportData = {
@@ -54,6 +63,8 @@ export async function exportAllData(userId: string): Promise<void> {
     habitCheckins: checkinsRes.data ?? [],
     waterLogs: waterRes.data ?? [],
     weightLogs: weightRes.data ?? [],
+    calendarFeedTokens: feedTokenRes.data ?? [],
+    onThisDayDismissals: otdDismissRes.data ?? [],
   }
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
