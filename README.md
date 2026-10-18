@@ -65,6 +65,12 @@ Sproutine is an AI-native nutrition companion. Tell **Rosie** (from _Rosenkohl_,
 - 🎯 **Daily nutrient goals:** set targets for kcal, protein, carbs and fat in Settings. Four animated SVG progress rings on the Today screen fill as you log. The grid adapts when fewer than four goals are active.
 - 📈 **Weekly review:** every Monday a review card appears. Tap it for a stats sheet with daily kcal bar chart, macros breakdown, best day highlight, and a Rosie quote. Gentle mode shows a qualitative view instead.
 - ⚖️ **Body & weight tracking:** a fourth tab (hidden in gentle mode) with an SVG trend chart, linear regression trend line, stats row, and a weight log sheet. Private by design — the lock icon makes that clear.
+- 🗓️ **Month calendar:** switch the Week tab to Month to see every day at a glance. A green dot marks a logged day, blue a met water goal and amber met nutrient goals, and a soft band runs behind consecutive logged days. Gentle mode keeps only the logged dot.
+- 📖 **Day detail:** tap any day for its meals, water and macro split. Copy a single meal or the whole day to today, and see planned meals on future days.
+- 🍽️ **Plan meals ahead:** plan a slot from your favourites, recent meals, the recipe list or a free-text description, then copy a planned day to several others at once (next week, rest of this week, or hand-picked days).
+- 🌡️ **30-day insights:** a heatmap strip on the Today screen shows the last month of logging. Tap it to open the calendar.
+- 🕰️ **On this day:** after 30 days of logging, a card now and then brings back a favourite meal from 1, 3, 6 or 12 months ago, with a one-tap way to log it again. At most once a week, swipe to dismiss, and never in gentle mode.
+- 📆 **Add to your calendar:** export planned meals as an `.ics` file, or subscribe to a private live webcal feed that stays in sync. The feed link can be reset or switched off in Settings.
 - 🔢 **Numbers from data, not the model:** the model only lists what you said. Matching, portion grams and nutrients are computed in code from BLS 4.0 (7,140 German foods), Open Food Facts and USDA data, and the server recomputes them on save.
 - 🇩🇪 **German-aware portions:** understands compounds ("Linsensuppe", "Orangensaft"), units like Scheibe, Becher, Handvoll and Tafel, and typical German portion sizes.
 - 🌿 **Allergen-aware data:** foods carry the EU-14 allergens, and "unknown" is never treated as "none".
@@ -137,16 +143,17 @@ Run `pnpm --filter @sproutine/ai models:check` to confirm the model IDs are stil
 sproutine/
 ├── apps/
 │   └── web/                  Next.js app (UI, API routes, e2e tests)
-│       └── src/app/api/      chat, voice, meals, water, weight, streaks, weekly-review, reports, food/search, food/barcode, account
+│       └── src/app/api/      chat, voice, meals, water, weight, streaks, weekly-review, calendar, reports, food/search, food/barcode, account
 ├── packages/
 │   ├── ai/                   LLM router, safety gate, intent, meal parser, Langfuse, evals
 │   ├── food/                 BLS + OFF + USDA clients, nutrients, portions, search, meal logs
-│   ├── db/                   Supabase client, profile, food cache, meal logs, water logs, favourites, streaks, weight logs, weekly stats
+│   ├── db/                   Supabase client, profile, food cache, meal logs, water logs, favourites, streaks, weight logs, weekly stats, calendar summaries, calendar feeds, on-this-day
 │   ├── types/                Shared types (diets, EU-14 allergens, intents, safety)
 │   └── ui/                   Shared UI pieces
 ├── supabase/
 │   ├── migrations/           Schema, RLS, RPCs
 │   └── templates/            Email templates
+├── scripts/                  Demo account seed (seed-demo.ts + demo/)
 └── docs/dev-plan.md          Roadmap and design decisions
 ```
 
@@ -230,6 +237,21 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+### Demo account
+
+`pnpm seed:demo` creates (or resets) a demo user, "Hari", with data that exercises every screen:
+
+- about six months of meals with a 30+ day streak, some skipped days and a handful of favourites
+- meals on the dates "On this day" looks at (1, 3, 6 and 12 months ago)
+- 60 days of water, four months of weigh-ins, and nutrient goals set in the profile
+- meal plans for this week and next, five habits with streaks, a week of chat and a weekly nudge
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=... SUPABASE_SECRET_KEY=... pnpm seed:demo
+```
+
+It signs in as `DEMO_EMAIL` / `DEMO_PASSWORD` (defaults `demo@sproutine.app` / `sproutine-demo`). The data is deterministic, and dates are relative to today in Berlin. The [`demo-reset`](.github/workflows/demo-reset.yml) workflow reruns it every night. To show a one-click **Explore the demo** button on the sign-in screen, set `NEXT_PUBLIC_DEMO_ENABLED=1` and `DEMO_USER_EMAIL` to the same address.
 
 ### Deploy to Vercel
 

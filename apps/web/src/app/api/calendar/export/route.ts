@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient, getProfile } from '@sproutine/db'
+import { RECIPES_BY_ID } from '@sproutine/food/client'
 import { requireUser } from '@/lib/supabase-server'
 import { buildIcs, type IcsMeal } from '@/lib/icsBuilder'
 
@@ -23,22 +24,13 @@ export async function GET(request: NextRequest) {
     const profile = await getProfile(db, user.id)
     const tz = profile?.timezone || 'UTC'
 
-    // Build date range for the query
     const now = new Date()
-    let query = db
+    const { data, error } = await db
       .from('meal_plans')
       .select('plan')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .order('week_start', { ascending: true })
-
-    if (range !== 'all') {
-      const end = new Date(now)
-      end.setDate(end.getDate() + Number(range))
-      query = query.gte('week_start', now.toISOString().slice(0, 10))
-    }
-
-    const { data, error } = await query
     if (error) throw new Error(error.message)
 
     // Extract individual meals from plan data
@@ -54,8 +46,9 @@ export async function GET(request: NextRequest) {
           if (day.date < now.toISOString().slice(0, 10) || day.date > end.toISOString().slice(0, 10))
             continue
         }
-        for (const [slot, foods] of Object.entries(day.meals)) {
-          if (foods) meals.push({ date: day.date, slot, foods })
+        for (const [slot, recipeId] of Object.entries(day.meals)) {
+          if (recipeId)
+            meals.push({ date: day.date, slot, foods: RECIPES_BY_ID[recipeId]?.name ?? recipeId })
         }
       }
     }

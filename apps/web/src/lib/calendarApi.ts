@@ -25,8 +25,6 @@ export interface DayMealSlot {
 
 export interface DayDetail extends DaySummary {
   meals: DayMealSlot[]
-  waterGlasses: number
-  waterGoal: number
   waterEntries: { id: string; ml: number }[]
   plannedMeals: { slot: string; foods: string }[] | null
 }

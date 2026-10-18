@@ -1,3 +1,4 @@
+import type { MealPlan } from '@sproutine/food'
 import type { createServerClient } from './client'
 import { midnightInTz } from './tzHelpers'
 
@@ -25,7 +26,7 @@ export interface DayDetail extends DaySummary {
     isFavourite: boolean
   }[]
   waterEntries: { id: string; ml: number }[]
-  plannedMeals: { slot: string; foods: unknown[] }[] | null
+  plannedMeals: { slot: string; recipeId: string }[] | null
 }
 
 /** Converts any ISO timestamp to a YYYY-MM-DD local date string in `tz`. */
@@ -278,17 +279,14 @@ export async function getDayDetail(
     carbs >= carbsGoal &&
     fat >= fatGoal
 
-  // Extract planned meals for this specific date from the plan JSON
-  let plannedMeals: { slot: string; foods: unknown[] }[] | null = null
+  let plannedMeals: { slot: string; recipeId: string }[] | null = null
   if (planResult.data) {
-    const plan = (planResult.data as { plan: Record<string, unknown> }).plan
-    // MealPlan typically has a `days` map keyed by date with slot entries
-    const dayPlan = (plan as { days?: Record<string, { slot: string; foods: unknown[] }[]> })?.days?.[date]
-    if (dayPlan && Array.isArray(dayPlan)) {
-      plannedMeals = dayPlan.map((entry) => ({
-        slot: entry.slot,
-        foods: entry.foods ?? [],
-      }))
+    const plan = (planResult.data as { plan: MealPlan }).plan
+    const dayPlan = plan?.days?.find((d) => d.date === date)
+    if (dayPlan) {
+      plannedMeals = Object.entries(dayPlan.meals)
+        .filter((e): e is [string, string] => typeof e[1] === 'string')
+        .map(([slot, recipeId]) => ({ slot, recipeId }))
     }
   }
 

@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       items: meal.items,
       totals: meal.totals,
       partial: meal.partial,
-      source: 'copy' as const,
+      source: meal.source,
       is_estimate: meal.is_estimate ?? true,
       trace_id: null,
     }))

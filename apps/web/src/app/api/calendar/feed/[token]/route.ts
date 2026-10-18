@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, getUserByFeedToken } from '@sproutine/db'
+import { RECIPES_BY_ID } from '@sproutine/food/client'
 import { buildIcs, type IcsMeal } from '@/lib/icsBuilder'
 
 export const runtime = 'nodejs'
@@ -45,8 +46,9 @@ export async function GET(
       if (!plan?.days) continue
       for (const day of plan.days) {
         if (day.date < todayStr || day.date > endStr) continue
-        for (const [slot, foods] of Object.entries(day.meals)) {
-          if (foods) meals.push({ date: day.date, slot, foods })
+        for (const [slot, recipeId] of Object.entries(day.meals)) {
+          if (recipeId)
+            meals.push({ date: day.date, slot, foods: RECIPES_BY_ID[recipeId]?.name ?? recipeId })
         }
       }
     }
