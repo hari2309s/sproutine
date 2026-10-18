@@ -2,7 +2,7 @@
 create table public.calendar_feed_tokens (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users(id) on delete cascade unique,
-  token       text not null unique default encode(gen_random_bytes(32), 'hex'),
+  token       text not null unique default replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''),
   created_at  timestamptz not null default now()
 );
 
