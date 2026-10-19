@@ -142,6 +142,7 @@ Run `pnpm --filter @sproutine/ai models:check` to confirm the model IDs are stil
 ```
 sproutine/
 ├── apps/
+│   ├── landing/              Marketing site (home, pricing, privacy, terms), static Next.js
 │   └── web/                  Next.js app (UI, API routes, e2e tests)
 │       └── src/app/api/      chat, voice, meals, water, weight, streaks, weekly-review, calendar, reports, food/search, food/barcode, account
 ├── packages/
@@ -259,6 +260,24 @@ It signs in as `DEMO_EMAIL` / `DEMO_PASSWORD` (defaults `demo@sproutine.app` / `
 2. Add the environment variables from [Environment setup](#environment-setup) for Production (and Preview if you use it). `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are needed at build time; set `LANGFUSE_TRACING_ENVIRONMENT=production` and `NEXT_PUBLIC_APP_URL` to your domain.
 3. In Supabase, under **Authentication → URL Configuration**, set the Site URL to your Vercel domain and add `https://<your-domain>/**` (plus `http://localhost:3000/**` for local work) to the redirect URLs, or confirmation and reset links fall back to the Site URL. For Preview deployments, also add `https://*-<your-vercel-team>.vercel.app/**`.
 4. Vercel reads the Node version from `apps/web/package.json` (`>=22`); pnpm 12 needs Node 22 or newer.
+
+### Landing page
+
+[`apps/landing`](apps/landing) is the marketing site (home, pricing, FAQ, privacy, terms). It's a separate, fully static Next.js app with no cookies, no trackers, and fonts and icons self-hosted.
+
+```bash
+pnpm --filter @sproutine/landing dev    # http://localhost:3001
+```
+
+To deploy it, create a second Vercel project from the same repo with **Root Directory** set to `apps/landing`; [`apps/landing/vercel.json`](apps/landing/vercel.json) uses the same pinned pnpm setup. Environment variables:
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_APP_URL` | Yes (Production builds fail without it) | Web app URL that every "Start free" and "Open the app" button links to |
+| `NEXT_PUBLIC_SITE_URL` | No | Canonical landing URL for metadata and the sitemap; defaults to the Vercel production domain |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | No | Contact address on the legal pages; defaults to `hello@sproutine.app` |
+
+"Explore the demo" opens the app at `/?demo=1`, which highlights the app's demo button, so set `NEXT_PUBLIC_DEMO_ENABLED=1` on the web app too. Prices live in [`apps/landing/src/lib/pricing.ts`](apps/landing/src/lib/pricing.ts). After adding an icon to `src/lib/icons.ts`, run `pnpm --filter @sproutine/landing icons:sync`.
 
 ---
 

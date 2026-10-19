@@ -1,0 +1,218 @@
+@import 'tailwindcss';
+
+/* "1a Kitchen Table" tokens, shared with the web app. */
+:root {
+  --bg: #f6efe4;
+  --surface: #efe5d5;
+  --card: #fffbf5;
+  --line: #e2d5c1;
+  --line-strong: #968471;
+  --muted: #756555;
+  --ink: #2e2219;
+  --ink2: #5a4a3c;
+  --accent: #ad4128;
+  --accent-soft: #f5dccf;
+  --green: #47711c;
+  --green-soft: #e4ebd2;
+  --amber: #b07a12;
+  --blue: #3d6b8c;
+  --bezel: #2e2219;
+  --nav: rgba(246, 239, 228, 0.82);
+  --sh: 0 1px 2px rgba(74, 48, 24, 0.06), 0 10px 30px rgba(74, 48, 24, 0.08);
+  --sh-lift: 0 2px 6px rgba(74, 48, 24, 0.08), 0 30px 70px rgba(74, 48, 24, 0.18);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #1c1612;
+    --surface: #251d17;
+    --card: #2d241d;
+    --line: #3d3229;
+    --line-strong: #806f5e;
+    --muted: #a08e7a;
+    --ink: #f4eadc;
+    --ink2: #cdbeaa;
+    --accent: #e8835f;
+    --accent-soft: #40281f;
+    --green: #9bcb5e;
+    --green-soft: #26301f;
+    --amber: #e3b04b;
+    --blue: #8fb6d3;
+    --bezel: #0d0a08;
+    --nav: rgba(28, 22, 18, 0.82);
+    --sh: 0 10px 30px rgba(0, 0, 0, 0.35);
+    --sh-lift: 0 0 0 1px #3d3229, 0 30px 70px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #1c1612;
+  --surface: #251d17;
+  --card: #2d241d;
+  --line: #3d3229;
+  --line-strong: #806f5e;
+  --muted: #a08e7a;
+  --ink: #f4eadc;
+  --ink2: #cdbeaa;
+  --accent: #e8835f;
+  --accent-soft: #40281f;
+  --green: #9bcb5e;
+  --green-soft: #26301f;
+  --amber: #e3b04b;
+  --blue: #8fb6d3;
+  --bezel: #0d0a08;
+  --nav: rgba(28, 22, 18, 0.82);
+  --sh: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --sh-lift: 0 0 0 1px #3d3229, 0 30px 70px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-muted: var(--muted);
+  --color-ink: var(--ink);
+  --color-ink2: var(--ink2);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-green: var(--green);
+  --color-green-soft: var(--green-soft);
+  --color-amber: var(--amber);
+  --color-blue: var(--blue);
+  --color-bezel: var(--bezel);
+  --shadow-soft: var(--sh);
+  --shadow-lift: var(--sh-lift);
+  --font-sans: var(--font-hanken), system-ui, sans-serif;
+  --font-display: var(--font-young-serif), Georgia, serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 88px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Self-hosted subset (scripts/sync-icons.ts): no runtime request to Google. */
+@font-face {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: block;
+  src: url('/fonts/material-symbols-rounded.woff2?v=1aa307d229') format('woff2');
+}
+
+@utility icon {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  direction: ltr;
+  display: inline-block;
+  user-select: none;
+  font-feature-settings: 'liga';
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+@utility icon-filled {
+  font-variation-settings:
+    'FILL' 1,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+/* Scroll reveal, driven by components/RevealObserver.tsx. Only hidden once JS
+   has run (the `js` class), so content never stays invisible without it. */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.js [data-reveal='in'] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Progress rings and bars fill once their card is revealed. */
+.ring-arc {
+  stroke-dasharray: 94.25;
+  stroke-dashoffset: var(--offset);
+  transition: stroke-dashoffset 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay, 0ms);
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+.js [data-reveal]:not([data-reveal='in']) .ring-arc {
+  stroke-dashoffset: 94.25;
+}
+.bar {
+  height: var(--h);
+  transition: height 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay, 0ms);
+}
+.js [data-reveal]:not([data-reveal='in']) .bar {
+  height: 4px;
+}
+
+@keyframes float {
+  to {
+    transform: translateY(var(--float, -8px));
+  }
+}
+.float {
+  animation: float var(--float-dur, 3.6s) ease-in-out infinite alternate;
+}
+
+@keyframes word-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.35em);
+  }
+}
+.word-in {
+  display: inline-block;
+  animation: word-in 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}

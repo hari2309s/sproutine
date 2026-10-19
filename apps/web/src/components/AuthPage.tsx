@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile'
 import { usePostHog } from 'posthog-js/react'
@@ -47,6 +47,15 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
   // When no site key is configured (CI / local dev), bypass captcha requirement
   const [captchaToken, setCaptchaToken] = useState<string | null>(SITE_KEY ? null : 'bypass')
   const turnstileRef = useRef<TurnstileInstance>(null)
+  const demoRef = useRef<HTMLButtonElement>(null)
+
+  // The landing page's "Explore the demo" opens /?demo=1. Demo sign-in is a
+  // same-origin POST, so we point at the button rather than submitting for them.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('demo') !== '1') return
+    demoRef.current?.scrollIntoView({ block: 'center' })
+    demoRef.current?.focus({ preventScroll: true })
+  }, [])
 
   const switchMode = (next: Mode) => {
     setMode(next)
@@ -383,6 +392,7 @@ export function AuthPage({ error: initialError = null }: { error?: string | null
                 <span className="h-px flex-1 bg-sproutine-border" />
               </div>
               <button
+                ref={demoRef}
                 type="submit"
                 className="btn-secondary w-full"
                 onClick={() =>
