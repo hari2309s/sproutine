@@ -326,4 +326,4 @@ German generic food data from the [Bundeslebensmittelschlüssel (BLS) 4.0](https
 
 ---
 
-<p align="center">Built with health and ❤️ from Berlin</p>
+<p align="center">Built with ❤️ from Berlin</p>
