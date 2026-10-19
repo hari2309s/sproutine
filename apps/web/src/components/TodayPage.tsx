@@ -4,12 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import {
-  PLAN_SLOTS,
-  RECIPES_BY_ID,
-  type MealLogProposal,
-  type MealSlot,
-} from '@sproutine/food/client'
+import { mealSlotAt, type MealLogProposal, type MealSlot } from '@sproutine/food/client'
 import { AppColumn } from './AppColumn'
 import { BottomNav } from './BottomNav'
 import { TopBar } from './TopBar'
@@ -31,6 +26,8 @@ import { WeeklyReviewCard } from './WeeklyReviewCard'
 import { WeeklyReviewSheet } from './WeeklyReviewSheet'
 import { CalendarInsightsCard } from './CalendarInsightsCard'
 import { OnThisDayCard } from './OnThisDayCard'
+import { OnTheMenuCard } from './OnTheMenuCard'
+import { FoodSearchSheet } from './FoodSearchSheet'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { fetchOwnProfile } from '@/lib/profile'
 import {
@@ -44,7 +41,6 @@ import {
   removeMealLog,
   setMealFavourite,
   copyMeal,
-  fetchPlannedMeals,
   fetchStreak,
   fetchWeeklyReview,
 } from '@/lib/mealApi'
@@ -96,12 +92,14 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
     }
   }, [load, userId])
 
-  const [planned, setPlanned] = useState<Partial<
-    Record<(typeof PLAN_SLOTS)[number], string>
-  > | null>(null)
-  useEffect(() => {
-    fetchPlannedMeals().then(setPlanned).catch(() => setPlanned(null))
-  }, [])
+  const [searchSlot, setSearchSlot] = useState<MealSlot | null>(null)
+  const openSearch = (slot?: MealSlot) =>
+    setSearchSlot(slot ?? mealSlotAt(new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone))
+  const handleSearchSaved = (slot: MealSlot) => {
+    setSearchSlot(null)
+    setToastMsg(t.search.saved(t.meal.slots[slot]))
+    void load()
+  }
 
   const handleDetected = async (code: string) => {
     setScanning(false)
@@ -255,25 +253,7 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
             />
           )}
 
-          {planned && (
-            <Link href="/week" className="card block space-y-1 px-4 py-3">
-              <h2 className="eyebrow">{t.today.onTheMenu}</h2>
-              <ul>
-                {PLAN_SLOTS.map((slot) =>
-                  planned[slot] ? (
-                    <li key={slot} className="flex gap-3 py-0.5 text-[15px]">
-                      <span className="w-20 shrink-0 text-sproutine-text-secondary">
-                        {t.week.slots[slot]}
-                      </span>
-                      <span className="text-sproutine-text">
-                        {RECIPES_BY_ID[planned[slot]!]?.name ?? planned[slot]}
-                      </span>
-                    </li>
-                  ) : null
-                )}
-              </ul>
-            </Link>
-          )}
+          <OnTheMenuCard />
 
           <QuickAddSection gentle={gentle} onReplay={replayMeal} />
 
@@ -282,6 +262,7 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
             gentle={gentle}
             dayKcal={dayKcal}
             onCopySlot={setCopySlot}
+            onAddToSlot={openSearch}
             onToggleFavourite={toggleFavourite}
             onRemoveLog={removeLog}
           />
@@ -295,11 +276,11 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
             </Link>
             <button
               type="button"
-              onClick={() => { setNotice(null); setScanning(true) }}
+              onClick={() => openSearch()}
               className="btn-secondary h-12 px-5 text-[15px]"
             >
-              <Icon name="barcode_scanner" size={20} />
-              {t.meal.scanAction}
+              <Icon name="search" size={20} />
+              {t.search.title}
             </button>
           </div>
         </main>
@@ -336,6 +317,15 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
         )}
         {copySlot && (
           <MealCopySheet slot={copySlot} onClose={() => setCopySlot(null)} onCopy={handleMealCopied} />
+        )}
+        {searchSlot && (
+          <FoodSearchSheet
+            slot={searchSlot}
+            gentle={gentle}
+            onClose={() => setSearchSlot(null)}
+            onSaved={handleSearchSaved}
+            onScan={() => { setSearchSlot(null); setNotice(null); setScanning(true) }}
+          />
         )}
         {showShare && logs && (
           <ShareSheet

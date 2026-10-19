@@ -3,7 +3,7 @@
 export const MEAL_SLOTS = ['breakfast', 'lunch', 'dinner', 'snack'] as const
 export type MealSlot = (typeof MEAL_SLOTS)[number]
 
-export const MEAL_SOURCES = ['text', 'voice', 'photo', 'barcode', 'copy'] as const
+export const MEAL_SOURCES = ['text', 'voice', 'photo', 'barcode', 'copy', 'search'] as const
 export type MealSource = (typeof MEAL_SOURCES)[number]
 
 /** Most items one log may hold; keeps external lookups and payloads bounded. */

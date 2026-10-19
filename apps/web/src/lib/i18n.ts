@@ -399,6 +399,38 @@ export interface Translations {
   quickAdd: {
     title: string
   }
+  search: {
+    title: string
+    addTo: (slot: string) => string
+    placeholder: string
+    clear: string
+    scan: string
+    recent: string
+    noRecent: string
+    results: (n: number) => string
+    searching: string
+    noResults: (q: string) => string
+    failed: string
+    tooMany: string
+    scanInstead: string
+    per100: string
+    pick: (name: string) => string
+    back: string
+    howMuch: string
+    less: string
+    more: string
+    whichMeal: string
+    save: (slot: string) => string
+    saving: string
+    saveFailed: string
+    saved: (slot: string) => string
+    gentleNote: string
+    today: string
+    yesterday: string
+    sources: Record<'bls' | 'off' | 'usda' | 'user', string>
+    sourcesLong: Record<'bls' | 'off' | 'usda' | 'user', string>
+    portion: (unit: string, count: number) => string
+  }
   reports: {
     title: string
     subtitle: string
@@ -912,6 +944,60 @@ export const translations: Record<Locale, Translations> = {
     },
     quickAdd: {
       title: 'Quick add',
+    },
+    search: {
+      title: 'Find a food',
+      addTo: (slot) => `Add to ${slot.toLowerCase()}`,
+      placeholder: 'Search foods or brands',
+      clear: 'Clear search',
+      scan: 'Scan a barcode',
+      recent: 'Recent',
+      noRecent: 'Foods you log will show up here for next time.',
+      results: (n) => (n === 1 ? '1 result' : `${n} results`),
+      searching: 'Searching…',
+      noResults: (q) => `Nothing found for “${q}”. Try another word, or scan the pack.`,
+      failed: 'Search didn’t work just now. Please try again in a moment.',
+      tooMany: 'That’s a lot of searching. Give it a minute, then try again.',
+      scanInstead: 'Not the right one? Scan the pack instead.',
+      per100: 'kcal / 100 g',
+      pick: (name) => `Choose ${name}`,
+      back: 'Back to search',
+      howMuch: 'How much?',
+      less: 'Less',
+      more: 'More',
+      whichMeal: 'Which meal?',
+      save: (slot) => `Save to ${slot.toLowerCase()}`,
+      saving: 'Saving…',
+      saveFailed: 'That didn’t save. Please try again.',
+      saved: (slot) => `Saved to ${slot.toLowerCase()}`,
+      gentleNote:
+        'Gentle mode is on, so amounts and numbers stay hidden. A typical portion is used in the background.',
+      today: 'today',
+      yesterday: 'yesterday',
+      sources: { bls: 'BLS 4.0', off: 'Open Food Facts', usda: 'USDA', user: 'Your food' },
+      sourcesLong: {
+        bls: 'German food database',
+        off: 'Product label',
+        usda: 'US food database',
+        user: 'Added by you',
+      },
+      portion: (unit, count) => {
+        const nouns: Record<string, [string, string]> = {
+          slice: ['slice', 'slices'],
+          piece: ['piece', 'pieces'],
+          glass: ['glass', 'glasses'],
+          cup: ['cup', 'cups'],
+          bowl: ['bowl', 'bowls'],
+          bar: ['bar', 'bars'],
+          handful: ['handful', 'handfuls'],
+          tbsp: ['tbsp', 'tbsp'],
+          serving: ['serving', 'servings'],
+          portion: ['portion', 'portions'],
+        }
+        if (unit === 'g') return `${count} g`
+        const [one, many] = nouns[unit] ?? [unit, unit]
+        return `${count} ${count === 1 ? one : many}`
+      },
     },
     reports: {
       title: 'Nutrition report',

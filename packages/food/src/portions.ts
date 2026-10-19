@@ -353,7 +353,7 @@ const COMPOUND_HEADS = new Set([
   'sosse',
 ])
 
-function findFood(name: string): FoodPortion | undefined {
+export function findFood(name: string): FoodPortion | undefined {
   const text = name.toLowerCase().split(ACCOMPANIMENT)[0]!.trim()
   let best: { entry: FoodPortion; end: number; len: number } | undefined
   for (const entry of FOOD_PORTIONS) {
