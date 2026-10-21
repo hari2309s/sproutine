@@ -135,6 +135,13 @@ All providers run on free tiers. The router picks the first provider still under
 
 Run `pnpm --filter @sproutine/ai models:check` to confirm the model IDs are still served.
 
+**In production with paying users**, move each provider you keep to its paid tier and sign its data processing agreement, since prompts carry health data. Free tiers have no uptime promise, and some keep or train on prompts (Google, for example, uses unpaid Gemini API content to improve its products). Then:
+
+- Raise the shared budgets with `LLM_DAILY_LIMIT_<PROVIDER>` (e.g. `LLM_DAILY_LIMIT_GROQ=50000`). The defaults are free-tier ceilings shared by all users, so a few dozen active users would exhaust them.
+- Turn off anything you don't have an agreement with: `LLM_DISABLED_PROVIDERS=openrouter,cerebras`. Disabled providers are never called, even when the others are over budget.
+- Per-user limits are separate: chat 150, voice 100 and photo 30 requests a day, plus 300 food lookups.
+- Chat and voice traces carry the user's pseudonym and a `plan:` tag (`plan:trial`, `plan:pro`), so Langfuse can show cost per user and per plan.
+
 ---
 
 ## Project structure

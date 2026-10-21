@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DAILY_LIMITS, PRIORITY_ORDER } from '../router'
+import { DAILY_LIMITS, PRIORITY_ORDER, dailyLimit, disabledProviders } from '../router'
 import type { Provider, TaskType } from '../types'
 
 const ALL_PROVIDERS: Provider[] = ['groq', 'gemini', 'cerebras', 'openrouter', 'mistral']
@@ -63,5 +63,25 @@ describe('PRIORITY_ORDER', () => {
       const unique = new Set(providers)
       expect(unique.size, `${task} has duplicate providers`).toBe(providers.length)
     }
+  })
+})
+
+describe('budget overrides', () => {
+  it('uses LLM_DAILY_LIMIT_<PROVIDER> when it is a positive number', () => {
+    expect(dailyLimit('groq', { LLM_DAILY_LIMIT_GROQ: '50000' })).toBe(50000)
+  })
+
+  it('falls back to the default for missing or invalid values', () => {
+    expect(dailyLimit('groq', {})).toBe(DAILY_LIMITS.groq)
+    expect(dailyLimit('groq', { LLM_DAILY_LIMIT_GROQ: 'lots' })).toBe(DAILY_LIMITS.groq)
+    expect(dailyLimit('groq', { LLM_DAILY_LIMIT_GROQ: '0' })).toBe(DAILY_LIMITS.groq)
+  })
+
+  it('reads disabled providers case- and space-insensitively', () => {
+    expect([...disabledProviders({ LLM_DISABLED_PROVIDERS: ' OpenRouter, cerebras ,' })]).toEqual([
+      'openrouter',
+      'cerebras',
+    ])
+    expect(disabledProviders({}).size).toBe(0)
   })
 })

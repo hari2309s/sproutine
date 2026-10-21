@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
     if (!profile || !profile.consentHealthAt) {
       return NextResponse.json({ error: 'onboarding required' }, { status: 409 })
     }
-    if (!(await getEntitlement(db, user.id)).pro) {
+    const entitlement = await getEntitlement(db, user.id)
+    if (!entitlement.pro) {
       return NextResponse.json(
         { error: 'Voice logging is part of Pro.', code: 'pro_required' },
         { status: 402 }
@@ -54,7 +55,11 @@ export async function POST(request: NextRequest) {
 
     const model = MODELS.groq.transcription
     const transcript = await propagateAttributes(
-      { traceName: 'transcribe-voice', userId: profile.llmPseudonym, tags: ['voice'] },
+      {
+        traceName: 'transcribe-voice',
+        userId: profile.llmPseudonym,
+        tags: ['voice', `plan:${entitlement.plan}`],
+      },
       () =>
         startActiveObservation('transcribe-voice', async (span) => {
           span.update({ input: { mimeType: audio.type, bytes: audio.size } })

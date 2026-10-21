@@ -8,6 +8,8 @@ export { langfuseSpanProcessor, langfuseClient, otelSdk, maskContactDetails } fr
 export { MODELS, getModelId } from './models'
 export {
   DAILY_LIMITS,
+  dailyLimit,
+  disabledProviders,
   PRIORITY_ORDER,
   selectModel,
   selectModelCandidates,

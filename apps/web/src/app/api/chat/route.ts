@@ -279,7 +279,8 @@ export async function POST(request: NextRequest) {
         traceName: 'chat-turn',
         userId: profile.llmPseudonym,
         sessionId: `${profile.llmPseudonym}-${sessionDay}`,
-        tags: ['chat'],
+        // Plan tag: Langfuse cost per user and per plan (trial vs paid).
+        tags: ['chat', `plan:${entitlement.plan}`],
       },
       () =>
         startActiveObservation(

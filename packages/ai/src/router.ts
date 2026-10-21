@@ -9,13 +9,36 @@ import { getModelId } from './models'
 
 export { getModelId } from './models'
 
-// Conservative buffers — stay ~10% under actual free tier limits
+// Default daily request budgets, shared by every user: ~10% under the free
+// tiers. On paid tiers raise them with LLM_DAILY_LIMIT_<PROVIDER>.
 export const DAILY_LIMITS: Record<Provider, number> = {
   groq: 900,
   gemini: 1300,
   cerebras: 1500,
   openrouter: 250,
   mistral: 600,
+}
+
+type Env = Record<string, string | undefined>
+
+/** A provider's daily budget: LLM_DAILY_LIMIT_GROQ=50000 overrides the default. */
+export function dailyLimit(provider: Provider, env: Env = process.env): number {
+  const raw = env[`LLM_DAILY_LIMIT_${provider.toUpperCase()}`]
+  const value = raw ? Number(raw) : NaN
+  return Number.isFinite(value) && value > 0 ? value : DAILY_LIMITS[provider]
+}
+
+/**
+ * Providers turned off with LLM_DISABLED_PROVIDERS (comma-separated), e.g.
+ * free tiers whose terms let them keep or train on prompts with health data.
+ */
+export function disabledProviders(env: Env = process.env): Set<string> {
+  return new Set(
+    (env.LLM_DISABLED_PROVIDERS ?? '')
+      .split(',')
+      .map((p) => p.trim().toLowerCase())
+      .filter(Boolean)
+  )
 }
 
 // Priority order per task type. First provider under its daily budget wins.
@@ -52,15 +75,18 @@ function candidate(provider: Provider, task: TaskType): ModelCandidate {
 }
 
 /**
- * All candidate providers for a task, in priority order, skipping any over
- * their daily budget. Streaming callers iterate these to retry on per-minute
- * rate limits. If every provider is over budget the primary is still returned
- * so the caller can try (and surface the real error).
+ * All candidate providers for a task, in priority order, skipping disabled
+ * ones and any over their daily budget. Streaming callers iterate these to
+ * retry on per-minute rate limits. If every enabled provider is over budget
+ * the primary is still returned so the caller can try (and surface the real
+ * error). Disabled providers are never used.
  */
 export async function selectModelCandidates(task: TaskType): Promise<ModelCandidate[]> {
+  const disabled = disabledProviders()
+  const priority = PRIORITY_ORDER[task].filter((p) => !disabled.has(p))
+  if (priority.length === 0) throw new Error(`[LLMRouter] No enabled provider for task: ${task}`)
   const usage = await usageOrEmpty()
-  const priority = PRIORITY_ORDER[task]
-  const available = priority.filter((p) => (usage[`${p}_requests`] ?? 0) < DAILY_LIMITS[p])
+  const available = priority.filter((p) => (usage[`${p}_requests`] ?? 0) < dailyLimit(p))
   if (available.length === 0) {
     console.warn('[LLMRouter] All providers over budget for task:', task)
     return [candidate(priority[0]!, task)]
