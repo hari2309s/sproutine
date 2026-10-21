@@ -188,6 +188,41 @@ export interface Database {
         }
         Update: Record<string, never>
       }
+      subscriptions: {
+        Row: {
+          user_id: string
+          trial_ends_at: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          status: string | null
+          price_interval: 'month' | 'year' | null
+          current_period_end: string | null
+          cancel_at_period_end: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          trial_ends_at?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          status?: string | null
+          price_interval?: 'month' | 'year' | null
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean
+          updated_at?: string
+        }
+        Update: {
+          trial_ends_at?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          status?: string | null
+          price_interval?: 'month' | 'year' | null
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean
+          updated_at?: string
+        }
+      }
     }
   }
 }

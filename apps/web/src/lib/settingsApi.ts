@@ -2,55 +2,82 @@ import { supabase } from './supabase'
 
 /** GDPR Art. 20 export: download everything stored about the user. */
 export async function exportAllData(userId: string): Promise<void> {
-  const [profileRes, messagesRes, mealsRes, plansRes, habitsRes, checkinsRes, waterRes, weightRes, feedTokenRes, otdDismissRes] =
-    await Promise.all([
-      supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
-      supabase
-        .from('chat_messages')
-        .select('role, content, is_proactive, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true }),
-      supabase
-        .from('meal_logs')
-        .select('slot, items, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true }),
-      supabase
-        .from('meal_plans')
-        .select('week_start, plan, status, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true }),
-      supabase
-        .from('goals_habits')
-        .select('title, period, created_at, archived_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true }),
-      supabase
-        .from('habit_checkins')
-        .select('habit_id, date')
-        .eq('user_id', userId)
-        .order('date', { ascending: true }),
-      supabase
-        .from('water_logs')
-        .select('ml, logged_at, created_at')
-        .eq('user_id', userId)
-        .order('logged_at', { ascending: true }),
-      supabase
-        .from('weight_logs')
-        .select('weight_kg, logged_at, created_at')
-        .eq('user_id', userId)
-        .order('logged_at', { ascending: true }),
-      supabase
-        .from('calendar_feed_tokens')
-        .select('created_at')
-        .eq('user_id', userId),
-      supabase
-        .from('on_this_day_dismissals')
-        .select('shown_at, action, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true }),
-    ])
-  for (const r of [profileRes, messagesRes, mealsRes, plansRes, habitsRes, checkinsRes, waterRes, weightRes, feedTokenRes, otdDismissRes]) {
+  const [
+    profileRes,
+    messagesRes,
+    mealsRes,
+    plansRes,
+    habitsRes,
+    checkinsRes,
+    waterRes,
+    weightRes,
+    feedTokenRes,
+    otdDismissRes,
+    subscriptionRes,
+  ] = await Promise.all([
+    supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+    supabase
+      .from('chat_messages')
+      .select('role, content, is_proactive, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('meal_logs')
+      .select('slot, items, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('meal_plans')
+      .select('week_start, plan, status, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('goals_habits')
+      .select('title, period, created_at, archived_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('habit_checkins')
+      .select('habit_id, date')
+      .eq('user_id', userId)
+      .order('date', { ascending: true }),
+    supabase
+      .from('water_logs')
+      .select('ml, logged_at, created_at')
+      .eq('user_id', userId)
+      .order('logged_at', { ascending: true }),
+    supabase
+      .from('weight_logs')
+      .select('weight_kg, logged_at, created_at')
+      .eq('user_id', userId)
+      .order('logged_at', { ascending: true }),
+    supabase.from('calendar_feed_tokens').select('created_at').eq('user_id', userId),
+    supabase
+      .from('on_this_day_dismissals')
+      .select('shown_at, action, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('subscriptions')
+      .select(
+        'trial_ends_at, status, price_interval, current_period_end, cancel_at_period_end, created_at'
+      )
+      .eq('user_id', userId)
+      .maybeSingle(),
+  ])
+  for (const r of [
+    profileRes,
+    messagesRes,
+    mealsRes,
+    plansRes,
+    habitsRes,
+    checkinsRes,
+    waterRes,
+    weightRes,
+    feedTokenRes,
+    otdDismissRes,
+    subscriptionRes,
+  ]) {
     if (r.error) throw r.error
   }
   const exportData = {
@@ -65,6 +92,7 @@ export async function exportAllData(userId: string): Promise<void> {
     weightLogs: weightRes.data ?? [],
     calendarFeedTokens: feedTokenRes.data ?? [],
     onThisDayDismissals: otdDismissRes.data ?? [],
+    subscription: subscriptionRes.data,
   }
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)

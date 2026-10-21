@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Icon, type IconName } from './Icon'
+import { ProPill } from './ProPill'
+import { useEntitlement } from '@/hooks/useEntitlement'
 
 type Tab = 'today' | 'week' | 'body' | 'chat'
 
@@ -31,6 +33,8 @@ export function BottomNav({ active, gentle = false }: { active: Tab; gentle?: bo
     queryKey: ['chat-unread-count'],
     queryFn: fetchUnreadCount,
   })
+  // Free users see where Pro starts; nobody else does.
+  const { pro } = useEntitlement()
 
   const allTabs: { id: Tab; href: string; icon: IconName; label: string; badge?: number }[] = [
     { id: 'today', href: '/', icon: 'wb_sunny', label: t.nav.today },
@@ -62,6 +66,9 @@ export function BottomNav({ active, gentle = false }: { active: Tab; gentle?: bo
                 }`}
               >
                 <Icon name={tab.icon} filled={isActive} size={22} />
+                {tab.id === 'chat' && pro === false && !tab.badge && (
+                  <ProPill size="sm" className="absolute -top-2 left-1/2 ml-1 scale-90" />
+                )}
                 {!!tab.badge && (
                   <span className="absolute -top-1 right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-sproutine-accent px-1 text-[10px] font-bold leading-none text-sproutine-bg">
                     {tab.badge > 9 ? '9+' : tab.badge}

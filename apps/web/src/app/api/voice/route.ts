@@ -2,7 +2,7 @@ import { after, NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
 import { propagateAttributes, startActiveObservation } from '@langfuse/tracing'
 import { langfuseSpanProcessor, MODELS, consumeUserQuota } from '@sproutine/ai'
-import { createServerClient, getProfile } from '@sproutine/db'
+import { createServerClient, getEntitlement, getProfile } from '@sproutine/db'
 import { requireUser } from '@/lib/supabase-server'
 
 const VOICE_DAILY_LIMIT = 100
@@ -30,9 +30,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Speech about eating is health data: same consent gate as chat.
-    const profile = await getProfile(createServerClient(), user.id)
+    const db = createServerClient()
+    const profile = await getProfile(db, user.id)
     if (!profile || !profile.consentHealthAt) {
       return NextResponse.json({ error: 'onboarding required' }, { status: 409 })
+    }
+    if (!(await getEntitlement(db, user.id)).pro) {
+      return NextResponse.json(
+        { error: 'Voice logging is part of Pro.', code: 'pro_required' },
+        { status: 402 }
+      )
     }
 
     // Per-user cap: Whisper calls share the app-wide Groq budget.

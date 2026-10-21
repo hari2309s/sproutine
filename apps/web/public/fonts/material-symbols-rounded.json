@@ -1,5 +1,5 @@
 {
-  "version": "65a60f8049",
+  "version": "e7471b5277",
   "icons": [
     "add",
     "arrow_back",
@@ -26,6 +26,7 @@
     "content_copy",
     "contrast",
     "cookie",
+    "credit_card",
     "dark_mode",
     "delete",
     "description",
@@ -38,6 +39,7 @@
     "egg_alt",
     "error",
     "event_busy",
+    "event_repeat",
     "event_upcoming",
     "expand_less",
     "expand_more",
@@ -61,6 +63,7 @@
     "notifications_off",
     "nutrition",
     "opacity",
+    "open_in_new",
     "photo_camera",
     "photo_library",
     "play_arrow",

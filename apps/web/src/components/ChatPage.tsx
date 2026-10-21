@@ -24,9 +24,20 @@ import { BottomNav } from './BottomNav'
 import { Icon, type IconName } from './Icon'
 import { ErrorBoundary } from './ErrorBoundary'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useProGuard } from '@/hooks/useProGuard'
+import { ProPill } from './ProPill'
 import type { MealLogProposal } from '@sproutine/food/client'
 
 const SUGGESTION_ICONS: IconName[] = ['restaurant', 'calendar_month', 'nutrition']
+
+/** Corner marker on Pro-only buttons for Free users. */
+function ProDot() {
+  return (
+    <span className="pointer-events-none absolute -top-0.5 -right-0.5">
+      <ProPill size="sm" className="origin-top-right scale-75" />
+    </span>
+  )
+}
 
 interface PhotoPreview {
   dataUrl: string
@@ -49,6 +60,7 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
   const { t, locale } = useLanguage()
   const chat = useSproutineChat(initialMessages, locale)
   const voice = useVoiceRecorder()
+  const proGuard = useProGuard()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const processedTranscriptRef = useRef<string | null>(null)
   const reactedRef = useRef<Set<string>>(new Set())
@@ -202,7 +214,7 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
                   <button
                     key={suggestion.title}
                     type="button"
-                    onClick={() => sendText(suggestion.subtitle)}
+                    onClick={proGuard.guard('chat', () => sendText(suggestion.subtitle))}
                     className={`flex min-h-16 w-full items-center gap-3 px-4 text-left hover:bg-sproutine-surface ${
                       i < t.chat.suggestions.length - 1 ? 'border-b border-sproutine-border' : ''
                     }`}
@@ -444,7 +456,7 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
       {/* ── Voice dock (recording / transcribing / speaking panels) ── */}
       <VoiceDock
         status={status}
-        onStart={voice.startRecording}
+        onStart={proGuard.guard('voice', voice.startRecording)}
         onStop={voice.stopRecording}
         onStopSpeaking={chat.cancelSpeech}
       />
@@ -514,18 +526,19 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
             const text = input.trim()
             if (!text) return
             setInput('')
-            sendText(text)
+            void proGuard.sendGuarded(text, sendText).then((sent) => !sent && setInput(text))
           }}
           className="shrink-0 px-3 pb-3"
         >
           <div className="flex h-14 items-center gap-0.5 rounded-full border border-sproutine-border-strong bg-sproutine-card pr-1.5 pl-1.5 shadow-soft">
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={proGuard.guard('photo', () => fileInputRef.current?.click())}
               aria-label={t.chat.takePhoto}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sproutine-text-secondary"
+              className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sproutine-text-secondary"
             >
               <Icon name="photo_camera" size={22} />
+              {proGuard.locked && <ProDot />}
             </button>
             <label htmlFor="chat-input" className="sr-only">
               {t.chat.composerPlaceholder}
@@ -548,17 +561,21 @@ export function ChatPage({ initialMessages, safetyMode }: ChatPageProps) {
                 <Icon name="arrow_upward" size={22} />
               </button>
             ) : (
-              <ComposerMicButton
-                status={status}
-                onStart={voice.startRecording}
-                onStop={voice.stopRecording}
-              />
+              <span className="relative">
+                <ComposerMicButton
+                  status={status}
+                  onStart={proGuard.guard('voice', voice.startRecording)}
+                  onStop={voice.stopRecording}
+                />
+                {proGuard.locked && <ProDot />}
+              </span>
             )}
           </div>
         </form>
       )}
 
       <BottomNav active="chat" gentle={gentle} />
+      {proGuard.sheet}
     </AppColumn>
   )
 }

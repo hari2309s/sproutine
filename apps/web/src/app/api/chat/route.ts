@@ -44,6 +44,7 @@ import {
 import {
   createFoodCache,
   createServerClient,
+  getEntitlement,
   getProfile,
   loadRecentMessages,
   getActivePlan,
@@ -223,23 +224,33 @@ export async function POST(request: NextRequest) {
     const replyWith = (text: string, safety: 'crisis' | 'ed_risk') =>
       saveMessage(db, user.id, { role: 'assistant', content: text, safety })
 
-    if (!(await consumeUserQuota(user.id, 'chat', CHAT_DAILY_LIMIT))) {
-      // The quota never blocks a crisis reply. The keyword screen is
-      // deterministic and makes no model call, so it can't drain the budget.
+    // Neither the plan nor the quota ever blocks a crisis reply. The keyword
+    // screen is deterministic and makes no model call, so it costs nothing.
+    const crisisReply = async (): Promise<Response | null> => {
       const urgent = keywordScreen(message)
-      if (urgent?.category === 'crisis' || urgent?.category === 'ed_risk') {
-        if (urgent.category === 'ed_risk' && !profile.safetyMode)
-          await enableSafetyMode(db, user.id)
-        // In order: the message, then the reply.
-        await saveUserTurn()
-        await replyWith(SAFE_RESPONSES[urgent.category], urgent.category)
-        return templatedResponse(SAFE_RESPONSES[urgent.category], {
-          safety: urgent.category,
-          speechTone: 'reassuring' satisfies SpeechTone,
-          createdAt: new Date().toISOString(),
-        })
-      }
-      return json({ error: "You've reached today's chat limit. Rosie will be back tomorrow." }, 429)
+      if (urgent?.category !== 'crisis' && urgent?.category !== 'ed_risk') return null
+      if (urgent.category === 'ed_risk' && !profile.safetyMode) await enableSafetyMode(db, user.id)
+      // In order: the message, then the reply.
+      await saveUserTurn()
+      await replyWith(SAFE_RESPONSES[urgent.category], urgent.category)
+      return templatedResponse(SAFE_RESPONSES[urgent.category], {
+        safety: urgent.category,
+        speechTone: 'reassuring' satisfies SpeechTone,
+        createdAt: new Date().toISOString(),
+      })
+    }
+
+    const entitlement = await getEntitlement(db, user.id)
+    if (!entitlement.pro) {
+      return (
+        (await crisisReply()) ?? json({ error: 'Rosie is part of Pro.', code: 'pro_required' }, 402)
+      )
+    }
+    if (!(await consumeUserQuota(user.id, 'chat', CHAT_DAILY_LIMIT))) {
+      return (
+        (await crisisReply()) ??
+        json({ error: "You've reached today's chat limit. Rosie will be back tomorrow." }, 429)
+      )
     }
     // Stored only once the quota allows the turn, so an over-limit client
     // can't keep adding rows.

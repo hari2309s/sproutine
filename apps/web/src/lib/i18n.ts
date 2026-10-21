@@ -431,6 +431,51 @@ export interface Translations {
     sourcesLong: Record<'bls' | 'off' | 'usda' | 'user', string>
     portion: (unit: string, count: number) => string
   }
+  plans: {
+    pro: string
+    gateTitle: string
+    gateBody: string
+    benefits: [string, string][]
+    monthly: string
+    yearly: string
+    save: (pct: number) => string
+    perYear: (price: string) => string
+    perMonth: (price: string) => string
+    yearlyNote: (monthly: string) => string
+    monthlyNote: string
+    startPro: string
+    starting: string
+    searchInstead: string
+    checkoutFailed: string
+    supportLine: string
+    trialLeft: (days: number) => string
+    trialEndingNote: string
+    seePlans: string
+    keepPro: string
+    whatStaysFree: string
+    dismiss: string
+    endedTitle: string
+    endedBody: string
+    endedDetail: string
+    continueFree: string
+    subscription: string
+    proName: string
+    freeName: string
+    trialName: string
+    freeBlurb: string
+    trialBlurb: (date: string) => string
+    renewsOn: (date: string) => string
+    endsOn: (date: string) => string
+    paymentIssue: string
+    intervalLabel: Record<'month' | 'year', string>
+    seeWhatProAdds: string
+    manage: string
+    manageHint: string
+    opening: string
+    proNote: (date: string) => string
+    freeNote: string
+    welcome: string
+  }
   reports: {
     title: string
     subtitle: string
@@ -998,6 +1043,57 @@ export const translations: Record<Locale, Translations> = {
         const [one, many] = nouns[unit] ?? [unit, unit]
         return `${count} ${count === 1 ? one : many}`
       },
+    },
+    plans: {
+      pro: 'Pro',
+      gateTitle: 'Rosie is part of Pro',
+      gateBody: 'Talking with Rosie uses AI, and that costs real money. Searching and scanning stay free.',
+      benefits: [
+        ['Chat with Rosie', 'Questions, ideas, a little encouragement'],
+        ['Log by voice', 'Hold to talk, check the grams, save'],
+        ['Log from a photo', 'Snap your plate, Rosie suggests the foods'],
+      ],
+      monthly: 'Monthly',
+      yearly: 'Yearly',
+      save: (pct) => `Save ${pct}%`,
+      perYear: (price) => `${price} a year`,
+      perMonth: (price) => `${price} a month`,
+      yearlyNote: (monthly) => `About ${monthly} a month · cancel anytime`,
+      monthlyNote: 'Billed monthly · cancel anytime',
+      startPro: 'Start Pro',
+      starting: 'Opening checkout…',
+      searchInstead: 'Search instead',
+      checkoutFailed: 'Checkout didn’t open. Please try again in a moment.',
+      supportLine: 'Need to talk to someone now? TelefonSeelsorge: 0800 111 0 111, free, day and night.',
+      trialLeft: (d) => (d === 1 ? 'Pro trial: 1 day left' : `Pro trial: ${d} days left`),
+      trialEndingNote: 'After that you’ll be on Free. Everything you’ve logged stays right here.',
+      seePlans: 'Plans',
+      keepPro: 'Keep Pro',
+      whatStaysFree: 'What stays free?',
+      dismiss: 'Dismiss',
+      endedTitle: 'Your Pro trial has ended',
+      endedBody: 'Everything you logged is still here.',
+      endedDetail:
+        'Search, scan, plans and your calendar keep working on Free. Rosie, voice and photo logging pause until you choose Pro.',
+      continueFree: 'Continue with Free',
+      subscription: 'Subscription',
+      proName: 'Sproutine Pro',
+      freeName: 'Sproutine Free',
+      trialName: 'Pro trial',
+      freeBlurb: 'Search, scan, plans, calendar and reviews. Free for as long as you like.',
+      trialBlurb: (date) => `Rosie, voice and photo logging are yours until ${date}.`,
+      renewsOn: (date) => `Renews on ${date}`,
+      endsOn: (date) => `Ends on ${date}`,
+      paymentIssue: 'Your last payment didn’t go through. Please update your card.',
+      intervalLabel: { month: 'Monthly', year: 'Yearly' },
+      seeWhatProAdds: 'See what Pro adds',
+      manage: 'Manage subscription',
+      manageHint: 'Change plan, payment or cancel',
+      opening: 'Opening…',
+      proNote: (date) =>
+        `Cancel anytime. You keep Pro until ${date}, then return to Free with all your data.`,
+      freeNote: 'Your logs, plans and safety features never depend on a plan.',
+      welcome: 'Welcome to Pro. Rosie is all yours.',
     },
     reports: {
       title: 'Nutrition report',

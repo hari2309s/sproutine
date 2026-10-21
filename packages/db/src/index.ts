@@ -42,6 +42,15 @@ export type { WeightEntry } from './weightLogs'
 export { getWeeklyStats } from './weeklyStats'
 export type { WeeklyStats } from './weeklyStats'
 export { midnightInTz } from './tzHelpers'
+export {
+  getEntitlement,
+  entitlementFromRow,
+  getStripeCustomerId,
+  saveStripeCustomerId,
+  saveStripeSubscription,
+  getUserIdByStripeCustomer,
+} from './billing'
+export type { Entitlement, Plan, StripeSubscriptionState, SubscriptionRow } from './billing'
 export { getMonthSummary, getDayDetail } from './calendarSummary'
 export type { DaySummary, DayDetail } from './calendarSummary'
 export {

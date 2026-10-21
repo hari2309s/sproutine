@@ -102,6 +102,18 @@ async function main() {
   })
   if (profileError) throw profileError
 
+  // Visitors should meet Rosie: the nightly reset keeps the demo on a fresh
+  // trial. Its per-user daily caps then bound what the public demo can spend.
+  const { error: trialError } = await db.from('subscriptions').upsert(
+    {
+      user_id: userId,
+      trial_ends_at: new Date(Date.now() + 14 * 86_400_000).toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id' }
+  )
+  if (trialError) console.warn(`  ⚠ subscriptions: ${trialError.message}`)
+
   console.log('  Chat history...')
   const messages = buildMessages(today)
   await insertChunks(db, 'chat_messages', messages.map((m) => ({ user_id: userId, ...m })))

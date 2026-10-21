@@ -28,6 +28,7 @@ import { CalendarInsightsCard } from './CalendarInsightsCard'
 import { OnThisDayCard } from './OnThisDayCard'
 import { OnTheMenuCard } from './OnTheMenuCard'
 import { FoodSearchSheet } from './FoodSearchSheet'
+import { PlanNotices } from './PlanNotices'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { fetchOwnProfile } from '@/lib/profile'
 import {
@@ -100,6 +101,15 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
     setToastMsg(t.search.saved(t.meal.slots[slot]))
     void load()
   }
+  // The Pro gate's "Search instead" lands here with ?search=1.
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('search') !== '1') return
+    url.searchParams.delete('search')
+    window.history.replaceState(null, '', url)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSearchSlot(mealSlotAt(new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone))
+  }, [])
 
   const handleDetected = async (code: string) => {
     setScanning(false)
@@ -198,6 +208,8 @@ export function TodayPage({ userId, name }: { userId: string; name: string }) {
               {greeting}
             </h1>
           </div>
+
+          <PlanNotices />
 
           {streak && (
             <StreakRow

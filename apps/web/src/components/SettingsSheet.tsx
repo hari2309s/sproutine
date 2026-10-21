@@ -16,6 +16,7 @@ import { ReportSheet } from './ReportSheet'
 import { DeleteAccountSection, AttributionFooter } from './DeleteAccountSection'
 import { GoalSettings } from './GoalSettings'
 import { CalendarExportSection } from './CalendarExportSection'
+import { SubscriptionSection } from './SubscriptionSection'
 import { fetchOwnProfile } from '@/lib/profile'
 import { exportAllData, updateProfileField } from '@/lib/settingsApi'
 import { supabase } from '@/lib/supabase'
@@ -207,6 +208,8 @@ export function SettingsSheet({ userId, onClose }: SettingsSheetProps) {
           className="safe-bottom space-y-6 overflow-y-auto px-5 pt-4 pb-6"
           style={{ overscrollBehavior: 'contain' }}
         >
+          <SubscriptionSection />
+
           <section className="space-y-2.5">
             <h3 className="eyebrow">{t.settings.language}</h3>
             <LanguagePicker onChange={handleLocaleChange} />

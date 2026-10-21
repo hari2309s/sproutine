@@ -3,6 +3,7 @@ import { consumeUserQuota, parseMealPhoto } from '@sproutine/ai'
 import {
   createFoodCache,
   createServerClient,
+  getEntitlement,
   getProfile,
 } from '@sproutine/db'
 import { mealSlotAt, proposeMealLog, proposalWithoutNutrients } from '@sproutine/food'
@@ -40,6 +41,12 @@ export async function POST(request: NextRequest) {
     const profile = await getProfile(db, user.id)
     if (!profile?.consentHealthAt) {
       return NextResponse.json({ error: 'onboarding required' }, { status: 409 })
+    }
+    if (!(await getEntitlement(db, user.id)).pro) {
+      return NextResponse.json(
+        { error: 'Photo logging is part of Pro.', code: 'pro_required' },
+        { status: 402 }
+      )
     }
     if (!(await consumeUserQuota(user.id, 'photo', PHOTO_DAILY_LIMIT))) {
       return NextResponse.json(
