@@ -120,8 +120,30 @@ export async function saveStripeSubscription(
     },
     { onConflict: 'user_id' }
   )
-  if (error) throw new Error(`billing.saveStripeSubscription: ${error.message}`)
+  // 23503: the user was deleted while Stripe was still sending events. Nothing to store.
+  if (error && error.code !== '23503') {
+    throw new Error(`billing.saveStripeSubscription: ${error.message}`)
+  }
 }
+
+/** Forgets the Stripe customer (after it was deleted in Stripe). */
+export async function clearStripeCustomer(db: Db, userId: string): Promise<void> {
+  const { error } = await db
+    .from('subscriptions')
+    .update({
+      stripe_customer_id: null,
+      stripe_subscription_id: null,
+      status: null,
+      current_period_end: null,
+      cancel_at_period_end: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId)
+  if (error) throw new Error(`billing.clearStripeCustomer: ${error.message}`)
+}
+
+export const isPaidStatus = (status: string | null | undefined) =>
+  !!status && PAID_STATUSES.has(status)
 
 export async function getUserIdByStripeCustomer(
   db: Db,

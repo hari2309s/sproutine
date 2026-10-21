@@ -281,6 +281,31 @@ To deploy it, create a second Vercel project from the same repo with **Root Dire
 
 ---
 
+## Plans and billing
+
+Sproutine Free covers search and barcode logging, the tracker, calendar, planner, reviews and every safety feature. Sproutine Pro adds Rosie: chat, voice logging and photo logging. Every account gets 14 days of Pro on sign-up (the `subscriptions` row is created by a database trigger), then drops to Free with nothing locked or lost.
+
+- The server decides the plan (`getEntitlement` in [`packages/db/src/billing.ts`](packages/db/src/billing.ts)). `/api/chat`, `/api/voice` and `/api/meals/photo` answer `402 { code: 'pro_required' }` for Free users, except that crisis and eating-disorder messages always get the fixed helpline reply.
+- Stripe is the payment provider. Only the webhook writes subscription state; it re-reads each subscription from Stripe, so retries and out-of-order events are safe. Deleting an account deletes the Stripe customer first, which cancels any subscription.
+
+### Setting up Stripe
+
+1. **Products:** create one product, "Sproutine Pro", with two recurring prices: €5.99 monthly and €39.99 yearly. Put their ids in `STRIPE_PRICE_MONTHLY` and `STRIPE_PRICE_YEARLY`. The prices shown in the app ([`apps/web/src/lib/billingApi.ts`](apps/web/src/lib/billingApi.ts)) and on the landing page ([`apps/landing/src/lib/pricing.ts`](apps/landing/src/lib/pricing.ts)) are display copies, so keep them in step.
+2. **Webhook:** add an endpoint for `https://<your-app>/api/billing/webhook` with the events `checkout.session.completed` and `customer.subscription.created`, `.updated`, `.deleted`, `.paused` and `.resumed`. Put its signing secret in `STRIPE_WEBHOOK_SECRET`.
+3. **Customer portal:** in Settings → Billing → Customer portal, allow cancelling at the end of the period, updating the payment method, viewing invoices, and switching between the two prices.
+4. **Tax and terms:** set your business address and turn on Stripe Tax, then set `STRIPE_AUTOMATIC_TAX=1`. Add your Terms of Service URL under Settings → Public details, then set `STRIPE_REQUIRE_TERMS=1` so checkout asks for consent.
+5. **Test locally** with the Stripe CLI and a test-mode key:
+
+   ```bash
+   stripe listen --forward-to localhost:3000/api/billing/webhook   # prints the whsec_ secret
+   ```
+
+   Pay with card `4242 4242 4242 4242`. Settings → Subscription should switch to Pro within a few seconds.
+
+Without the Stripe variables the app still runs: the plan gates work and checkout answers "Billing is not set up yet".
+
+---
+
 ## Safety
 
 - **Safety gate on every message:** a deterministic keyword screen catches clear crisis and eating-disorder language without any model call, so it works even when every provider is down or a user's daily quota is used up. Everything else goes to the `gpt-oss-safeguard` policy classifier; if that is unavailable, the reply still follows the safety rules in Rosie's system prompt.

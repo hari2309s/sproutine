@@ -11,7 +11,11 @@ export function createServerClient() {
 }
 
 type AuthSuccess = {
-  user: { id: string; user_metadata?: { name?: string } & Record<string, unknown> }
+  user: {
+    id: string
+    email?: string
+    user_metadata?: { name?: string } & Record<string, unknown>
+  }
   errorResponse: null
 }
 type AuthFailure = { user: null; errorResponse: NextResponse }

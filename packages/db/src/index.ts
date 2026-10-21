@@ -49,6 +49,8 @@ export {
   saveStripeCustomerId,
   saveStripeSubscription,
   getUserIdByStripeCustomer,
+  clearStripeCustomer,
+  isPaidStatus,
 } from './billing'
 export type { Entitlement, Plan, StripeSubscriptionState, SubscriptionRow } from './billing'
 export { getMonthSummary, getDayDetail } from './calendarSummary'

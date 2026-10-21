@@ -32,12 +32,21 @@ async function redirectTo(path: string, body?: unknown): Promise<void> {
   window.location.assign(url)
 }
 
-/** Sends the user to Stripe Checkout for the chosen interval. */
-export const startCheckout = (interval: BillingInterval) =>
-  redirectTo('/api/billing/checkout', { interval })
-
 /** Opens the Stripe customer portal (change plan, card, cancel). */
 export const openBillingPortal = () => redirectTo('/api/billing/portal')
+
+/**
+ * Sends the user to Stripe Checkout for the chosen interval. Someone who
+ * already has a subscription goes to the portal instead of paying twice.
+ */
+export async function startCheckout(interval: BillingInterval): Promise<void> {
+  try {
+    await redirectTo('/api/billing/checkout', { interval })
+  } catch (e) {
+    if (e instanceof Error && e.message === 'HTTP 409') return openBillingPortal()
+    throw e
+  }
+}
 
 /** Whole days left until `iso`, rounded up; 0 once it has passed. */
 export function daysUntil(iso: string | null, now = new Date()): number {

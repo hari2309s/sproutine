@@ -157,11 +157,15 @@ export function PlanNotices() {
                 write(ENDED_SEEN, '1')
                 setEndedSeen(true)
               }}
-              className="btn-secondary h-12 flex-1"
+              className="btn-secondary h-12 flex-1 px-3 text-[15px] whitespace-nowrap"
             >
               {t.plans.continueFree}
             </button>
-            <button type="button" onClick={() => setGate(true)} className="btn-primary h-12 flex-1">
+            <button
+              type="button"
+              onClick={() => setGate(true)}
+              className="btn-primary h-12 flex-1 px-3 text-[15px] whitespace-nowrap"
+            >
               {t.plans.keepPro}
             </button>
           </div>
