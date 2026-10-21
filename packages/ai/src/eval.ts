@@ -48,7 +48,7 @@ export async function getGlobalUsage(): Promise<Record<string, number>> {
  */
 export async function consumeUserQuota(
   userId: string,
-  kind: 'chat' | 'voice' | 'food',
+  kind: 'chat' | 'voice' | 'food' | 'photo',
   limit: number
 ): Promise<boolean> {
   const { data, error } = await getDb().rpc('consume_user_quota', {

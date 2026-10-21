@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { parseMealPhoto } from '@sproutine/ai'
+import { consumeUserQuota, parseMealPhoto } from '@sproutine/ai'
 import {
   createFoodCache,
   createServerClient,
@@ -13,6 +13,8 @@ export const runtime = 'nodejs'
 export const maxDuration = 30
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5 MB
+/** Vision calls are the priciest per request, so photos get the tightest cap. */
+const PHOTO_DAILY_LIMIT = 30
 const MEAL_LOOKUP_BUDGET_MS = 10_000
 
 export async function POST(request: NextRequest) {
@@ -38,6 +40,12 @@ export async function POST(request: NextRequest) {
     const profile = await getProfile(db, user.id)
     if (!profile?.consentHealthAt) {
       return NextResponse.json({ error: 'onboarding required' }, { status: 409 })
+    }
+    if (!(await consumeUserQuota(user.id, 'photo', PHOTO_DAILY_LIMIT))) {
+      return NextResponse.json(
+        { error: "You've reached today's photo limit. Try searching for the food instead." },
+        { status: 429 }
+      )
     }
 
     const parsed = await parseMealPhoto(body.image, note)
