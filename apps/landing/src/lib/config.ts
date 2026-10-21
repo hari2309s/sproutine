@@ -21,3 +21,17 @@ export const NAV_LINKS = [
   { label: 'Pricing', href: '/#pricing' },
   { label: 'FAQ', href: '/#faq' },
 ] as const
+
+/** Impressum (§ 5 DDG) details. Production builds fail without name and address. */
+export const IMPRINT = {
+  name: process.env.NEXT_PUBLIC_IMPRINT_NAME ?? '',
+  // One address line per "\n" (or real newline) in the env value.
+  address: (process.env.NEXT_PUBLIC_IMPRINT_ADDRESS ?? '')
+    .split(/\\n|\n/)
+    .map((l) => l.trim())
+    .filter(Boolean),
+  phone: process.env.NEXT_PUBLIC_IMPRINT_PHONE ?? '',
+  vatId: process.env.NEXT_PUBLIC_IMPRINT_VAT_ID ?? '',
+}
+
+export const CANCEL_URL = `${APP_URL}/cancel`

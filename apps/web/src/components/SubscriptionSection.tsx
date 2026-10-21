@@ -114,6 +114,16 @@ export function SubscriptionSection() {
             <Icon name="open_in_new" size={20} className="text-sproutine-muted" />
           </button>
         )}
+        {plan === 'pro' && !cancelAtPeriodEnd && (
+          <a
+            href="/cancel"
+            className="flex min-h-14 w-full items-center gap-3 py-2 pr-3 pl-4 text-[15px] font-semibold text-sproutine-text"
+          >
+            <Icon name="event_busy" size={22} className="text-sproutine-text-secondary" />
+            <span className="flex-1">{t.cancelPage.settingsLink}</span>
+            <Icon name="chevron_right" size={20} className="text-sproutine-muted" />
+          </a>
+        )}
       </div>
       {failed && (
         <p role="alert" className="text-sm text-sproutine-accent">

@@ -476,6 +476,39 @@ export interface Translations {
     freeNote: string
     welcome: string
   }
+  cancelPage: {
+    title: string
+    lead: string
+    signedOut: string
+    signIn: string
+    emailUs: string
+    nothing: string
+    alreadyCancelled: (date: string) => string
+    plan: (interval: string, date: string) => string
+    whatHappens: string
+    confirm: string
+    cancelling: string
+    done: (date: string) => string
+    doneNoDate: string
+    doneUndo: string
+    emailed: string
+    notEmailed: (when: string) => string
+    formTitle: string
+    name: string
+    email: string
+    kind: string
+    ordinary: string
+    extraordinary: string
+    reason: string
+    sending: string
+    requestDone: (when: string, email: string) => string
+    requestNoEmail: (when: string) => string
+    requestFailed: string
+    requestUnavailable: string
+    failed: string
+    back: string
+    settingsLink: string
+  }
   reports: {
     title: string
     subtitle: string
@@ -1094,6 +1127,42 @@ export const translations: Record<Locale, Translations> = {
         `Cancel anytime. You keep Pro until ${date}, then return to Free with all your data.`,
       freeNote: 'Your logs, plans and safety features never depend on a plan.',
       welcome: 'Welcome to Pro. Rosie is all yours.',
+    },
+    cancelPage: {
+      title: 'Verträge hier kündigen',
+      lead: 'Cancel a Sproutine Pro subscription. You keep Pro until the end of the period you’ve paid for, then return to Free with all your data.',
+      signedOut: 'Sign in to the account that has the subscription, then come back to this page. Can’t sign in? Email us and we’ll cancel it for you.',
+      signIn: 'Sign in',
+      emailUs: 'Email a cancellation',
+      nothing: 'This account has no paid subscription. A Pro trial ends on its own and is never charged.',
+      alreadyCancelled: (date) => `Your subscription is already cancelled. Pro ends on ${date}.`,
+      plan: (interval, date) => `Sproutine Pro, ${interval.toLowerCase()}. Renews on ${date}.`,
+      whatHappens: 'After cancelling, you won’t be charged again. Rosie, voice and photo logging stay on until the date above.',
+      confirm: 'Jetzt kündigen · Cancel now',
+      cancelling: 'Cancelling…',
+      done: (date) => `Your subscription is cancelled. Pro stays on until ${date}, and you won’t be charged again.`,
+      doneNoDate: 'Your subscription is cancelled. Pro stays on until the end of the period you’ve paid for, and you won’t be charged again.',
+      doneUndo: 'Changed your mind? You can resume it in Settings → Subscription before then.',
+      emailed: 'We’ve emailed you a confirmation.',
+      notEmailed: (when) =>
+        `Cancelled on ${when}. We couldn’t send a confirmation email, so please keep this page (a screenshot is fine) as your confirmation.`,
+      formTitle: 'Cancel without signing in',
+      name: 'Your name',
+      email: 'Email address of your Sproutine account',
+      kind: 'Type of cancellation',
+      ordinary: 'Ordinary, at the next possible date',
+      extraordinary: 'Extraordinary, with immediate effect',
+      reason: 'Reason (needed for an extraordinary cancellation)',
+      sending: 'Sending…',
+      requestDone: (when, email) =>
+        `Received on ${when}. We’ve sent a confirmation of receipt to ${email} and will confirm the date your subscription ends in a second email.`,
+      requestNoEmail: (when) =>
+        `Received on ${when}. Please keep this page (a screenshot is fine) as your confirmation of receipt. We’ll confirm the end date by email.`,
+      requestFailed: 'That didn’t send. Please try again, or email us directly.',
+      requestUnavailable: 'This form isn’t available right now. Please email us your cancellation instead.',
+      failed: 'That didn’t work. Please try again, or email us and we’ll cancel it for you.',
+      back: 'Back to Today',
+      settingsLink: 'Cancel subscription',
     },
     reports: {
       title: 'Nutrition report',

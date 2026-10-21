@@ -28,5 +28,4 @@ export const PLAN_PRO = [
   'Chat with Rosie',
   'Voice logging, hold to talk',
   'Photo logging',
-  'Plan meals from free text',
 ]

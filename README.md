@@ -283,6 +283,9 @@ To deploy it, create a second Vercel project from the same repo with **Root Dire
 | `NEXT_PUBLIC_APP_URL` | Yes (Production builds fail without it) | Web app URL that every "Start free" and "Open the app" button links to |
 | `NEXT_PUBLIC_SITE_URL` | No | Canonical landing URL for metadata and the sitemap; defaults to the Vercel production domain |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | No | Contact address on the legal pages; defaults to `hello@sproutine.app` |
+| `NEXT_PUBLIC_IMPRINT_NAME` | Yes (Production builds fail without it) | Your name or company for the Impressum (§ 5 DDG) |
+| `NEXT_PUBLIC_IMPRINT_ADDRESS` | Yes (Production builds fail without it) | Postal address, lines separated by `\n`, e.g. `Street 1\n10115 Berlin\nGermany` |
+| `NEXT_PUBLIC_IMPRINT_PHONE` / `NEXT_PUBLIC_IMPRINT_VAT_ID` | No | Shown in the Impressum when set |
 
 "Explore the demo" opens the app at `/?demo=1`, which highlights the app's demo button, so set `NEXT_PUBLIC_DEMO_ENABLED=1` on the web app too. Prices live in [`apps/landing/src/lib/pricing.ts`](apps/landing/src/lib/pricing.ts). After adding an icon to `src/lib/icons.ts`, run `pnpm --filter @sproutine/landing icons:sync`.
 
@@ -310,6 +313,16 @@ Sproutine Free covers search and barcode logging, the tracker, calendar, planner
    Pay with card `4242 4242 4242 4242`. Settings → Subscription should switch to Pro within a few seconds.
 
 Without the Stripe variables the app still runs: the plan gates work and checkout answers "Billing is not set up yet".
+
+### Cancelling (§ 312k BGB)
+
+`/cancel` is the "Verträge hier kündigen" page, linked from the landing footer and from Settings → Subscription.
+
+- **Signed in:** "Jetzt kündigen" cancels at the end of the paid period and emails a confirmation with the time received and the end date.
+- **Signed out:** a form (name, email, ordinary or extraordinary). It never cancels anything by itself, because anyone could type someone else's email. It emails the visitor a receipt and forwards the request to `NEXT_PUBLIC_CONTACT_EMAIL`. You then match it to the account, cancel in Stripe and confirm the end date.
+- **Email:** sent through Resend once `RESEND_API_KEY` and `EMAIL_FROM` are set. Without them the signed-in flow shows the confirmation on screen, and the signed-out form asks the visitor to email you instead. Set `TURNSTILE_SECRET_KEY` so the public form is checked for bots.
+
+The legal pages, checkout wording and this flow are drafts; have them reviewed before charging customers.
 
 ---
 

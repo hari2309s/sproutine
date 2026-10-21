@@ -8,9 +8,10 @@ import { Sprout } from './ui'
 const TABS = [
   { label: 'Privacy', href: '/privacy' },
   { label: 'Terms', href: '/terms' },
+  { label: 'Impressum', href: '/impressum' },
 ] as const
 
-export function LegalPage({ page, active }: { page: Page; active: '/privacy' | '/terms' }) {
+export function LegalPage({ page, active }: { page: Page; active: (typeof TABS)[number]['href'] }) {
   return (
     <>
       <Nav />

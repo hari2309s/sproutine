@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { APP_URL, GITHUB_URL, NAV_LINKS } from '@/lib/config'
+import { APP_URL, CANCEL_URL, GITHUB_URL, NAV_LINKS } from '@/lib/config'
 import { Icon, Sprout } from './ui'
 
 const COLUMNS: { heading: string; links: { label: string; href: string; external?: boolean }[] }[] =
@@ -10,7 +10,8 @@ const COLUMNS: { heading: string; links: { label: string; href: string; external
       links: [
         { label: 'Privacy', href: '/privacy' },
         { label: 'Terms', href: '/terms' },
-        { label: 'Data sources', href: '/privacy#sources' },
+        { label: 'Impressum', href: '/impressum' },
+        { label: 'Cancel a subscription', href: CANCEL_URL, external: true },
       ],
     },
     {
