@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePostHog } from 'posthog-js/react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useEntitlement, useRefreshEntitlement } from '@/hooks/useEntitlement'
 
@@ -17,6 +18,7 @@ export function CancelSignedIn() {
   const { t, locale } = useLanguage()
   const { entitlement } = useEntitlement()
   const refresh = useRefreshEntitlement()
+  const posthog = usePostHog()
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
   const [done, setDone] = useState<Done | null>(null)
@@ -38,6 +40,7 @@ export function CancelSignedIn() {
       if (res.status === 404) return setNothing(true)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setDone((await res.json()) as Done)
+      posthog?.capture('subscription_cancelled', { source: 'cancel_page' })
       void refresh()
     } catch {
       setFailed(true)

@@ -3,8 +3,10 @@
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
+import { usePostHog } from 'posthog-js/react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useEntitlement, useRefreshEntitlement } from '@/hooks/useEntitlement'
+import { flushEvents, queueEvent } from '@/lib/analytics'
 import { daysUntil } from '@/lib/billingApi'
 import { Icon } from './Icon'
 import { ProGateSheet } from './ProGateSheet'
@@ -22,6 +24,24 @@ function read(key: string): string | null {
     return null
   }
 }
+const WELCOME = 'sproutine-billing-welcome'
+
+function readSession(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+function writeSession(key: string, value: string) {
+  try {
+    if (value) sessionStorage.setItem(key, value)
+    else sessionStorage.removeItem(key)
+  } catch {
+    // Storage blocked: the welcome may not survive a remount.
+  }
+}
+
 function write(key: string, value: string) {
   try {
     localStorage.setItem(key, value)
@@ -35,6 +55,7 @@ export function PlanNotices() {
   const { t } = useLanguage()
   const { entitlement } = useEntitlement()
   const refresh = useRefreshEntitlement()
+  const posthog = usePostHog()
   const [gate, setGate] = useState(false)
   const [hidden, setHidden] = useState(true)
   const [endedSeen, setEndedSeen] = useState(true)
@@ -47,10 +68,19 @@ export function PlanNotices() {
     setHidden(Number(read(BANNER_HIDDEN_UNTIL) ?? 0) > Date.now())
     setEndedSeen(read(ENDED_SEEN) === '1')
     const url = new URL(window.location.href)
-    if (url.searchParams.get('billing') === 'success') {
-      setWelcome(true)
+    const billing = url.searchParams.get('billing')
+    if (billing) {
       url.searchParams.delete('billing')
       window.history.replaceState(null, '', url)
+    }
+    if (billing === 'cancelled') queueEvent('checkout_cancelled')
+    if (billing === 'success') {
+      queueEvent('subscribed')
+      // Kept in session storage: the tree may remount once PostHog loads.
+      writeSession(WELCOME, '1')
+    }
+    if (readSession(WELCOME) === '1') {
+      setWelcome(true)
       // The webhook may land a moment after the redirect.
       void refresh()
       const id = setTimeout(() => void refresh(), 3000)
@@ -58,6 +88,13 @@ export function PlanNotices() {
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [refresh])
+
+  useEffect(() => flushEvents(posthog), [posthog])
+
+  // Once the welcome has been shown with Pro active, don't show it again.
+  useEffect(() => {
+    if (welcome && entitlement?.plan === 'pro') writeSession(WELCOME, '')
+  }, [welcome, entitlement?.plan])
 
   if (!entitlement) return null
   const days = daysUntil(entitlement.trialEndsAt)
@@ -156,6 +193,7 @@ export function PlanNotices() {
               onClick={() => {
                 write(ENDED_SEEN, '1')
                 setEndedSeen(true)
+                posthog?.capture('trial_ended_continue_free')
               }}
               className="btn-secondary h-12 flex-1 px-3 text-[15px] whitespace-nowrap"
             >

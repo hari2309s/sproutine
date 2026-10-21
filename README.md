@@ -324,6 +324,19 @@ Without the Stripe variables the app still runs: the plan gates work and checkou
 
 The legal pages, checkout wording and this flow are drafts; have them reviewed before charging customers.
 
+### Launch checklist
+
+1. Apply the migrations: `supabase db push`.
+2. Vercel: move to Pro (Hobby doesn't allow commercial use) and add the Stripe, Resend, Turnstile and `CRON_SECRET` variables.
+3. Supabase: move to Pro (no pausing, point-in-time recovery), confirm the project's region, and set up custom SMTP for auth emails.
+4. AI providers: switch to paid tiers with data processing agreements, raise `LLM_DAILY_LIMIT_*`, and set `LLM_DISABLED_PROVIDERS` for anything without an agreement. Keep the privacy policy's processor list in step.
+5. Stripe: follow "Setting up Stripe" above, test a full checkout, cancel and resume in test mode, then switch to live keys.
+6. GitHub: add `APP_URL` and `CRON_SECRET` as repository secrets so the hourly [`nudges`](.github/workflows/nudges.yml) workflow runs.
+7. Landing: set `NEXT_PUBLIC_APP_URL` and the Impressum variables, then deploy.
+8. Business: register the business (Gewerbeanmeldung), decide on VAT (Kleinunternehmerregelung or Stripe Tax), and have the legal pages reviewed.
+
+PostHog receives `paywall_viewed`, `checkout_started`, `checkout_cancelled`, `subscribed`, `subscription_cancelled` and `trial_ended_continue_free`, all subject to the app's cookie consent.
+
 ---
 
 ## Safety
